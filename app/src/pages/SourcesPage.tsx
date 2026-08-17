@@ -3,10 +3,25 @@
  *
  * This is the plain-language counterpart to the v5.0.19 source-attribution badge
  * (design/provenance.tsx). It explains, in order: what the site is, where every
- * number comes from (NODE / COINGECKO / SESSION / MODEL — the exact badge
- * vocabulary), why the peer panel is paused, and a reverse-chronological release
- * log. The NavTop version label links to the #release-notes section below.
- */
+ * number comes from (NODE / NETWORK / COINGECKO / SESSION / MODEL — the exact
+ * badge vocabulary, FIVE of them), why the peer panel is paused, and a
+ * reverse-chronological release log. The NavTop version label links to the
+ * #release-notes section below.
+ *
+ * NETWORK was missing from this list until p4·01. `b78dfe2` (2026-08-03) added
+ * it as the fifth `ProvSource` and retrofitted the RENDER — the fifth
+ * <SourceRow> below is `network`, appended after `model` rather than in the
+ * union's own order, which is the signature of that retrofit — but it did not
+ * update this docblock. So the sentence claiming to name "the exact badge
+ * vocabulary" was one short, in the file whose entire job is to be the
+ * provenance legend, and it disagreed with the five rows rendered ~150 lines
+ * below it. NODE and NETWORK are the pair the vocabulary exists to keep apart
+ * (telemetry from the node this site reads, versus a census of the nodes it
+ * does not), so dropping NETWORK dropped exactly the distinction that matters.
+ * If a sixth source is ever added, this line and the rows below are BOTH
+ * hand-maintained: the two `Record<ProvSource, …>` maps in provenance.tsx are
+ * the only compile-enforced members, and neither this comment nor the row list
+ * is one of them. */
 
 import * as React from "react";
 import { useLocation } from "react-router-dom";
