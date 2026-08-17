@@ -66,7 +66,21 @@ const NAV: React.CSSProperties = {
 
 /** Same route list as index.html's shell fallback and App.tsx's <Routes>,
  *  in nav/ia.ts's section order (Live → Monero → Learn → Future → Operate →
- *  About). Built from R rather than retyped path literals. */
+ *  About). Built from R rather than retyped path literals.
+ *
+ *  ── DERIVED PATHS, HAND-COPIED MEMBERSHIP — AND IT HAD DRIFTED (p4·04) ──
+ *  Read that sentence above carefully, because it is the half-truth that let
+ *  this rot: every PATH here comes from `R`, so a renamed route follows
+ *  automatically — but WHICH routes appear is hand-kept, and nothing derives
+ *  or gates it. p3·16 minted `/operate/superstress` and never reached this
+ *  file, so this list shipped 13 entries against 14 routes for a full release
+ *  series, and the crash screen quietly omitted the newest page. CLAUDE.md's
+ *  own "four route lists, one truth — RESOLVED in v6.1.6" entry names this
+ *  file among the resolved; that claim covers the paths and not the set.
+ *
+ *  p4·04 adds `/operate/mine` AND backfills the missing hub. If you add a
+ *  route, add it here: a `git grep` for the SIBLING route's constant is the
+ *  reliable way to find every list like this one. */
 const ROUTES: ReadonlyArray<readonly [string, string]> = [
   [R.HOME, "Home"],
   [R.LIVE_MEMPOOL, "Mempool"],
@@ -79,6 +93,8 @@ const ROUTES: ReadonlyArray<readonly [string, string]> = [
   [R.FUTURE, "Future"],
   [R.FUTURE_OUTLOOK, "Outlook"],
   [R.OPERATE_NODE, "Run a node"],
+  [R.OPERATE_MINE, "Mine"],
+  [R.OPERATE_SUPERSTRESS, "Superstress hub"],
   [R.ABOUT_PEERS, "Peers"],
   [R.ABOUT_SOURCES, "Sources"],
 ];

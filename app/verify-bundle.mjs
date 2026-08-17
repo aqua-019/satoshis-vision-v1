@@ -174,6 +174,7 @@ const PAGE_MODULE = {
   '/future': 'src/pages/FuturePage.tsx',
   '/future/outlook': 'src/pages/future/OutlookPage.tsx',
   '/operate/node': 'src/pages/NodePage.tsx',
+  '/operate/mine': 'src/pages/MinePage.tsx',
   '/operate/superstress': 'src/pages/SuperstressPage.tsx',
   '/about/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
@@ -645,7 +646,16 @@ const BUDGETS = {
   // literals from measurement with similar margins, and not an accumulating
   // error. Recorded again rather than quietly repaired: repairing it means
   // deciding what the backstop is FOR, which is its own change.
-  totalJsRaw: 1_167_000,  // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
+  // p4·04 RAISE, 1,167,000 -> 1,195,000. Moves WITH lazyJsRaw as always, and
+  // the arithmetic closes exactly: lazy +28,945 plus eager +499 = +29,444,
+  // which IS this budget's whole delta (1,163,009 -> 1,192,453). Residual
+  // ZERO on both halves.
+  // The stated construction ("the sum of the two real budgets") remains
+  // broken — 280,000 + 933,000 = 1,213,000 against this line's 1,196,000, a
+  // 17,000 B window against p4·03's 18,000. Still recorded rather than
+  // quietly repaired: repairing it means deciding what the backstop is FOR.
+  totalJsRaw: 1_196_000,  // p4·04: built 1,192,453 on the FINAL tree, margin 3,547.
+                          // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
                           // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
                           // p3·15: built 1,130,194, margin 3,806.
@@ -1164,7 +1174,35 @@ const BUDGETS = {
   // Baseline built in an ISOLATED `c6b518e` worktree; attribution keyed on chunk
   // STEM and paired by MULTIPLICITY, because this build stamps content and a
   // filename-keyed diff reports 69 additions and 69 deletions rather than a delta.
-  lazyJsRaw: 904_000,   // p4·03: built 900,457 on the FINAL tree, margin 3,543.
+  // p4·04 RAISE, 904,000 -> 932,000, and it is the SIMPLEST attribution this
+  // budget has ever recorded: ONE term. `/operate/mine` is a new lazy route,
+  // so Rollup mints `MinePage-*.js` and nothing else moves —
+  //
+  //     MinePage   (new route chunk)   +28,945
+  //     ---------------------------------------
+  //                                    +28,945
+  //
+  // and `ls -la dist/assets/MinePage-*.js` reads 28,945 B, which is the WHOLE
+  // lazy delta to the byte (900,457 -> 929,402). Aggregate equality alone
+  // could still hide two offsetting moves, so it was PAIRED per stem against
+  // an ISOLATED `git worktree` build of fdb105e with its own dist/ and its own
+  // node_modules — see the release note for the per-stem table.
+  //
+  // The page imports NO new shared module. That is a decision, not luck: the
+  // obvious way to write it was to derive the Superbrain miner line from
+  // `pages/future/data.ts`, which would have given that module a FOURTH
+  // importer group and split it into a chunk of its own — a second mint on
+  // top of this route's, against a CHUNK_COUNT already on its band ceiling.
+  // MinePage.tsx's header records why linking beat deriving.
+  lazyJsRaw: 933_000,   // p4·04: built 929,402 on the FINAL tree, margin 3,598.
+                        //   RE-DERIVED TWICE, and both times it had moved: the
+                        //   first measurement read 928,203, later copy edits took
+                        //   it to 929,518, and two render fixes landed it at
+                        //   929,402 — every ceiling GREEN throughout, so nothing
+                        //   would have reported the prose going stale. A budget
+                        //   comment is not gated by the budget it annotates;
+                        //   that is p3·19's recorded near-miss, twice in one PR.
+                        // p4·03: built 900,457 on the FINAL tree, margin 3,543.
                         // p3·19: built 896,103 on the FINAL tree, margin 3,897.
                         // p3·16: built 882,873 on the FINAL tree, margin 3,127.
                         // p3·15: built 867,213, margin 3,787.
@@ -1435,6 +1473,17 @@ const ROUTE_BUDGET_GZ = {
   '/future':                107_000, //  96,895
   '/future/outlook':         92_000, //  83,652 — new: split out of the old /monero/outlook tab
   '/operate/node':           92_000, //  83,305
+  // p4·04: NEW ROW — the 15th route. Built 97,918 on the FINAL tree, margin
+  //  3,082. Set from measurement, never by eye, for the reason the row below
+  //  states: a first budget chosen by eye is a ceiling nobody can later argue
+  //  with, because there is no recorded number underneath it.
+  //  Its closure is FOUR chunks — entry + vendor + MinePage + Disclosure —
+  //  and that count is the interesting half. Disclosure is a pre-existing
+  //  shared chunk (minted in p4·03 when SourcesPage became its third
+  //  importer), so the accordion this page is built on costs it a chunk it
+  //  does not mint. There is NO future-data chunk in this closure, which is
+  //  the difference between this row and /operate/superstress's five.
+  '/operate/mine':          101_000,
   // p3·16: NEW ROW — the 14th route. Built 101,893 on the FINAL tree, margin
   //  3,107. Set from measurement, never guessed: a first budget chosen by eye
   //  is a ceiling nobody can later argue with, because there is no recorded
@@ -1649,7 +1698,19 @@ const ROUTE_BUDGET_GZ = {
    this and gets read rather than absorbed. The 70th is `Disclosure`, hoisted out
    of SuperstressPage's group when SourcesPage became its third importer — see
    the attribution table beside lazyJsRaw. */
-const CHUNK_COUNT = 67;
+/* p4·04: RE-CENTRED 67 -> 68, not widened — and note that this line was GREEN
+   when it moved. The build measures 71 against the old band [63, 71], i.e.
+   INSIDE it and exactly ON the ceiling, which is the same state p4·03 found at
+   70/[62, 70] and re-centred out of. Re-centring while green is the point: the
+   band is a drift DETECTOR, and a detector sitting on its own limit reports the
+   next mint as a failure of the budget rather than as news about the build.
+   [64, 72] restores the one rung of upward headroom, keeps the ±4 sensitivity
+   in both directions, and costs nothing.
+   The 71st chunk is `MinePage`, minted by /operate/mine — a plain new lazy
+   route, not a shared leaf. This PR deliberately mints ONE and not two: see
+   lazyJsRaw's note on why the Superbrain miner line is linked rather than
+   derived from pages/future/data.ts. */
+const CHUNK_COUNT = 68;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);
