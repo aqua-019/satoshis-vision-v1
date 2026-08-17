@@ -428,7 +428,13 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       // because "we are still waiting" and "the answer is no" look identical
       // on a page that simply stops mentioning it. The MoneroSpace clause
       // above is a DIFFERENT open question and is still genuinely open.
-      "The chain itself is self-hosted: every node on it is somebody's own box, so there is no public endpoint for a dashboard to read and none is coming. /operate/superstress is the guide to running one.",
+      // NO bare route path in this sentence. An early draft closed it with
+      // "/operate/superstress is the guide to running one", which renders in
+      // EcoPopup as INERT TEXT — the modal renders `body` as plain paragraphs —
+      // while `links` below already carries that exact destination as a real
+      // anchor. A path a reader cannot click, one scroll above the same path
+      // they can, is worse than no path. Found by reading the rendered modal.
+      "The chain itself is self-hosted: every node on it is somebody's own box, so there is no public endpoint for a dashboard to read and none is coming. The hub linked below is the guide to running one.",
     ],
     // The wind-tunnel simulator tells this same story from the modelling side:
     // storm intensity in, dynamic block size and fee response out. Gated on
