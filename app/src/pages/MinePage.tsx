@@ -191,7 +191,20 @@ function Cmd({ id, cmd, copied, setCopied }: { id: string; cmd: string; copied: 
       <code className="mono" style={{ color: "var(--c-50)", fontSize: "var(--fs-mono)" }}>
         $ <span style={{ color: "var(--ink-100)" }}>{cmd}</span>
       </code>
-      <button type="button" className="proto-btn" style={{ padding: "5px 10px", fontSize: "var(--fs-label)" }} onClick={copy}>
+      {/* flexShrink 0 — a SECOND deliberate divergence from NodePage's copy, and
+          measured on both pages rather than assumed. At 390 the long monerod
+          command squeezes this button until "COPY" breaks one letter per line:
+          `styles.css`'s `.main * { min-width: 0 !important }` below 768px
+          defeats the min-content floor that would otherwise protect a single
+          word, and p4·02's `overflow-wrap: break-word` then legitimately breaks
+          a word that cannot fit. Measured at 390: /operate/node renders a 27×60
+          button on its docker line, i.e. the same shatter — so this is the
+          shared pattern's defect and not this page's. Refusing to shrink fixes
+          it here; the label is four characters and costs the command row ~58px
+          it can spare, and §8 re-asserts zero overflow at 390. */}
+      <button type="button" className="proto-btn"
+              style={{ padding: "5px 10px", fontSize: "var(--fs-label)", flexShrink: 0 }}
+              onClick={copy}>
         {copied === id ? "✓ COPIED" : "COPY"}
       </button>
     </div>
@@ -798,11 +811,9 @@ export function MinePage() {
           <Card style={{ padding: 16 }}>
             <div className="serif" style={{ fontSize: 17, color: "var(--ink-100)" }}>Already run an Umbrel box?</div>
             <p className="mono dim" style={{ margin: "8px 0 10px", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>
-              The Superbrain community store packages P2Pool and XMRig as one Umbrel app that accepts
-              external miners over your LAN or Tailscale — the fifth path, and the shortest one if you
-              already run that box. The hub publishes the single line that points a miner at it, and
-              this page deliberately does not restate it: one surface owns that command, so there is
-              no second copy to drift.
+              The Superbrain community store packages P2Pool and XMRig as one Umbrel app that takes
+              external miners over your LAN. The hub publishes the line that points one at it, and
+              this page deliberately does not restate it — one surface owns that command.
             </p>
             <Link className="acc mono" to={R.OPERATE_SUPERSTRESS} style={{ fontSize: "var(--fs-label)" }}>/operate/superstress →</Link>
           </Card>
