@@ -233,18 +233,70 @@ try {
   R.ok(cardsAfterError === expectedPartnerCount,
     `§6 · Cards still render on failed pulse (count: ${cardsAfterError})`);
 
-  // Pulse area should not have a fabricated number — either "fetching", error msg, or em-dash
+  /* §6b · THE DEGRADED RENDERING, ASSERTED SPECIFICALLY (p4·01, closing #184 F3).
+     This block used to read:
+         const hasFabricatedNumber = /^[\s\d.,]+$/.test(pulseDivText.trim());
+         R.ok(!hasFabricatedNumber || text.includes('fetching') || text.includes('error'), …)
+     which could not fail. That regex demands the WHOLE string be digits,
+     dots, commas and spaces — so any text containing a letter made
+     `hasFabricatedNumber` false and `!hasFabricatedNumber` true on its own.
+     The LIVE readout ("★ 42  open issues 7 (incl. PRs) …") satisfies it just as
+     well as the degraded one, so the assertion passed whether the page had
+     degraded or not. The two fallback disjuncts never ran, and one of them
+     could not: `FeedEmpty` renders no word "error" anywhere. Measured at
+     `81fafca` it reported ✅ rather than a skip, so it was passing vacuously
+     rather than abstaining.
+     What replaces it asserts the copy `FeedEmpty` actually ships, plus the
+     ABSENCE of the mocked live numbers, plus the absence of the live branch's
+     structural markers. `textContent`, never `innerText`: `.kicker` uppercases
+     via text-transform and innerText returns the RENDERED casing — the defect
+     family CLAUDE.md records three times.
+     A missing pulse area is now a FAILURE, not a skip. The skip was the other
+     half of the vacuity: it made "the feature vanished entirely" and "the
+     feature degraded honestly" the same green run. */
   const pulseDivAfterError = page.locator('[data-peer-pulse="brainchainz/Monero-Superbrain"]');
-  const pulseDivVisible = await pulseDivAfterError.isVisible({ timeout: 2000 }).catch(() => false);
+  const pulseDivVisible = await pulseDivAfterError.isVisible({ timeout: 5000 }).catch(() => false);
+  R.ok(pulseDivVisible,
+    '§6b · the pulse area is still on the page after the feed dies — degradation, not disappearance');
   if (pulseDivVisible) {
-    const pulseDivText = await pulseDivAfterError.textContent();
-    const hasFabricatedNumber = /^[\s\d.,]+$/.test(pulseDivText.trim());
-    R.ok(!hasFabricatedNumber || pulseDivText.includes('fetching') || pulseDivText.includes('error'),
-      `§6 · Degraded pulse does not render fabricated numbers`);
-  } else {
-    R.skip('§6 · Pulse area not visible after error (acceptable degradation)');
+    const degradedText = (await pulseDivAfterError.textContent()) ?? '';
+    const flat = degradedText.replace(/\s+/g, ' ').trim();
+
+    // (a) the house degraded copy, verbatim from repoPulse.tsx's FeedEmpty.
+    R.ok(flat.includes('returned no data'),
+      `§6b · the degraded pulse says "returned no data" — the honest empty state, not a blank`);
+    R.ok(flat.includes('failed') && flat.includes('upstream'),
+      '§6b · it names WHERE it failed ("failed upstream"), so the reader is not left guessing');
+    R.ok(flat.includes('Nothing cached yet'),
+      '§6b · it says nothing is cached — last-good is claimed only when there IS a last-good');
+    R.ok(flat.includes('src=ghrepo'),
+      '§6b · it names the endpoint that failed, so the failure is diagnosable from the page');
+
+    // (b) THE NEGATIVE HALF — the mock's live numbers must be GONE. §6a asserted
+    //     both were rendered moments ago, so this pair is a real before/after on
+    //     one selector rather than an absence that was always absent.
+    R.ok(!/★/.test(flat) && !/\b42\b/.test(flat),
+      `§6b · the star count from the live mock is GONE — no fabricated 42 survives the outage`);
+    R.ok(!/open issues\s*7\b/.test(flat),
+      '§6b · the issue count from the live mock is GONE — no fabricated 7 survives the outage');
+
+    // (c) STRUCTURAL: the live branch's own markers. `data-readout` spans exist
+    //     only in the populated branch, so their presence would prove a
+    //     fabricated readout even if every numeral happened to differ.
+    const liveMarkers = await pulseDivAfterError.locator('[data-readout]').count();
+    R.ok(liveMarkers === 0,
+      `§6b · the live readout's [data-readout] spans are absent (${liveMarkers}) — the degraded branch rendered, not a numberless copy of the live one`);
   }
 
+  /* §7 · DELIBERATELY UNTOUCHED BY p4·01 (2026-08-17). This section's
+     mono/pill class exemptions are load-bearing for the CURRENT stylesheet:
+     the repo runs an 11px floor (verify-legibility.mjs:124 — "floor raised
+     10.5 -> 11. Nothing below 11 ships") while the v6 prompt series asserts 12,
+     and this gate's exemptions are what hold that standing conflict at bay on
+     this route. p4·02 replaces them wholesale with a site-wide mobile floor
+     gate. Narrowing them HERE would turn the tree red for exactly the defect
+     p4·02 exists to fix — a hygiene pass that reds the build to register a
+     complaint is not hygiene. Left alone on purpose, not by oversight. */
   // §7: Mobile (390px) — no h-scroll, no sub-12px text
   const viewport = { width: 390, height: 844, deviceScaleFactor: 2 };
   await page.setViewportSize(viewport);

@@ -30,8 +30,20 @@
 // BLIND SPOTS (stated, not hidden):
 //   — Whether any citation URL RESOLVES. There is no egress: the agent gateway
 //     answers 403 to CONNECT for dfs.ny.gov, eur-lex.europa.eu and fincen.gov,
-//     measured rather than assumed. §B asserts scheme and shape; VALIDITY is
-//     operator-checkable and is listed as such in the PR body.
+//     measured rather than assumed. VALIDITY is operator-checkable and is
+//     listed as such in the PR body.
+//     §B asserts SCHEME (https, hard), HOST (a named external domain, not an
+//     in-app route), and — since p4·01 — the absence of a query string or
+//     fragment. It does NOT assert that a path is canonical rather than
+//     guessed, and that gap is measured rather than tolerated: Germany's
+//     `gesetze-im-internet.de/estg/` is one segment and canonical while the
+//     EU's ELI URI `/eli/reg/2023/1114/oj` is five and equally canonical, so
+//     no depth rule separates a canonical path from a guess. Path shape is an
+//     editorial judgement, recorded in data.ts's header, not an assertion.
+//     (This sentence read "§B asserts scheme and shape" and was carried as an
+//     open ledger item claiming the SCHEME was unchecked. Measured at
+//     `81fafca`, the scheme was and is checked — the exact mutation cited reds
+//     on "every linked source is https". The unchecked half was SHAPE.)
 //   — Whether any legal CLAIM is currently true. Nothing here can know that.
 //     §C makes the claims' AGE visible so a reader can discount them; it cannot
 //     make them fresh.
@@ -505,6 +517,35 @@ R.ok(SRC_ROWS.size > 0 && noReviewed.length === 0,
   });
   R.ok(badHost.length === 0, 'every linked source resolves to a named external domain',
     badHost.map((s) => `${s.country}: ${s.href}`).join(', '));
+
+  /* NO QUERY STRING AND NO FRAGMENT (p4·01, closing the real half of #187 F2).
+     The ledger item said the SCHEME was unchecked and that an `http://` deep
+     path stayed green. Measured at `81fafca`, that is FALSE — `badScheme` above
+     catches it, and the exact mutation reds with "every linked source is https
+     (23 links)". What actually sails through is the SHAPE half: an href of
+     `https://www.fincen.gov/some/deep/guessed/path?utm_source=xmrirish`
+     measured 68 passed · 0 failed, fully green.
+     This closes the machine-checkable part of that. A citation here is a
+     regulator's front door, and `data.ts`'s own header commits to "either a
+     regulator's ROOT or a canonical permanent identifier" — neither of which
+     carries tracking parameters, and a `#anchor` on a root is a guess at a
+     heading nobody has loaded the page to confirm. A `?utm_*` would also leak
+     this site's name to a regulator's analytics, which is the same privacy
+     claim the rel="noopener noreferrer" assertion below is making.
+     BLIND SPOT, MEASURED RATHER THAN ASSUMED: this does NOT detect a guessed
+     deep PATH, and that is not an omission — it is not machine-definable here.
+     Germany's `gesetze-im-internet.de/estg/` is one segment and canonical;
+     the EU's ELI URI `eur-lex.europa.eu/eli/reg/2023/1114/oj` is FIVE segments
+     and equally canonical. No depth rule separates those from a guess, so path
+     shape stays an editorial judgement (recorded in data.ts's header and in
+     p3·18's adversarial pass) rather than a fabricated assertion. */
+  const junkUrl = linked.filter((s) => {
+    try { const u = new URL(s.href); return u.search !== '' || u.hash !== ''; }
+    catch { return true; }
+  });
+  R.ok(junkUrl.length === 0,
+    `no citation href carries a query string or fragment (${linked.length} links) — a regulator root or canonical identifier has neither, and a ?utm_* would name this site to their analytics`,
+    junkUrl.map((s) => `${s.country}: ${s.href}`).join(', '));
 
   // Privacy, not boilerplate: noreferrer withholds the Referer header, so a
   // regulator's server is never told its visitor came from a Monero legality page.
