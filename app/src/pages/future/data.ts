@@ -97,8 +97,27 @@ export interface AutomationRow {
   k: string;
   src: string;
   mode: string;
-  tone: "live" | "pending"; // green = wired end-to-end today
-  // yellow = needs something that doesn't exist yet
+  /**
+   * green = wired end-to-end today · amber = NOT wired end-to-end.
+   *
+   * AMBER DELIBERATELY COVERS TWO DIFFERENT STATES, and saying so is more
+   * honest than pretending it covers one. The colour answers "is this row
+   * live?", and both states answer no: something that does not exist YET (the
+   * XMRHUB directory feed), and something that will never exist because the
+   * question was asked and the answer came back no (stressnet telemetry — the
+   * chain is self-hosted, so there is no public endpoint to wire).
+   *
+   * This comment used to read "yellow = needs something that doesn't exist
+   * yet". The "yet" was ALREADY false for the X row before p3·19 touched
+   * anything: X publishes no unauthenticated read API and is not about to.
+   *
+   * A third tone was considered and DECLINED. It would put the distinction in
+   * a HUE — the channel StatusMark exists precisely to avoid relying on — and
+   * it would add a third colour to a registry whose whole job is a two-way
+   * live/not-live read. `mode` is prose and carries the difference losslessly,
+   * which is where a distinction this verbal belongs.
+   */
+  tone: "live" | "pending";
 }
 
 export interface DevLabPulse {
@@ -402,17 +421,31 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // a source. verify-future.mjs fails the build if one comes back.
     body: [
       "Before FCMP++ activates on mainnet, the community runs it under fire. The superstress net is a deliberately abused beta chain: storm campaigns, dynamic-block-size pressure, proof-verification load — measured, shared, fixed, repeated.",
-      "The same Umbrel app repo publishes MoneroSpace, a visual mempool pointed at the beta chain. Where its interface design comes from is an open question we have put to its maintainer; until that is answered this page names the project and links the repo and claims nothing further either way. Screenshots, endpoints, and the node's story land here as they're provided.",
+      "The same Umbrel app repo publishes MoneroSpace, a visual mempool pointed at the beta chain. Where its interface design comes from is an open question we have put to its maintainer; until that is answered this page names the project and links the repo and claims nothing further either way. Screenshots and the node's story land here as they're provided.",
+      // The endpoint half of that sentence was retired in p3·19: the chain is
+      // self-hosted and runs its own daemon, so there is no public endpoint to
+      // wire and none is planned. Said here rather than left as an absence,
+      // because "we are still waiting" and "the answer is no" look identical
+      // on a page that simply stops mentioning it. The MoneroSpace clause
+      // above is a DIFFERENT open question and is still genuinely open.
+      "The chain itself is self-hosted: every node on it is somebody's own box, so there is no public endpoint for a dashboard to read and none is coming. /operate/superstress is the guide to running one.",
     ],
     // The wind-tunnel simulator tells this same story from the modelling side:
     // storm intensity in, dynamic block size and fee response out. Gated on
     // SIM_IDS by EcoPopup, exactly like the protocol cards' CTAs.
     simLink: `${R.LEARN_SIM}?p=stressnet`,
     simLabel: "RUN THE STRESSNET SIMULATOR",
+    // The two screenshot slots stay: screenshots were promised as-provided and
+    // still may arrive, so an honest reservation is still honest. The third
+    // slot — "telemetry endpoint · to be wired" — was retired in p3·19. A
+    // reserved box is a promise that the thing is coming, and this one is not:
+    // the chain is self-hosted and has no public endpoint by design. Note that
+    // EcoPopup renders every slot identically, so a slot cannot express
+    // "answered no" — the only honest form for that is prose, which body[2]
+    // now carries.
     slots: [
       { label: "screenshot · umbrel node dashboard", h: 130 },
       { label: "screenshot · MoneroSpace on the beta chain", h: 130 },
-      { label: "telemetry endpoint · to be wired", h: 64 },
     ],
     // p3·16 replaces the null "Umbrel node writeup" placeholder with the hub
     // that IS the Umbrel node writeup — the placeholder was a promise of a
@@ -533,9 +566,15 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
    the React client in that same change and the endpoint was deleted in v6.1.7.
    GitHub and getmonero.org route through the same-origin /api/feeds proxy
    (24h edge cache + 24h localStorage) — also live. Genuinely still pending:
-   X ingest (X publishes no unauthenticated read API), stressnet telemetry
-   (no endpoint exists yet), and the XMRHUB directory feed (no public feed
-   exists yet). ─────────────────────────────────────────────────── */
+   X ingest (X publishes no unauthenticated read API) and the XMRHUB directory
+   feed (no public feed exists yet).
+
+   STRESSNET TELEMETRY IS NO LONGER ON THAT LIST, and the distinction is the
+   point: it is not pending, it is ANSWERED NO. The maintainer confirmed the
+   chain is self-hosted and runs its own daemon, so there is no public endpoint
+   to wire and none is planned. "Pending" and "answered no" render the same
+   amber here, which is a limit of a two-value tone rather than a claim — see
+   the AutomationRow docblock. ─────────────────────────────── */
 export const AUTOMATION_ROWS: readonly AutomationRow[] = [
   { k: "Repo activity", src: "api.github.com/repos/*, via /api/feeds proxy", mode: "live · 4 repos · 24h edge + localStorage cache", tone: "live" },
   { k: "Dev labs · MRL", src: "research-lab/issues?sort=updated, via /api/feeds", mode: "live · 24h edge + localStorage cache", tone: "live" },
@@ -546,7 +585,11 @@ export const AUTOMATION_ROWS: readonly AutomationRow[] = [
   // repo's newest issue updated_at — on the pulse rows and in the popup
   // alike. Two signals, never merged: see DevLabPulseCard.
   { k: "Fork ETAs", src: "editorial, sourced from MRL + blog", mode: "live · flags a push idle >90d, separately from issue activity", tone: "live" },
-  { k: "Stressnet telemetry", src: "brainchainz/Monero-Superbrain · Superstress", mode: "repo pulse live · telemetry endpoint still pending", tone: "pending" },
+  // Half live, half permanently not applicable — and amber is right for the
+  // row as a whole, because the row is not wired end-to-end and never will be.
+  // Green would claim it is. See the `tone` docblock for why there is no third
+  // colour for "answered no".
+  { k: "Stressnet telemetry", src: "brainchainz/Monero-Superbrain · Superstress", mode: "repo pulse live · no public endpoint, by design — the chain is self-hosted", tone: "pending" },
   { k: "Ecosystem links", src: "xmrhub directory feed", mode: "pending wiring · no public feed exists yet", tone: "pending" },
   { k: "Chain data", src: "/api/xmr/{tip,mempool,fees,network,blocks}", mode: "live · 3s / 15s tiers, all-real since v5.0.14", tone: "live" },
 ];

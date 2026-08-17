@@ -456,23 +456,184 @@ try {
   R.ok(/github\.com\/brainchainz\/Monero-Superbrain/.test(html),
     'its repo is LINKED, not merely named');
 
-  /* ══ §6 · the betanet slot names its own absence ═════════════════════ */
-  R.group('§6 · the betanet slot is a reserved box that says what is missing');
+  /* ══ §6 · the betanet question is ANSWERED, and the ports are attributed ══
+     THIS SECTION'S SUBJECT CHANGED IN p3·19, and the replacement is sharper
+     rather than weaker — which is the only defensible reason to rewrite a
+     gate. It used to pin a reserved 220px `EmptySlot` and five sentences
+     about a telemetry endpoint that might or might not exist. The maintainer
+     answered: the chain is self-hosted, runs its own daemon, and has no public
+     endpoint. Every one of those five assertions describes copy that is now
+     FALSE, so keeping them would pin a lie.
 
-  const slot = page.locator('[data-empty-slot*="beta-chain mempool"]');
-  const slotCount = await slot.count();
-  R.ok(slotCount === 1, `the betanet slot renders (found ${slotCount})`);
-  const slotBox = slotCount === 1 ? await slot.boundingBox() : null;
-  R.ok(slotBox && slotBox.height >= 200,
-    `its height is RESERVED, not collapsed (${slotBox ? Math.round(slotBox.height) : 0}px)`,
-    'a zero-height placeholder costs a layout shift the day it is filled — reserving it now is the CLS discipline applied forward');
-  const slotText = slotCount === 1 ? await slot.innerText() : '';
-  R.ok(/telemetry endpoint/i.test(slotText),
-    'the slot names the missing thing: a telemetry endpoint');
-  R.ok(/open question/i.test(slotText),
-    'and says whether one exists is an OPEN QUESTION, rather than implying it is merely unbuilt');
-  R.ok(/fabricated|does not ship/i.test(slotText),
-    'and states why it is empty rather than filled with mainnet data');
+     "Restore the feature, never weaken the gate" governs DEFECTS. This is a
+     designed replacement, so the bar is that the new assertions catch strictly
+     more: the old §6 could not have caught an unattributed port number, a
+     resurrected "pending" phrase anywhere outside the slot, or a missing
+     why-no-live-panel — and those are the three things this page can now get
+     wrong. The mutation that matters most is the resurrection one (§6f): it is
+     what makes the historical state unrepresentable rather than merely absent.
+
+     EVERY ABSENCE HERE IS PAIRED WITH A POSITIVE CONTROL. An absence assertion
+     passes whether the copy went, the selector died, or the page failed to
+     render — this file's §5 already records the case-sensitivity version of
+     that trap — so each sweep below is preceded by proof that the thing doing
+     the reading is alive and CAN see text of the shape being denied. */
+  R.group('§6 · the betanet question is answered, and every port is attributed');
+
+  /* ── §6a · floors. Parsed from the page's OWN source, never retyped here:
+     a gate that restates a sentence cannot detect the sentence changing. */
+  const REACH_QUOTE = (() => {
+    const m = pageSrc.match(/reach:\s*"((?:[^"\\]|\\.)*)"/);
+    return m ? m[1] : '';
+  })();
+  const PREREQ_ROWS = (() => {
+    const m = pageSrc.match(/const PREREQ[^=]*=\s*\[([\s\S]*?)\n\];/);
+    return m ? [...m[1].matchAll(/\["([^"]+)",\s*"((?:[^"\\]|\\.)*)"\]/g)].map((x) => [x[1], x[2]]) : [];
+  })();
+  R.ok(REACH_QUOTE.length > 40,
+    REACH_QUOTE.length > 40
+      ? `parsed the maintainer's reachability quote from source (${REACH_QUOTE.length} chars)`
+      : 'parsed NO reachability quote from SuperstressPage.tsx — MAINTAINER.reach moved or changed shape',
+    'every quote assertion below compares the RENDERED text against this parse; an empty parse makes them vacuous');
+  R.ok(PREREQ_ROWS.length >= 5,
+    PREREQ_ROWS.length >= 5
+      ? `parsed ${PREREQ_ROWS.length} prerequisite-identity rows from source`
+      : `parsed only ${PREREQ_ROWS.length} PREREQ rows — the const moved or changed shape`);
+
+  const hubText = await page.evaluate(() => document.querySelector('.page-shell').innerText);
+  R.ok(hubText.length > 3000,
+    `the page carries ${hubText.length} chars of rendered text`,
+    'every absence sweep below reads this string — a short read makes all of them vacuously true');
+
+  /* ── §6b · the reservation is GONE, and the control proves EmptySlot lives.
+     Deleting the component entirely would satisfy the first assertion for the
+     wrong reason; the per-app screenshot slots are the paired positive. */
+  const betaSlots = await page.locator('[data-empty-slot*="beta-chain mempool"]').count();
+  R.ok(betaSlots === 0,
+    `the reserved betanet box is GONE (found ${betaSlots})`,
+    'a reserved box is a promise the thing is coming; this one is not coming, so the box is a false promise');
+  const shotSlots = await page.locator('[data-empty-slot^="screenshot"]').count();
+  R.ok(shotSlots >= 1,
+    `EmptySlot itself still renders for the honest reservations (${shotSlots} screenshot slots)`,
+    'PAIRED CONTROL for the assertion above: without it, deleting the whole component reads as "the betanet box was removed"');
+
+  /* ── §6c · the answer is present, negative, and PERMANENT. "No endpoint
+     today" and "no endpoint ever" are different claims and only the second is
+     true, so the permanence half gets its own assertion. */
+  const answer = page.locator('[data-betanet-answer]');
+  R.ok(await answer.count() === 1, 'the answered section renders exactly once');
+  const answerText = await answer.count() ? await answer.innerText() : '';
+  R.ok(/asked and answered/i.test(answerText),
+    'it says the question was ASKED AND ANSWERED, rather than silently dropping it');
+  R.ok(/no public endpoint/i.test(answerText),
+    'it states the answer: there is no public endpoint');
+  R.ok(/none is planned|by design|never/i.test(answerText),
+    'and that the answer is PERMANENT, not a current state',
+    '"no endpoint yet" invites the next PR to re-open the question; "none is planned" closes it');
+  R.ok(/self-hosted/i.test(answerText),
+    'and names the reason: the chain is self-hosted');
+
+  /* ── §6d · the why-no-live-panel is an ARGUMENT, and both of its two real
+     reasons must be named. Either alone reads as an excuse. */
+  const noPanel = page.locator('[data-no-live-panel]');
+  R.ok(await noPanel.count() === 1, 'the why-no-live-panel note renders');
+  const noPanelText = await noPanel.count() ? await noPanel.innerText() : '';
+  R.ok(/connect-src/i.test(noPanelText) && /self/i.test(noPanelText),
+    'reason 1 — this site\'s CSP is connect-src \'self\', so the browser reaches no other origin');
+  R.ok(/lan|tailnet|onion/i.test(noPanelText) && /proxy|ours to reach/i.test(noPanelText),
+    'reason 2 — a reader\'s node is on their LAN/Tailnet/onion and is not this site\'s to proxy');
+
+  /* ── §6e · the forward rule is recorded BEFORE there is data to apply it to,
+     so a later change inherits it instead of inventing one. */
+  const ruleText = await page.locator('[data-betanet-rule]').count()
+    ? await page.locator('[data-betanet-rule]').innerText() : '';
+  R.ok(/BETANET\s*·\s*NOT MAINNET\s*·\s*TEST FUNDS ONLY/i.test(ruleText),
+    'the banner rule for any future beta-chain data is written into the copy');
+  R.ok(/provenance/i.test(ruleText) && /accent/i.test(ruleText),
+    'and names the other two halves of that rule — its own accent and its own provenance badge');
+
+  /* ── §6f · THE RESURRECTION SWEEP. The historical state made unrepresentable.
+     Sentence-scoped rather than token-scoped, because the page legitimately
+     says "endpoint" (in the answer) and legitimately says "open question" (the
+     MoneroSpace provenance caveat, a DIFFERENT and still-open question). A
+     bare token grep would have to choose between missing the defect and
+     failing on correct copy; pairing the two token classes WITHIN a sentence
+     does neither, and it survives rewording. */
+  const sentences = hubText.split(/(?<=[.!?])\s+|\n+/).filter((s) => s.trim().length > 0);
+  const PENDING_RX = /\bpending\b|awaiting|landing soon|coming soon|to be wired|not wired|still to come/i;
+  const ENDPOINT_RX = /endpoint|telemetry/i;
+  const resurrected = sentences.filter((s) => ENDPOINT_RX.test(s) && PENDING_RX.test(s));
+  R.ok(sentences.length > 40,
+    `the page splits into ${sentences.length} sentences`,
+    'PAIRED CONTROL: the sweep below is vacuous if the splitter returns nothing');
+  R.ok(sentences.some((s) => ENDPOINT_RX.test(s)),
+    'the splitter CAN see endpoint-shaped sentences (the answer itself is one)',
+    'PAIRED CONTROL: proves a zero below means "no pending endpoint claim", not "no endpoint text at all"');
+  R.ok(resurrected.length === 0,
+    `no sentence claims an endpoint is pending (found ${resurrected.length}${resurrected.length ? ': ' + JSON.stringify(resurrected.slice(0, 3)) : ''})`,
+    'the endpoint question is ANSWERED NO — copy that says otherwise is now false, wherever it reappears');
+  R.ok(/open question/i.test(hubText) && /maintainer/i.test(hubText),
+    'and the MoneroSpace provenance caveat SURVIVES — a different question, still genuinely open',
+    'PAIRED CONTROL: proves the sweep above removed endpoint copy specifically, not every open-question sentence on the page');
+
+  /* ── §6g · EVERY PORT NUMBER IS ATTRIBUTED, OR IT IS ABSENT.
+     The failure mode is concrete: a reader copies "18081 p2p" into a config
+     and it does not connect, because those are the mainnet ADDON's ports as
+     the maintainer recalls them — not Superstress's own daemon's, which are
+     undocumented, and not even mainnet convention (which is 18080 for P2P).
+     The number and its attribution must therefore be in ONE container; a
+     number that has drifted out of `[data-ports]` is a number a reader can
+     meet without the paragraph that makes it safe. */
+  const PORTS = ['18080', '18081', '18083', '18089'];
+  const portsText = await page.locator('[data-ports]').count()
+    ? await page.locator('[data-ports]').innerText() : '';
+  const countOf = (hay, needle) => hay.split(needle).length - 1;
+  const rendered = PORTS.filter((p) => countOf(hubText, p) > 0);
+  R.ok(rendered.length > 0,
+    `port numbers actually render on the page (${rendered.join(', ')})`,
+    'PAIRED CONTROL: without it, deleting every port number would pass the attribution sweep below');
+  const strayPorts = PORTS.filter((p) => countOf(hubText, p) !== countOf(portsText, p));
+  R.ok(strayPorts.length === 0,
+    `every port occurrence sits inside [data-ports] with its attribution (stray: ${strayPorts.length ? strayPorts.join(', ') : 'none'})`,
+    'a port number outside that block is a number a reader can copy without reading whose port it is');
+  const attrText = await page.locator('[data-port-attribution]').count()
+    ? await page.locator('[data-port-attribution]').innerText() : '';
+  R.ok(/monero node add/i.test(attrText),
+    'the attribution names WHOSE ports these are: the Monero node addon\'s');
+  R.ok(/not superstress|its own monerod/i.test(attrText),
+    'and denies the reading that matters — they are NOT Superstress\'s own daemon\'s');
+  R.ok(/configuration|config/i.test(attrText),
+    'and tells the reader to read their own config rather than copy the number');
+
+  /* ── §6h · the prerequisite is made concrete, and the transports are stated
+     with the NEGATIVE named. A transport the app does not have is worth more
+     words than one it does: a reader planning an I2P-only deployment would
+     otherwise get all the way to a node that cannot reach anything. */
+  const prereqEl = page.locator('[data-prereq-identity]');
+  R.ok(await prereqEl.count() === 1, 'the prerequisite-identity block renders');
+  const prereqText = await prereqEl.count() ? await prereqEl.innerText() : '';
+  const missingRows = PREREQ_ROWS.filter(([, v]) => !prereqText.includes(v));
+  R.ok(PREREQ_ROWS.length > 0 && missingRows.length === 0,
+    `all ${PREREQ_ROWS.length} prerequisite rows render verbatim from source (missing: ${missingRows.length})`,
+    missingRows.length ? `first missing: ${JSON.stringify(missingRows[0][0])}` : '');
+  R.ok(/mainnet/i.test(prereqText),
+    'it says the prerequisite is a MAINNET node — the mistake this block exists to prevent');
+  R.ok(/tor/i.test(prereqText),
+    'Tor is named as an available transport (PAIRED CONTROL for the I2P check below)');
+  const i2pSentence = prereqText.split(/(?<=[.!?])\s+|\n+/).find((s) => /i2p/i.test(s)) || '';
+  R.ok(i2pSentence.length > 0 && /\bnot\b|commented out/i.test(i2pSentence),
+    `I2P is named ONLY as unavailable, never listed as a transport (${JSON.stringify(i2pSentence.slice(0, 80))})`,
+    'upstream leaves the i2pd daemon commented out; listing I2P as available would send a reader down a path that dead-ends');
+
+  /* ── §6i · the maintainer is QUOTED, not paraphrased. A paraphrase of a chat
+     message is a claim this site would be making on somebody else's behalf,
+     and these three sentences are the only published answers about a chain
+     whose specification is not published. */
+  R.ok(hubText.includes(REACH_QUOTE),
+    'the reachability answer renders VERBATIM, exactly as the maintainer wrote it');
+  R.ok(await page.locator('[data-maintainer-quote]').count() >= 2,
+    `his words are marked as his (${await page.locator('[data-maintainer-quote]').count()} attributed quotes)`,
+    'an unmarked quote reads as this site asserting the claim itself');
 
   /* ══ §7 · every cross-link resolves ══════════════════════════════════ */
   R.group('§7 · every in-app link on this page resolves to a route that exists');

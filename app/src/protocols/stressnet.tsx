@@ -8,9 +8,12 @@
 // is the hard 2× median cap, which the long-term median only relaxes slowly.
 // A stress test that never fails proves nothing, so the failure is explicit.
 //
-// Pure MODEL surface — the `data` prop is intentionally never read. The real
-// superstress net has no telemetry endpoint wired (see AUTOMATION_ROWS in
-// pages/future/data.ts), so nothing here may read as a measurement from it.
+// Pure MODEL surface — the `data` prop is intentionally never read, and after
+// p3·19 that is a PERMANENT property rather than a state to revisit. The real
+// superstress net is self-hosted and runs its own daemon, so there is no
+// public endpoint for this file to consume — not "not yet wired", but no such
+// thing to wire (see AUTOMATION_ROWS in pages/future/data.ts, and the answer
+// on /operate/superstress). Nothing here may read as a measurement from it.
 
 import * as React from "react";
 import { Link } from "react-router-dom";
@@ -226,7 +229,7 @@ export function StressnetView({ bg }: ViewProps) {
           <div className="body" style={{ borderTop: "1px dashed var(--ink-10)", paddingTop: 12 }}>
             {/* No provenance claim about MoneroSpace here either — see the
                 note on ECOSYSTEM[0] in pages/future/data.ts. */}
-            <em>The real tunnel:</em> the <b>Umbrel Superstress Net</b> is a live community FCMP++ beta chain. Nothing on this page is a reading from it — no telemetry endpoint exists yet.{" "}
+            <em>The real tunnel:</em> the <b>Umbrel Superstress Net</b> is a live community FCMP++ beta chain. Nothing on this page is a reading from it: the chain is self-hosted, so the only way to read it is to run a node on it.{" "}
             <Link to="/future" style={{ color: "var(--tk-accent)" }}>See the Superstress Net card →</Link>
           </div>
         </>

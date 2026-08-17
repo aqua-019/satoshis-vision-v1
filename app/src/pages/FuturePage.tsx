@@ -143,12 +143,17 @@ export function FuturePage() {
           <div className="kicker" style={{ color: "var(--g-50)" }}>Live now · community FCMP++ beta · Umbrel apps</div>
           {/* "Umbrel superstress net" must stay contiguous here —
               verify-sims.mjs finds this band by that text to open the
-              stressnet simulator. */}
+              stressnet simulator. HONOURED, WITH A CORRECTION: verify-sims is
+              an ORPHAN, wired to neither npm nor CI, so nothing actually
+              enforces this today. The constraint is real (that gate is one
+              wiring away from running) and the enforcement claim was not —
+              keep the phrase contiguous, and do not read this comment as
+              "a gate has my back". */}
           <div className="serif" style={{ fontSize: "clamp(20px, 1.7vw, 30px)", color: "var(--ink-100)", margin: "6px 0 4px" }}>
             The Umbrel <em style={{ fontStyle: "normal", color: "var(--g-50)", textShadow: "var(--glow-g)" }}>superstress net</em> is hammering FCMP++ before it reaches mainnet.
           </div>
           {/* Names MoneroSpace, claims nothing about where it came from. */}
-          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)" }}>Storm campaigns · dynamic block size under load · proof-verification pressure — with MoneroSpace, the beta chain&apos;s visual mempool, in the same Umbrel app repo. Screenshots + endpoints landing soon.</p>
+          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)" }}>Storm campaigns · dynamic block size under load · proof-verification pressure — with MoneroSpace, the beta chain&apos;s visual mempool, in the same Umbrel app repo. The chain is self-hosted — every node on it is somebody&apos;s own box.</p>
         </div>
         <span className="open-cue mono" style={{ opacity: 1, color: "var(--g-50)", fontSize: "var(--fs-mono)" }}>open window →</span>
       </Card>
