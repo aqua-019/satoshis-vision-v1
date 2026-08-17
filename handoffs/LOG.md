@@ -343,3 +343,55 @@
   deliberately untouched with a dated comment: p4·02 replaces its exemptions wholesale.
   **No human has seen the rendered result in a browser.**
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/189
+- XMRIRISH-20260817-43 · done · p4·02 "THE MOBILE FOUNDATION" — the touch type floor, the gate
+  with no exemptions, and the ~25-release 11-vs-12px standards conflict adjudicated BY VIEWPORT
+  (≤720px is 12px hard, >720px keeps the recorded 11px, so "the tab bar is visible" and "the
+  12px floor applies" became one condition). **FOUR OF THE BRIEF'S PREMISES FAILED MEASUREMENT
+  AND ONE OF ITS FIXES IS WORSE THAN THE DEFECT.** (1) `verify-mobile.mjs` is NOT new — it
+  existed at 148 lines, already wired to npm AND ci.yml as a named step, so the predicted census
+  move (83→84 / 79→80 / e2e 34→35 / CI 69→70) is wrong and **every figure is UNCHANGED**:
+  83 files / 79 gates / static 22 / e2e 34 / CI 69 / orphans 6, recounted with a script
+  CONTROLLED against `e5eae16` and `bda0491` first. (2) `cssGz` did NOT cross — 17,900 → 18,143
+  against 18,200, a pass with 57 B spare; raised to **18,600 and not the brief's built+4,000**,
+  because that budget's own comment says it deliberately runs ~2.5% where JS runs ~10%, and
+  22% would have silently repealed the paragraph above it. (3) The brief's wrap fix
+  (`overflow-wrap: normal`) MEASURES 18 mid-word breaks but **clips 4 → 11** — it trades eight
+  bruised labels for seven TRUNCATED ones; what shipped is `anywhere` → `break-word` (26 → 24
+  breaks, clips unchanged, 0px overflow), which fixes the brief's own named `CONFIRMA/TIONS`
+  instance because the two values differ ONLY in min-content sizing and that is exactly what let
+  flex rows shatter labels. (4) The 320px check is not free: 13 elements past the edge on
+  `/live/network` — **13 on the base commit too**, one `.keep-cols` used outside the
+  `.table-scroll` precondition its own stylesheet comment states.
+  **THE FLOOR: 1,031 → 0 across fourteen routes, and the fix is one token.** 344 of the 1,031
+  take their size from an inline `style={{ fontSize }}` no author rule can beat without
+  `!important` — but **318 specify `var(--fs-label)`**, so redefining the token inside the media
+  query reaches them all. **ZERO `!important` in the block.** Verified in BOTH feed states
+  (`/api/**` answers 501 on serve-dist, so every earlier measurement was degraded-only — a
+  recon worker caught that, and the mocked-live re-measure is also 0).
+  **THE GATE: 8 sections, 47 assertions, no class exemption**, closing two vacuities rather than
+  inheriting them — overflow measured by bounding rect (documentElement cannot move under
+  `overflow-x: clip` below 769px; the honest skip is kept) and SVG measured in RENDERED space
+  via `getScreenCTM()`. Two defects BOUNDED not exempted: thesis's 22 labels at 2.58–3.04px
+  behind a 0.304 viewBox scale (unfixable cheaply — `DEFAULT_MAX_K` is 1.7, this needs 4.4×) and
+  `/live/network`'s 320px overflow. `verify-peers` §7 and `verify-superstress` §8 lose their
+  exemption lists — peers' walker exempted **`mono`, that page's body font**, at a floor read
+  through `parseInt('11.5px') === 11`, and was GREEN on a page carrying 37 sub-12px elements.
+  Both KEPT because peers mocks a LIVE pulse, a state the site-wide gate cannot reach.
+  **`verify-legibility` had two defects of its own, found by this work reddening it**: its
+  exactly-once SCALE check counted its own COMMENT PROSE as a declaration, and forbade
+  responsive overrides. Subject narrowed (comments stripped, @media bodies blanked) and the
+  override asserted by VALUE. **NINE break tests** — six on verify-mobile (M1 token→11px = 15
+  reds naming per-route counts · M2 tab bar hidden · M3 a forced 500px element = 3 including
+  §8's 320 bound, proving it live · M4 a version claim in the title · M5 clearance removed ·
+  M6 a 23rd SVG label = `23 ≤ 22`) and three on verify-legibility — every restore verified
+  against the COMMITTED BLOB. **THE FIRST RUN OF ALL SIX WAS VOID AND LOOKED LIKE SIX PASSES**:
+  serve-dist had died, so each printed a crash with no named red, over which `grep '❌'` returns
+  EMPTY. Budgets +179 B raw JS over 6 chunk slots of 68 (eager entry +154, the touch chip;
+  entry identified from `dist/index.html`'s own script src, not by basename), CHUNK_COUNT 69.
+  Copy: six device verbs neutralised, five KEPT with reasons. The `⌘K` chip prints "Search"
+  below 720 via a CONTAINER query, because `.nav-kbd` really is inside `.nav-shell`.
+  **NOT FIXED, named**: twelve remaining mid-word wraps (flex-squeeze, scale-invariant —
+  tracking was tried and the box shrinks WITH the word); the thesis SVG; the 320px `.keep-cols`;
+  `ChartTip` tspans at 10.5px that only a hover reveals, named as the gate's blind spot.
+  **No human has seen the rendered result in a browser.**
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/PENDING
