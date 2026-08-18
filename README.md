@@ -1,199 +1,227 @@
+```
+                         *#%%+%%%=*    *=%%%+%%#*
+                       +##%%%+%##=#****#=##%+%%%##+
+                      -****##=##*=**++**=*##=##****-
+                    -:.:+**##=###=**++**=###=##**+:.:-
+                *##**++:--#%%+%%%+%####%+%%%+%%#--:++**##*
+               #%%##***##---@+@@@+%%%%%%+@@@+@---##***##%%#
+              #%%%######%%@@---@@@@@%%@@@@@---@@%%######%%%#
+              #%%%##*##%%%@@@@---@@@%%@@@---@@@@%%%##*##%%%#
+               ####***##%%@@@@@@---@%%@---@@@@@@%%##***####
+                =***++**#%%%%@@@@%%%##%%%@@@@%%%%#**++***=
+                =***++**#%%%%@@@@%%%##%%%@@@@%%%%#**++***=
+               ####***##%%@@@@@@---@%%@---@@@@@@%%##***####
+              #%%%##*##%%%@@@@---@@@%%@@@---@@@@%%%##*##%%%#
+              #%%%######%%@@---@@@@@%%@@@@@---@@%%######%%%#
+               #%%##***##---@+@@@+%%%%%%+@@@+@---##***##%%#
+                *##**++:--#%%+%%%+%####%+%%%+%%#--:++**##*
+                    -:.:+**##=###=**++**=###=##**+:.:-
+                      -****##=##*=**++**=*##=##****-
+                       +##%%%+%##=#****#=##%+%%%##+
+                         *#%%+%%%=* ###*=%%%+%%#*
+                                    |##|
+                                    |###
+                                     ###|
+                                     |##|
+                                      ###
+                                      |##|
+```
+
 # Satoshi's Vision Archive — xmr.irish
 
 An educational site on Bitcoin's surveillance trajectory and Monero's privacy
 architecture, rendered from live chain and market data.
 
-![Bitcoin](https://img.shields.io/badge/Bitcoin-F7931A?style=flat&logo=bitcoin&logoColor=white)
-![Monero](https://img.shields.io/badge/Monero-FF6600?style=flat&logo=monero&logoColor=white)
-
 **Live**: [xmr.irish](https://xmr.irish)
 
----
-
-## 📁 Project Structure
-
-```
-satoshis-vision-v1/
-├── app/                    # React 18 + Vite + TypeScript SPA — the front-end
-│   ├── index.html          # Vite entry (carries the critical paint floor)
-│   ├── src/                # routes, layout, data hooks, protocol simulators
-│   ├── public/             # favicon + 12 self-hosted woff2
-│   ├── scripts/
-│   │   ├── routes.mjs      # the 13 static routes + R/REDIRECTS — single source of truth
-│   │   ├── prerender.mjs   # emits dist/<route>/index.html (works with JS off)
-│   │   ├── gen-sitemap.mjs # emits dist/sitemap.xml + dist/robots.txt
-│   │   └── serve-dist.mjs  # local mirror of Vercel's resolution order
-│   └── verify-*.mjs        # 65 gates + verify-lib/-reporter/-fixtures.mjs (shared, not gates)
-├── api/                    # Vercel serverless — MIXED: CJS except coingecko/markets (ESM)
-│   └── verify-*.mjs        # 6 offline gates
-├── relay/                  # websocket relay (not currently deployed)
-├── docs/                   # design specs and historical v4 audits
-├── vercel.json             # deploy config: build, rewrites, CSP, HSTS
-└── LICENSE
-```
-
-> The v4 static site that used to live at the repo root (22 `.html` pages, `js/`,
-> `css/`) was deleted in v6.1.0. It had been unreachable since the SPA migration —
-> `vercel.json` publishes `app/dist`, which those files were never part of.
+This file is not a contributor's map. It is a statement of how this site treats
+the people who read it, and every claim in it names the thing in this
+repository that enforces it — a file, a header, or a build gate. An ethos you
+cannot check is a slogan.
 
 ---
 
-## 🚀 Development
+## What this is
+
+A teaching tool and a blockchain explorer at the same time. The explanations
+sit beside the live chain they describe, so a claim made here can be checked
+against the numbers on the same screen.
+
+It is non-profit. There is nothing to buy, no account to make, no wallet to
+connect. **The site is read-only and non-custodial: it holds no funds, takes
+custody of nothing, and has no mechanism by which anything on it can move
+money.**
+
+---
+
+## How this site treats you
+
+Each row names the mechanism. Every one is in this repository.
+
+| Claim | Mechanism, and where to check it |
+|---|---|
+| **Your browser reaches no third party.** | `Content-Security-Policy: … connect-src 'self'` in `vercel.json`. The browser is *forbidden* to open a connection to another origin. Gated by `app/verify-origins.mjs`, which sweeps the source tree for off-origin fetches **and** drives the site in a real browser counting the requests that actually leave. |
+| **No analytics, beacons, tracking pixels, cookies, accounts or fingerprinting.** | None of it is in the tree, and `connect-src 'self'` means none of it could phone home if it were. There is no consent banner because there is nothing to consent to. |
+| **No CAPTCHAs, bot challenges or interstitials.** | Absent by decision, permanently. There is no challenge code in this repository. The machinery that makes much of the web hostile to Tor is not here, and is not coming. |
+| **Third parties never see you.** | Market data, repository activity and the public node census are fetched **server-side** by the functions in `api/`. Your address reaches CoinGecko, GitHub and the node census exactly never. Outbound links carry `Referrer-Policy: no-referrer`, so a site you open from here is not told where you came from. |
+| **The fonts are local too.** | 12 `woff2` in `app/public/fonts/`. No CDN, no `fonts.googleapis`, no `fonts.bunny.net`. The count of third-party browser requests is zero and is gated at zero. |
+| **It works with JavaScript off.** | Every static route is prerendered to real HTML at build time by `app/scripts/prerender.mjs`. Tor Browser at its Safest setting reads this site whole. Live data enriches a page; it is never the price of admission. Gated by `app/verify-nojs.mjs` and `app/verify-degraded.mjs`. |
+| **No number is invented.** | See [Real values, or none](#real-values-or-none) below. |
+| **Usable at 390px, nothing under 12px, and reduced motion loses no information.** | Gated by `app/verify-mobile.mjs`, `app/verify-legibility.mjs` and `app/verify-reduce.mjs`. |
+
+### Real values, or none
+
+A figure on a live surface is one the site actually received, or it is an
+em-dash. It is never a plausible guess wearing the clothes of a measurement.
+When a feed degrades, the page carries the last good value and says
+`STALE · reconnecting`; it never synthesises a replacement.
+
+Randomness exists in exactly two places, and neither of them renders a value:
+
+- **`app/src/protocols/`** — the educational simulators, which are *supposed*
+  to invent values and are labelled as doing so. This is the rule's one
+  carve-out, and it is enforced from both sides: `app/verify-prng.mjs` strips
+  comments, scans every `.ts`/`.tsx` file under `app/src/`, and asserts **zero**
+  `Math.random()` call sites outside `src/protocols/` — plus a positive control
+  that the exemption is load-bearing, so the check cannot pass by scanning
+  nothing.
+- **Retry backoff in `api/`** — `api/markets.js` and `api/coingecko.js` jitter
+  the delay before re-trying a rate-limited upstream, so a fan-out of requests
+  does not retry in lockstep. The random number is a count of milliseconds to
+  wait. It never becomes a value anyone reads.
+
+### What is honestly still true
+
+This site keeps no log of its own. It is served by a host that meters requests
+the way any origin does, and edge caching collapses simultaneous readers into
+a single upstream fetch. **So there are logs — the operator's view of them is
+that a page was read, never who read it.** Anyone claiming a website generates
+no records at all is describing something other than a website.
+
+Your browser does store things locally: the last good market data, a
+short-lived feed cache, and your own display settings. None of it identifies
+you, and none of it leaves your machine.
+
+---
+
+## Security headers
+
+Served on every path, from `vercel.json`. The policy is quoted in full because
+paraphrasing it would cost you the ability to check it.
+
+```
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';
+  font-src 'self'; object-src 'none'; base-uri 'self';
+
+Referrer-Policy:            no-referrer
+X-Frame-Options:            DENY
+X-Content-Type-Options:     nosniff
+Strict-Transport-Security:  max-age=31536000; includeSubDomains; preload
+Permissions-Policy:         camera=(), microphone=(), geolocation=(), payment=()
+X-XSS-Protection:           1; mode=block
+```
+
+`connect-src 'self'` is the load-bearing line. `object-src 'none'` and
+`base-uri 'self'` close the plugin and base-tag injection routes.
+`Permissions-Policy` denies camera, microphone, geolocation and payment
+outright rather than leaving them to default.
+
+To verify the live site rather than this file:
 
 ```bash
-cd app
-npm ci
-npm run dev        # vite dev server
-npm run build      # tsc + vite build + SSR + prerender + sitemap
-```
-
-To serve a production build exactly as Vercel resolves it — real file, then
-directory index, then the SPA catch-all:
-
-```bash
-node scripts/serve-dist.mjs &
-npm run wait-preview
-```
-
-`npm run preview` (plain `vite preview`) is an SPA server that falls back to
-`index.html` for every path, so it hides prerender breakage. Prefer `serve-dist`.
-
-### Adding or removing a route
-
-Add the path to `R` in **`app/scripts/routes.mjs`** — it is the one place a route
-path is written down. The prerenderer, the sitemap generator, `App.tsx`,
-`src/nav/ia.ts`, `NavTop.tsx` and `RootBoundary.tsx` all read it. Then add a
-`<Route path={R.NEW}>` in `app/src/App.tsx` and place the leaf in the right
-section of `app/src/nav/ia.ts`, which feeds the nav, breadcrumbs, the mobile tab
-bar and the ⌘K palette. `verify-ia.mjs` enforces that those agree, and
-`verify-bundle.mjs` fails a route with no measured byte budget.
-
----
-
-## ✅ Verification
-
-71 gates guard this repo (65 in `app/`, 6 in `api/`; `verify-lib.mjs`,
-`verify-reporter.mjs` and `verify-fixtures.mjs` are shared modules, not gates —
-`verify-lib` alone is imported by 29 of them).
-`.github/workflows/ci.yml` runs **60 distinct** files on every PR to `main`, in
-two jobs: 12 named offline gates, then `verify:static` (21) and `verify:e2e`
-(29), plus 3 individually-named browser gates v2·3b wired in. Counts here are
-RECOUNTED, never incremented — this block read "66 / 52 / 19 / 26" while the
-chains held 21 and 29, and the arithmetic in its own parenthetical did not
-close.
-
-```bash
-cd app
-npm run typecheck
-npm run build
-
-npm run verify:static   # 21 source-assertion gates, no browser, ~30s
-npm run verify:bundle   # byte budgets — offline, but reads dist/
-
-npx playwright install --with-deps chromium
-node scripts/serve-dist.mjs &
-npm run wait-preview
-npm run verify:e2e      # 29 Playwright gates
-
-npm run verify:all      # all of the above in one command, with one tally
-```
-
-`verify:all` builds, starts `serve-dist`, runs every gate CI reaches (plus the
-cost gates), tears the server down and prints a single
-`passed · fixtured · skipped · failed` line naming every command it ran. It is
-an orchestrator rather than a gate — the "no gate spawns a server" rule is
-intact — and it is deliberately **not** wired into CI, because CI runs its two
-jobs in parallel and this would serialise them for no extra coverage.
-
-### Cost gates (v6.1.5)
-
-Everything above checks correctness. Two gates check **cost**:
-
-- **`verify-bundle.mjs`** — per-route first-load bytes, eager JS, CSS, total JS
-  and Vite's own 500 kB chunk backstop. Deterministic (gzip pinned to level 9),
-  so its ceilings hold on any machine. Runs in the `build` job *after* Build —
-  it cannot live in `verify:static`, which runs before the build.
-- **`verify-vitals.mjs`** — LCP, main-thread blocking, and worst scripted
-  interaction latency, against a mocked feed. Wall-clock, so its ceilings are
-  calibrated against the CI runner. An environment too contended to measure
-  honestly reports `skip` — its own counter — never a silent pass.
-
-Both print their measured numbers on every run, pass or fail. A `--measure`
-flag on each prints without asserting, which is how baselines are re-taken.
-
-Four more are npm-wired but deliberately not in CI — `verify:shots`,
-`verify:perf-classic`, `verify:mem:perf`, and `verify:pageshell` (held back
-under v2·3b's "never wire a red gate" rule for a pre-existing `/future@1600`
-layout overflow; see CLAUDE.md's verification block). `verify-shots.mjs`'s `--baseline` diff
-needs a shot tree built from another commit, which CI has no way to produce; the
-two framerate gates measure fps, which a shared runner cannot measure honestly.
-
-`verify:perf` was RENAMED to `verify:perf-classic` in v2·3b. It ran
-`verify-perf-classic.mjs`, while the similarly-named `verify-perf.mjs` was
-orphaned — and `grep verify-perf package.json` matches `verify:perf`, so the
-orphan looked wired to anyone checking by substring. That trap cost real time
-and is recorded at CLAUDE.md:431; the rename removes it. `verify-perf.mjs` is
-now `verify:perf-runtime`, and unlike the classic gate it asserts no framerate,
-so it runs in CI.
-
-The remaining 7 are wired to neither npm nor CI. Several expect live upstreams
-the sandbox cannot reach; auditing and wiring them is its own task. (v6.1.4
-wired in `verify-allreal-dom.mjs` and `verify-tiers-dom.mjs`, which between them
-already asserted the CONNECTING / LIVE / STALE vocabulary, last-good retention
-under outage, and the tier cadence — exactly the regression surface of that
-release's status refactor.)
-
----
-
-## 🛡️ Security and privacy invariants
-
-These are enforced by gates, not convention:
-
-- **One origin.** CSP is `connect-src 'self'`. The browser reaches no third party;
-  everything is proxied through `/api/`. Gated by `verify-origins.mjs`.
-- **Self-hosted fonts.** 12 woff2 in `app/public/fonts/`. No CDN — the site is used
-  over Tor and the external-request count must stay at zero.
-- **No fabricated data.** `Math.random()` is confined to `app/src/protocols/` (the
-  educational simulators). Live surfaces show real values or an em-dash, never an
-  invented one. Degradation is "STALE · reconnecting" plus last-good, never synthesis.
-- **Works with JavaScript off.** Every static route is prerendered to real HTML.
-- **No white flash.** Every route keeps its `noscript` block and a literal
-  background floor. Gated by `verify-degraded.mjs`.
-- **Usable at 390px**, no text under 12px, and a `prefers-reduced-motion` path that
-  loses no information.
-
-Security headers (`vercel.json`): `X-Frame-Options: DENY`,
-`X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
-`Strict-Transport-Security` with preload, and the CSP above.
-
----
-
-## ⚠️ Legal Disclaimers
-
-```
-FOR EDUCATIONAL AND DEMONSTRATION PURPOSES ONLY
-
-• This website documents publicly available information
-• NOT financial, legal, or investment advice
-• No endorsement of any cryptocurrency or financial product
-• Users are responsible for compliance with local regulations
-• The creators assume no liability for use or misuse
+curl -sI https://xmr.irish | grep -i 'content-security-policy\|referrer-policy'
 ```
 
 ---
 
-## 📜 License
+## Legal
 
-MIT License — see [LICENSE](LICENSE)
+### Purpose
+
+**This site is for education and documentation only.** It explains publicly
+available information about how two public blockchains work. Nothing on it is
+an offer, a solicitation, or an inducement to do anything.
+
+### Not advice
+
+**Nothing on this site is financial, investment, legal, tax, accounting or
+security advice.** It is not a recommendation to buy, sell, hold, mine, or
+transact in any asset, and it is not a recommendation to use any wallet, node,
+pool, exchange, service or piece of software mentioned on it. No content here
+is tailored to your circumstances, because the site knows nothing about your
+circumstances and is built so that it cannot. Consult a qualified professional
+in your own jurisdiction before acting on anything you read here.
+
+### No endorsement
+
+Naming a project, protocol, service or organisation is documentation, not
+endorsement. Where this site links to an external resource it is neither
+controlled nor monitored by this site, its contents may change without notice,
+and its accuracy, safety and availability are the responsibility of whoever
+operates it. Following an external link is at your own risk.
+
+### Non-custodial and read-only
+
+**This site holds no funds, custodies no assets, and operates no wallet.**
+There are no accounts, no sign-in, no balances, and no transaction-signing
+capability of any kind. Nothing on this site can move money, and no action
+taken on it can spend, receive or authorise a transfer. It cannot recover a
+lost key, reverse a transaction, or help with funds sent anywhere.
+
+### Live data may be wrong
+
+Figures on this site come from third-party sources — a Monero node, a market
+data provider, a public node census — and are shown as received. They may be
+**delayed, incomplete, degraded, cached, or simply wrong**, and the site may
+be unreachable at any time. Where data is stale the page says so, but a
+correct-looking number is not a guarantee of a correct number. **Do not rely on
+anything here for a financial, operational or security decision.** Verify
+against your own node or another independent source.
+
+### The simulators are simulated
+
+The interactive protocol demonstrations under `/learn` render **invented
+values by design**, in order to illustrate a mechanism. They are labelled as
+such throughout. They are not chain data, not historical data, and not a
+prediction of anything.
+
+### Your jurisdiction is your responsibility
+
+**The legal treatment of cryptocurrency — and of privacy-preserving
+cryptocurrency in particular — varies enormously between jurisdictions and
+changes frequently.** Something lawful where this site is read may be
+restricted, licensable or prohibited where you are. Any description on this
+site of a law, regulation or regulatory position is a summary written at a
+point in time, is not comprehensive, and may be out of date. **You are solely
+responsible for determining and complying with the laws that apply to you.**
+
+### Warranty and liability
+
+Quoting the [`LICENSE`](LICENSE) this project ships under, because it governs
+the content as well as the code:
+
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+> FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+> IN THE SOFTWARE.
+
+To the fullest extent permitted by law, the operator and contributors accept
+no liability for any loss or damage arising from use of, or reliance on, this
+site or anything linked from it.
 
 ---
 
-## 🔗 External Resources
+## License
 
-- [GetMonero.org](https://www.getmonero.org/) — Official Monero site
-- [Bitcoin.org](https://bitcoin.org/) — Official Bitcoin site
-- [Nakamoto Institute](https://nakamotoinstitute.org/) — Satoshi's writings
-- [Monero Research Lab](https://www.getmonero.org/resources/research-lab/)
+MIT — see [`LICENSE`](LICENSE).
+
+```
+Copyright (c) 2026 Satoshi's Vision Archive
+```
 
 ---
 
