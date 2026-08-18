@@ -819,6 +819,31 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   at the formed phase must NOT show it in the stream phase, with a lit-pixel guard proving the
   canvas is painting either way. It installs NO cold-boot bypass, and that is structural rather
   than asserted.
+  **THE FULL CHAIN FOUND A DEFECT THE NEW GATE STRUCTURALLY COULD NOT, and it is the best
+  argument in this release for running the whole chain rather than the gate you just wrote.**
+  `verify-govern` §5 is a SOURCE assertion over every rAF driver in `app/src`: each must reach
+  the shared visibility machinery (`isPageActive`/`onPageActiveChange`/`observeDrawable`/…) or
+  carry a `D0699-EXEMPT` marker, and an exemption is for a MEASUREMENT-only rAF (a deferred
+  read, a bounded settle) rather than a driver. The overlay's loop had neither and the chain
+  named it: **`UNPAUSED: src/pages/about/CloverOverlay.tsx`, alone among ten drivers.**
+  `verify-site`'s 68 assertions test the overlay's BEHAVIOUR and could not see it — a new page
+  can satisfy its own gate completely and still break a site-wide invariant. Rolling one's OWN
+  loop is fine (the same gate reports four other files doing exactly that, as standing debt);
+  the missing GATE was the defect. Fixed with the better behaviour rather than the marker: the
+  clock is now ANIMATION time, so a reader who backgrounds the tab mid-animation returns to the
+  clover where they left it instead of to an overlay that finished without them, and `lastTs` is
+  dropped on resume so the hidden gap is never credited as one enormous frame.
+  **AND THE CHAIN'S RED WAS REPORTED TO ME AS EXIT 0.** The run's last command was a `grep`, so
+  the task's status was the grep's — p4·03's recorded trap, in a new shell. `E2E_EXIT=1` was in
+  the output all along. **The `&&` chain also ABORTED at position 26, so gates 27-36 never ran**:
+  the "25 green" that run printed was not a pass, it was an abort with ten gates unreported.
+  Read the recorded exit, never the wrapper's.
+  **A SELF-AUDIT AFTER M4 FOUND ONE MORE VACUITY BEFORE A BREAK TEST HAD TO.** Sweeping this
+  gate's own absence-shaped assertions, §8's no-figures check read a string that — had the
+  selector returned empty — would have matched nothing and passed however the page reads. Every
+  other absence was already paired with a floor (§7's `cited >= 4` and its corpus count, §5's
+  mark and char counts, §9's `hrefs.length >= 10`). Paired now; it reports 947 chars captured,
+  so it was never actually vacuous and now cannot become so.
   **TEN BREAK TESTS, and the two that did not behave taught the most.**
   M1 the clover never forms → 3 · M2 input no longer dismisses → 2 · M3 reduced motion ignored →
   3 · M5 a guessed social handle → 1 · M6 a hardcoded fundraiser figure → 1 · M7 the overlay
