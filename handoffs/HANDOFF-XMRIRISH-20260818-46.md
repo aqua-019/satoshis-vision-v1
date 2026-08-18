@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260818-46
 branch: claude/xmr-irish-about-page-6upd6q
-status: in_progress
+status: done
 written_by: claude-code (manual mode — the task arrived as a prompt)
 owner: claude-code
 ---
@@ -54,13 +54,14 @@ vitals-last e2e ordering.
 - [x] `node verify-future.mjs` exits 0 — the phrasing embargo is intact
 - [x] `node verify-bundle.mjs` exits 0 with the new route row set from measurement
 - [x] `node verify-site.mjs` exits 0
-- [ ] `npm run verify:e2e` exits 0 across all 36 members — RUNNING on the shipping tree
-- [ ] `node verify-mobile.mjs` exits 0 (the new route is swept automatically) — PENDING
+- [x] `npm run verify:e2e` exits 0 across all 36 members — E2E_EXIT=0, 36 green, 0 reds
+- [x] `node verify-mobile.mjs` exits 0 — 51 passed · 1 skipped · 0 failed; /about/site swept
+      automatically with 0 text elements below 12px
 - [x] Ten break tests, each red where intended, each restore proven against the
       COMMITTED BLOB
 - [x] Renders captured and READ at 1440, 390, mid-animation, formed, dissolved
       and under reduced motion
-- [ ] Branch pushed · draft PR opened
+- [x] Branch pushed · draft PR #193 open
 
 ## 6 · VERIFY COMMANDS
 ```

@@ -867,6 +867,12 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   85/81/22/35/71): **86 files / 82 gates / static 22 / e2e 36 / CI 72 / orphans 6** (78
   invocations − 6 duplicates). Five figures move, which is correct for a release that adds a
   gate FILE.
+  **SUITE ON THE SHIPPING TREE**: `verify:static` exit 0 (17 gates) · **`verify:e2e` exit 0, 36 of
+  36 green, 0 reds**, with `verify-site` reporting 69 passed IN-CHAIN at position 17 and
+  `verify-future` green in-chain · `verify-mobile` 51 passed · 1 skipped · 0 failed, the new route
+  swept automatically with 0 text elements below 12px · `verify-bundle` 30 passed · 0 failed.
+  **THAT E2E RESULT IS THE FIRST ONE THAT EXISTS** — the previous two runs were an abort at 26 and
+  a run discarded because a copy edit landed mid-flight, and neither was a pass.
   **THE OPERATOR'S X HANDLE ARRIVED UNFILLED AND IS NOT GUESSED.** The brief's bracket was not
   filled in, so the slot ships as an HONEST NULL in the house's own unlinked idiom (`.v6-res`,
   dashed, `--ink-40` — `JurisdictionRow`'s treatment for a citation whose URL could not be
