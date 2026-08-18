@@ -29,6 +29,7 @@ export interface RouteMap {
   OPERATE_NODE: string;
   OPERATE_MINE: string;
   OPERATE_SUPERSTRESS: string;
+  OPERATE_SUPERSTRESS_EXPLORER: string;
   OPERATE_PEERS: string;
   ABOUT_SOURCES: string;
   ABOUT_SITE: string;

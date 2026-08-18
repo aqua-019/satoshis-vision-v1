@@ -491,10 +491,18 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     ],
     // p3·16 replaces the null "Umbrel node writeup" placeholder with the hub
     // that IS the Umbrel node writeup — the placeholder was a promise of a
-    // page, and the page now exists on this site. "Beta-chain explorer" stays
-    // null because nothing has been supplied for it; an honest placeholder is
-    // only dishonest once the thing it stands for arrives.
-    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS], ["Beta-chain explorer", null], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
+    // page, and the page now exists on this site.
+    //
+    // p4·07 closes the last null on the same test that sentence set: an honest
+    // placeholder is only dishonest once the thing it stands for arrives, and
+    // something has now arrived. Note carefully WHAT: not the beta-chain
+    // explorer that row was reserving, which would need a public endpoint that
+    // does not exist and is not coming. What arrived is a SIMULATED one — the
+    // wind tunnel rendered in the classic explorer's layout — so the label
+    // carries "simulated" and does so BEFORE the destination, because a reader
+    // decides whether to expect a chain reading at the moment they read the
+    // link, not when the banner tells them on arrival.
+    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS], ["Beta-chain explorer · simulated · on this site", R.OPERATE_SUPERSTRESS_EXPLORER], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
   },
   {
     id: "xmrhub", name: "XMRHUB", head: "the ecosystem, in one directory.",

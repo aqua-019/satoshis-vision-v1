@@ -50,8 +50,14 @@
          the meta description above — for roughly twenty-five PRs after the era
          became v6, so the browser tab contradicted the topbar's own gated
          version label. `prerender.mjs` rewrites only the <html> tag and the
-         root element, so this ONE string is inherited verbatim by all fourteen
-         routes: one stale claim, fourteen copies.
+         root element, so this ONE string is inherited verbatim by every
+         prerendered route: one stale claim, eighteen copies. (p4·07: that
+         warning was itself stale in seventeen copies — it said "fourteen"
+         from #175 until now, through four route additions. A count written
+         into prose beside the mechanism that multiplies it is exactly the
+         thing this comment is warning about, which is why it is stated as a
+         relationship and no longer as a number that has to be maintained
+         here: it is `ROUTES.length` in scripts/routes.mjs, and nowhere else.)
          DE-VERSIONED rather than DERIVED, and no version number is named even
          here, on purpose: the release identity moves every PR, so any copy of
          it living outside `data/siteVersion.ts` — a tab label, a bookmark, or a
@@ -163,7 +169,7 @@
         document.documentElement.classList.remove("cb-pending");
         if (f && r && r.childElementCount === 0) f.hidden = false;
         // A dead module also means NavTop's six <button> triggers do nothing
-        // and its dropdown never opens, so 6 of the 13 prerendered routes have
+        // and its dropdown never opens, so 6 of the 18 prerendered routes have
         // no reachable link. .nav-noscript is in the DOM already (hidden, so it
         // costs the healthy path no layout shift); this reveals it. Keyed off
         // main.tsx's data-boot="ok" rather than #root emptiness: prerendering
@@ -337,7 +343,7 @@
           blocker, a strict privacy setting, or a dropped connection stopped it — the site itself is
           read-only and non-custodial, so nothing was at risk. Reloading often resolves it; allowing
           scripts for this one origin will too. Every page below is a plain link and still works.</div>
-        <!-- Plain HTML cannot import — kept hand-in-sync with the 17 real
+        <!-- Plain HTML cannot import — kept hand-in-sync with the 18 real
              route paths declared once in scripts/routes.mjs's `R`. Order
              matches nav/ia.ts's IA sections: Live → Monero → Learn → Future
              → Operate → About. -->
@@ -356,6 +362,7 @@
           <li><a class="shell__a" href="/operate/node">Run a node</a></li>
           <li><a class="shell__a" href="/operate/mine">Mine Monero</a></li>
           <li><a class="shell__a" href="/operate/superstress">Superstress hub</a></li>
+          <li><a class="shell__a" href="/operate/superstress/explorer">Beta-chain explorer (simulated)</a></li>
           <li><a class="shell__a" href="/operate/peers">Peers</a></li>
           <li><a class="shell__a" href="/about/sources">Sources</a></li>
           <li><a class="shell__a" href="/about/site">Mission &amp; ethos</a></li>
@@ -375,9 +382,9 @@
 
          ROUTE-AGNOSTIC BY CONSTRUCTION, and it has to be: scripts/prerender.mjs
          clones this exact built shell — byte for byte, this block included —
-         into all 13 prerendered routes and only swaps out #root's contents. A
+         into all 18 prerendered routes and only swaps out #root's contents. A
          candidate list naming specific paths would be correct on the one page
-         it was written for and wrong on the other twelve. A "document" rule
+         it was written for and wrong on the other seventeen. A "document" rule
          with a bare href_matches pattern has no such problem: it is identical
          HTML on every route and simply watches whatever <a> elements that
          particular page already has — nothing here names a path.

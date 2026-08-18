@@ -566,6 +566,24 @@ export function SuperstressPage() {
             <span className="led" style={{ background: "var(--g-50)", boxShadow: "0 0 6px var(--g-50)" }} />
             Run the stressnet simulator →
           </Link>
+          {/* p4·07 — the explorer, beside the wind tunnel it is built on. The
+              word "simulated" is IN THE LINK TEXT rather than left to the
+              destination's banner: this page's whole argument is that no live
+              beta-chain panel will ever exist here, and a bare "Beta-chain
+              explorer" sitting two paragraphs under that argument would read
+              as the exception to it.
+
+              THE LED IS AMBER, NOT THE EXPLORER'S OWN MAGENTA, and that is the
+              #188 rule being obeyed rather than decorated: "an accent used
+              nowhere else" means nowhere else, and this page is a MAINNET
+              context — it is about running a node. Letting the betanet accent
+              across onto it is the exact colour bleed the rule exists to stop.
+              `--y-50` is already what this page paints betanet-adjacent
+              warnings in (the rule paragraph itself, a few sections down). */}
+          <Link className="v6-res" to={R.OPERATE_SUPERSTRESS_EXPLORER}>
+            <span className="led" style={{ background: "var(--y-50)", boxShadow: "0 0 6px var(--y-50)" }} />
+            Beta-chain explorer · simulated →
+          </Link>
           <Link className="v6-res" to={R.FUTURE}>
             <span className="led" style={{ background: "var(--tk-accent)", boxShadow: "0 0 6px var(--tk-accent)" }} />
             {FCMP?.tag} on the roadmap →
