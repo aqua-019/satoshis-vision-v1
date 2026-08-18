@@ -327,16 +327,29 @@ export const CIPHER: ReadonlyArray<readonly [string, string]> = [
  *  on: four fields resolve, the fifth is the actual privacy guarantee. */
 export const SIGNER_LINE = "└ signer_index  ???  ── NOT ENCODED IN THE PROTOCOL";
 
-/** The same sentence for a stage too narrow to hold it — 49 cells against 51.
+/** The closing line in three forms, WIDEST FIRST — `composeTarget` takes the
+ *  first one that fits the stage's fully-visible columns.
  *
- *  EVERY WORD IS VERBATIM; only the padding runs shrink (two double spaces
- *  become single). A 360px phone has 50 fully-visible columns, so the shipped
- *  line was one character over and the grid dropped it: the sequence's closing
- *  claim rendered as "NOT ENCODED IN THE PROTOCO". Cutting a sentence about
- *  what the protocol does not encode, mid-word, on the narrowest device, is the
- *  one line in this file that must never be truncated — so the whitespace
- *  yields instead of the meaning. */
-export const SIGNER_LINE_NARROW = "└ signer_index ??? ── NOT ENCODED IN THE PROTOCOL";
+ *  ── WHY A LADDER AND NOT A LINE ─────────────────────────────────────────
+ *  `putLine` silently drops any cell outside `[0, cols)`, so a line one
+ *  character too wide loses that character with nothing said. Measured: at
+ *  360px the shipped 51-character line rendered "…NOT ENCODED IN THE PROTOCO",
+ *  and at 320px (iPhone SE, and this repo's own narrowest gated width) even a
+ *  squeezed 49 renders "…NOT ENCODED IN THE PRO". A sentence about what the
+ *  protocol does not encode, cut mid-word, is the one line here that must never
+ *  truncate — so the PADDING yields, then the LINE BREAK yields, and the words
+ *  never do.
+ *
+ *  Rung 2 is the same sentence with its two double spaces squeezed; every word
+ *  is verbatim. Rung 3 wraps at the em-dash, which is where the line already
+ *  divides its subject from its claim. Rows are the abundant axis on a phone —
+ *  the same argument the stacked wordmark rests on — so spending one more of
+ *  them is the cheapest thing this composition can do. */
+export const SIGNER_FORMS: ReadonlyArray<readonly string[]> = [
+  [SIGNER_LINE],
+  ["└ signer_index ??? ── NOT ENCODED IN THE PROTOCOL"],
+  ["└ signer_index  ???", "  ── NOT ENCODED IN THE PROTOCOL"],
+];
 
 // ── CSS custom property resolution (not cssColor() — see file header) ──────
 
@@ -656,7 +669,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     const bodyW = Math.min(cols - 6, 74);
     /* ── CENTRE ON THE WIDEST LINE THE BLOCK WILL ACTUALLY DRAW ────────────
        `bodyW` is the body's own width, and every line is cut to it — except
-       `SIGNER_LINE`, which is a fixed 51 characters and is the sentence the
+       the closing line (`SIGNER_FORMS`), which is up to 51 characters and is the sentence the
        whole sequence closes on. Centring on `bodyW` alone put its left edge at
        column 3 on a 51-column stage, so the last four characters fell off the
        grid and a 360px phone read "NOT ENCODED IN THE PROT". Measured, and
@@ -670,8 +683,14 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
        is right for scramble and wrong for a sentence, and it is why the naive
        "51 characters fit in 51 columns" arithmetic still lost a character. */
     const visibleCols = Math.floor(w / cw);
-    const signerLine = [...SIGNER_LINE].length <= visibleCols ? SIGNER_LINE : SIGNER_LINE_NARROW;
-    const blockW = Math.max(bodyW, [...signerLine].length);
+    /* The widest form that fits, else the narrowest one there is — the ladder
+       is ordered widest-first and its last rung wraps, so "none fits" means the
+       stage is narrower than 32 cells and nothing in this file can help. */
+    const signerRows =
+      SIGNER_FORMS.find((f) => Math.max(...f.map((l) => [...l].length)) <= visibleCols) ??
+      SIGNER_FORMS[SIGNER_FORMS.length - 1];
+    const signerW = Math.max(...signerRows.map((l) => [...l].length));
+    const blockW = Math.max(bodyW, signerW);
     /* Centred on the grid, then pulled left only as far as the last fully
        visible column requires. The clamp is what makes this inert above the
        phone band: it binds only when `c0 + blockW` would exceed `visibleCols`,
@@ -710,9 +729,12 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
       cipherRows.push(row);
       row++;
     }
-    if (row < rows - 2) {
-      putLine(target, tclass, cols, rows, signerLine, row, 3, false, c0);
-      closingLine = readRow(target, cols, row, visibleCols);
+    /* `rows - 1 - signerRows.length` so a two-row form needs two rows of
+       headroom, not one. The old guard was `row < rows - 2` for a single line;
+       for one row that arithmetic is identical. */
+    if (row < rows - 1 - signerRows.length) {
+      signerRows.forEach((line, i) => putLine(target, tclass, cols, rows, line, row + i, 3, false, c0));
+      closingLine = signerRows.map((_, i) => readRow(target, cols, row + i, visibleCols)).join(" ").trimEnd();
     }
 
     const lastRow = row;

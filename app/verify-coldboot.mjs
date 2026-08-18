@@ -1522,6 +1522,60 @@ R.group('── 11 · the orb reaches the phone console\'s Network slot ──�
       'container on a phone, and a scroll moves a box without resizing it, so neither the ResizeObserver nor ' +
       'window.resize fires. See ColdBootConsole.tsx\'s slot effect.');
 
+    /* ── §11b · TRACKING THE SLOT MUST NOT COST LAYOUT SHIFT ──────────────
+     * The orb is `position:fixed` and `Orb.tsx` re-anchors its layout box on
+     * every render at rest, so the naive way to make it follow a scrolling slot
+     * is to write `left`/`top` once per frame — which is a scored layout shift
+     * on every one of them. MEASURED on the tree that first fixed the tracking:
+     * a 40-step scroll of the console grid at 390x844 scored **CLS 0.242**
+     * against this repo's 0.005 ceiling, 64 frames at ~0.0168 each with `DIV`
+     * (the orb) the sole source, IDENTICAL at 1x and 6x. The remedy is in
+     * Orb.tsx: a same-size rect change keeps the base and moves by transform.
+     *
+     * NOTHING ELSE IN THE SUITE CAN SEE THIS. `verify-cls.mjs` and
+     * `verify-vitals.mjs` both call `coldBootOffBrowser`, so `/`'s recorded
+     * 0.0000 is taken with the splash bypassed — it could not have moved, and a
+     * regression here would have shipped green. That is why the assertion lives
+     * beside the tracking it pays for rather than in the CLS gate.
+     *
+     * Floored on BOTH sides: the grid must actually have scrolled and frames
+     * must actually have elapsed, or "0.000" is a statement about a scroll that
+     * never happened. */
+    if (expectBelowFold) {
+      const shift = await page.evaluate(async () => {
+        let cls = 0; const srcs = [];
+        const po = new PerformanceObserver((l) => {
+          for (const e of l.getEntries()) if (!e.hadRecentInput) {
+            cls += e.value;
+            if (e.value > 0.0005 && srcs.length < 4) srcs.push(`${e.value.toFixed(4)} ${(e.sources || []).map((x) => x.node && x.node.nodeName).join(',')}`);
+          }
+        });
+        po.observe({ type: 'layout-shift' });
+        const g = document.querySelector('[data-cb-grid]');
+        if (!g) return { cls: -1, frames: 0, scrolled: 0, srcs };
+        g.scrollTop = 0;
+        let frames = 0;
+        const max = g.scrollHeight - g.clientHeight;
+        for (let i = 1; i <= 40; i++) {
+          g.scrollTop = (max * i) / 40;
+          await new Promise((r) => requestAnimationFrame(() => { frames++; r(); }));
+        }
+        await new Promise((r) => setTimeout(r, 300));
+        po.disconnect();
+        return { cls: +cls.toFixed(5), frames, scrolled: Math.round(g.scrollTop), srcs };
+      });
+      R.ok(shift.frames >= 20 && shift.scrolled > 100,
+        `${label}: precondition — the console really scrolled (${shift.scrolled}px over ${shift.frames} frames)`,
+        `${shift.frames} frames / ${shift.scrolled}px — a shift score over a scroll that did not happen is not a measurement`);
+      if (shift.frames >= 20 && shift.scrolled > 100) {
+        R.ok(shift.cls <= 0.005,
+          `${label}: scrolling the console to the orb emits NO layout shift (CLS ${shift.cls.toFixed(5)}, ceiling 0.005)`,
+          `CLS ${shift.cls} over the scroll — ${shift.srcs.join(' · ')}. The orb is tracking its slot by writing ` +
+          'left/top per frame on a position:fixed element, which is a scored shift every frame. Orb.tsx must keep ' +
+          'its layout base and express a same-size move as a transform, the way the ENTER travel already does.');
+      }
+    }
+
     R.ok(m.overSlot,
       `${label}: elementFromPoint at the slot's centre resolves INSIDE [data-orb] (${m.hitTag})`,
       `resolved to ${m.hitTag}, outside [data-orb] — the reader looking at the Network slot is not looking ` +
