@@ -94,13 +94,72 @@ export const SPD = 0.9;
 export const EFFECTIVE_MS = DUR_MS / SPD;
 
 /**
+ * Base duration on a NARROW stage — 60% of `DUR_MS`.
+ *
+ * ── WHY A PHONE GETS A SHORTER SEQUENCE, WITH THE NUMBERS ────────────────
+ * Measured before this constant existed: the flip from `data-coldboot=
+ * "decrypt"` to `"console"` landed at 5,785ms at 390x844 and 5,745ms at
+ * 1440x900 — a phone was served the whole desktop sequence, to the frame.
+ * `verify-vitals` puts `/`'s own LCP ceiling at 2,500ms, so the splash held a
+ * phone visitor for 2.3x the budget the same repo sets for that route's
+ * content.
+ *
+ * 60% rather than parity-with-the-LCP-ceiling, and the reason is measurable:
+ * the phone stage resolves 2,856 cells against the wide stage's 7,958 (36%),
+ * so it has materially less to say — but the cipher block is the SAME seven
+ * rows on both, and its closing line ("signer_index ??? — NOT ENCODED IN THE
+ * PROTOCOL") is the payoff the whole sequence is built around. Its readable
+ * window is roughly T ∈ [0.45, 0.80], which is 1.9s at the wide duration and
+ * 1.1s at this one; cutting to the 2,500ms ceiling would take it to ~0.6s and
+ * buy a sequence nobody can read the end of. So: shorter, deliberately, and
+ * still over `/`'s content budget — said out loud rather than hidden.
+ */
+export const DUR_NARROW_MS = 3000;
+
+/** `DUR_NARROW_MS / SPD` — 3333.33ms. Same speed multiplier as the wide
+ *  stage: `SPD` is a playback rate, not a per-stage knob. */
+export const EFFECTIVE_NARROW_MS = DUR_NARROW_MS / SPD;
+
+/**
+ * The sequence's wall-clock ceiling, as a multiple of whichever effective
+ * duration is in play — 7,500ms wide, 4,500ms narrow.
+ *
+ * ── THE DEFECT THIS BOUNDS, AND WHY IT INVERTS ───────────────────────────
+ * `ColdBoot.tsx`'s loop advances its progress accumulator by
+ * `Math.min(64, now - last)` — a clamp that exists so a stalled frame cannot
+ * jump the choreography. Its side effect is that a device which CANNOT hit
+ * 15.6fps advances T more slowly than the wall clock, so the sequence gets
+ * LONGER on a slower phone, which is exactly backwards. Measured at 390x844
+ * under 6x CPU throttle: 9,015ms against the 5,785ms the same tree takes
+ * unthrottled, and the operator reported the splash "still showing at 11s".
+ *
+ * The clamp is kept — it is right about the thing it was written for — and a
+ * second, UNCLAMPED accumulator of active wall time bounds the whole run
+ * instead. A slow device now gets a shorter sequence, not a longer one.
+ *
+ * 1.35 is derived, not chosen twice: the loop's own measured overhead at 1x
+ * (first frame contributes dt 0, and `t >= 1` is tested at frame granularity)
+ * is ~230ms on a 5,556ms run — 4% — so 35% is ~8x the ordinary slack. It
+ * leaves 24% margin at 1440x900 (5,745 measured against 7,500) and 26% at
+ * 390x844 (a predicted 3,563 against 4,500), and it binds at 6x, which is the
+ * whole point.
+ */
+export const WALL_CEIL_FACTOR = 1.35;
+
+/**
  * Progress at `elapsedMs` milliseconds since the decrypt started, clamped to
  * [0, 1]. Pure: reproduces coldboot-splash.html:1516's per-frame accumulation
  * (`S.T = clamp01(S.T + dt/(S.dur/S.spd))`) as a closed form — summing a
  * constant increment every frame for `elapsedMs` worth of frames is
  * mathematically the same clamped ramp as `elapsedMs / EFFECTIVE_MS`, without
  * the frame-by-frame state that would make it depend on call history.
+ *
+ * `effectiveMs` defaults to the wide stage's `EFFECTIVE_MS`, so every existing
+ * call site reads exactly as it did; a narrow stage passes
+ * `EFFECTIVE_NARROW_MS`. It is a PARAMETER rather than module state for the
+ * same reason nothing else here is: `T(2500)` must return the same float on
+ * the first call of a session and the millionth.
  */
-export function T(elapsedMs: number): number {
-  return clamp01(elapsedMs / EFFECTIVE_MS);
+export function T(elapsedMs: number, effectiveMs: number = EFFECTIVE_MS): number {
+  return clamp01(elapsedMs / effectiveMs);
 }

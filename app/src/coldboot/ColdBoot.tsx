@@ -157,14 +157,14 @@
  */
 
 import * as React from "react";
-import { drawField } from "./field";
-import { T, E, seg, clamp01, lerp } from "./schedule";
+import { drawField, fieldReport, isNarrowStage } from "./field";
+import { T, E, seg, clamp01, lerp, EFFECTIVE_MS, EFFECTIVE_NARROW_MS, WALL_CEIL_FACTOR } from "./schedule";
 import { ColdBootConsole } from "./ColdBootConsole";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { R } from "../../scripts/routes.mjs";
 import {
   CB_FLOOR, CB_HOLD_GLOBAL, CB_HOLD_MS, CB_PENDING_CLASS, CB_T0_GLOBAL,
-  COLDBOOT_FLAG, coldBootWillRender,
+  COLDBOOT_FLAG, FIELD_REPORT_GLOBAL, coldBootWillRender,
 } from "./gate";
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -598,7 +598,18 @@ export function ColdBoot(): React.JSX.Element | null {
 
   const handleConsoleOrbRect = React.useCallback((rect: DOMRect | null) => {
     const plain = rect ? rectFromDom(rect) : null;
+    /* THE PREVIOUS VALUE, read before the ref is overwritten. `patchOrbState`
+       already bails on a no-op patch, but it compares with `Object.is` and
+       this is a fresh object every call, so without a VALUE comparison every
+       report would notify every subscriber. That did not matter while the only
+       reporters were two resize observers; it matters now that a scroll
+       reports once per frame (ColdBootConsole's slot effect explains why), and
+       an Orb render redraws its canvas via the effect keyed on
+       `effectiveRect`. Scrolling a phone console must not repaint the orb 60
+       times a second for a rect that did not move. */
+    const prev = consoleRectRef.current;
     consoleRectRef.current = plain;
+    if (prev && plain && prev.x === plain.x && prev.y === plain.y && prev.w === plain.w && prev.h === plain.h) return;
     // Handoff drives the store itself (lerping toward #hm-orb); once "done"
     // this file never touches the store again — see the header contract.
     // `assembleRef` (not a literal) — a resize firing mid-decrypt must not
@@ -666,24 +677,69 @@ export function ColdBoot(): React.JSX.Element | null {
     if (!canvas || !ctx) return;
 
     let dims = resizeCanvas(canvas);
-    const onResize = () => {
-      dims = resizeCanvas(canvas);
-    };
-    window.addEventListener("resize", onResize);
-
     let raf = 0;
     let last: number | null = null;
     let elapsed = 0;
+    /* ── THE WALL-CLOCK ACCUMULATOR — see schedule.ts#WALL_CEIL_FACTOR ─────
+     * `elapsed` is clamped per frame and therefore advances more slowly than
+     * real time on a device that cannot keep up, which made the sequence
+     * LONGER the slower the phone (measured 9,015ms at 390 under 6x throttle
+     * against 5,785ms unthrottled). This second accumulator takes the same
+     * `last` and does NOT clamp, so it is the honest count of active time.
+     *
+     * "Active" is the load-bearing word: it shares `last`, and `last` is reset
+     * to null on visibility resume, so the first frame back contributes 0 and
+     * a backgrounded gap is credited to neither accumulator. A ceiling built
+     * on `Date.now() - mountTime` would end the sequence for a reader who
+     * switched tabs and came back, which is a different and worse bug. */
+    let wall = 0;
+    /* Resolved ONCE, from the stage this loop starts on. An orientation flip
+     * mid-decrypt re-lays the field (geometryFor is keyed on w×h×dpr and
+     * rebuilds), and re-timing the sequence underneath that would make T jump
+     * — the composition may change mid-run; the clock may not. */
+    const effectiveMs = isNarrowStage(dims.w) ? EFFECTIVE_NARROW_MS : EFFECTIVE_MS;
+    const wallCeilMs = effectiveMs * WALL_CEIL_FACTOR;
+    /* The read hook: what the field resolved to, for a gate that cannot see a
+     * canvas. Published by the HOST, never by field.ts — see fieldReport's
+     * docblock. Republished on resize below, so it always describes the
+     * geometry currently being drawn rather than the one this loop started on. */
+    const publishReport = (): void => {
+      try {
+        const dpr = ctx.canvas.width > 0 && dims.w > 0 ? ctx.canvas.width / dims.w : 1;
+        (window as unknown as Record<string, unknown>)[FIELD_REPORT_GLOBAL] = {
+          ...fieldReport(dims.w, dims.h, dpr),
+          effectiveMs,
+          wallCeilMs,
+        };
+      } catch {
+        /* a report is diagnostics; it must never be able to blank the splash */
+      }
+    };
+    publishReport();
+
+    const onResize = () => {
+      dims = resizeCanvas(canvas);
+      publishReport();
+    };
+    window.addEventListener("resize", onResize);
+
     const tick = (now: number) => {
       if (last === null) last = now;
-      const dt = Math.min(64, now - last);
+      const raw = now - last;
+      const dt = Math.min(64, raw);
       last = now;
       // The loop only runs while the tab is visible (see start/stop below), so
       // there is no per-frame visibility test here and `elapsed` advances every
       // frame it is called.
       elapsed += dt;
+      wall += raw;
 
-      const t = T(elapsed);
+      /* `max`, so the ceiling can only ever bring the sequence FORWARD. At 1x
+         `wall ≈ elapsed` and `wall / (1.35 × eff) < elapsed / eff`, so the
+         second term is inert and the choreography is byte-identical to what
+         it was before this line existed. It takes over only where the clamp
+         has started lying about time. */
+      const t = Math.max(T(elapsed, effectiveMs), clamp01(wall / wallCeilMs));
       drawField(ctx, dims.w, dims.h, t, 1);
       if (consoleWrapRef.current) {
         const op = consoleOpacity(t);

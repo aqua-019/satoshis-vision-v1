@@ -651,17 +651,60 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
   }, [fireEnter]);
 
   const orbSlotRef = React.useRef<HTMLDivElement | null>(null);
+  /* ── THE SLOT MOVES NOW, SO ITS RECT HAS TO BE REPORTED WHEN IT MOVES ────
+   * `[data-orb]` is `position:fixed` and drives itself from whatever rect this
+   * publishes. Until #196 the slot could only change by RESIZING — the console
+   * grid was `alignItems:stretch` on a viewport-height row, so a
+   * ResizeObserver plus `window.resize` saw everything there was to see.
+   *
+   * #196 made the stacked grid a SCROLL CONTAINER (`overflowY:auto` +
+   * `gridAutoRows:max-content`), which is the phone fix and stays. A scroll
+   * moves a box without resizing it, so neither observer fires — and on a
+   * phone this slot starts 753px below the fold (measured at 390x844: slot top
+   * y=1597 in an 844px viewport, inside a 2,211px scroller). So the orb was
+   * pinned, correctly drawn and correctly painted, at a viewport coordinate no
+   * reader can see, and scrolling down to the Network pane arrived at an EMPTY
+   * frame — which is what the operator reported. `verify-orb` §7 could only
+   * report it as a reasoned skip, because `elementFromPoint` is
+   * viewport-relative and cannot speak about an off-screen element.
+   *
+   * CAPTURE-PHASE and on `window`, because scroll events from an ancestor
+   * scroller do not bubble — the capture phase is the only way one listener
+   * hears every scroller between here and the document. `passive` because this
+   * never calls preventDefault and a non-passive scroll listener is a
+   * scroll-jank tax on the one surface that must feel immediate.
+   *
+   * THE HANDOFF IS PROTECTED STRUCTURALLY, not by a flag here: ColdBoot's
+   * `handleConsoleOrbRect` only writes the store while `phaseRef.current ===
+   * "splash"`, so a scroll landing during the ENTER travel cannot fight the
+   * lerp that owns the rect then. */
   React.useEffect(() => {
     const el = orbSlotRef.current;
     if (!el || !onOrbRectChange) return;
-    const report = () => onOrbRectChange(el.getBoundingClientRect());
+    let frame = 0;
+    const report = () => {
+      frame = 0;
+      onOrbRectChange(el.getBoundingClientRect());
+    };
+    /* One read per animation frame however many events arrive — a scroll can
+       fire far more often than the compositor paints, and every report costs a
+       layout read plus (when the value actually changed) one Orb render. The
+       de-duplication that stops an UNCHANGED rect reaching the store at all
+       lives in ColdBoot's `handleConsoleOrbRect`, next to the previous value. */
+    const schedule = () => {
+      // D0699-EXEMPT: one coalesced rect read per frame, self-cancelling — never reschedules itself
+      if (!frame) frame = requestAnimationFrame(report);
+    };
     report();
-    const ro = new ResizeObserver(report);
+    const ro = new ResizeObserver(schedule);
     ro.observe(el);
-    window.addEventListener("resize", report);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, { capture: true, passive: true });
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       ro.disconnect();
-      window.removeEventListener("resize", report);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, { capture: true });
       onOrbRectChange(null);
     };
   }, [onOrbRectChange]);
