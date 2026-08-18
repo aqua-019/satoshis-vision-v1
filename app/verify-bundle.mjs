@@ -656,7 +656,17 @@ const BUDGETS = {
   // broken — 280,000 + 933,000 = 1,213,000 against this line's 1,196,000, a
   // 17,000 B window against p4·03's 18,000. Still recorded rather than
   // quietly repaired: repairing it means deciding what the backstop is FOR.
-  totalJsRaw: 1_220_000,  // p4·06: built 1,216,382 on the FINAL tree, margin 3,618.
+  totalJsRaw: 1_220_000,  // p4·06: built 1,216,317 on the FINAL tree, margin 3,683.
+  //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
+  //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
+  //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
+  //   ProtocolPage 0 -> 4,354; repoPulse +786 (data.ts gained the audit rows
+  //   and the xmr.club rewrite); the EAGER entry +365, identified by reading
+  //   dist/index.html's own <script src> rather than by basename, since the
+  //   `index` stem holds two chunks; TrustedPeersPage -57 (gridTemplateColumns
+  //   left the inline style for the sheet); SuperstressPage +2 (a route
+  //   constant two characters longer). eager +365 + lazy +5,408 = +5,773 =
+  //   the measured total delta. RESIDUAL ZERO on both halves.
                           // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
                           // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
@@ -1196,7 +1206,12 @@ const BUDGETS = {
   // importer group and split it into a chunk of its own — a second mint on
   // top of this route's, against a CHUNK_COUNT already on its band ceiling.
   // MinePage.tsx's header records why linking beat deriving.
-  lazyJsRaw: 956_000,   // p4·06: built 952,561 on the FINAL tree, margin 3,439.
+  lazyJsRaw: 956_000,   // p4·06: built 952,496 on the FINAL tree, margin 3,504.
+  //   RE-DERIVED after the LAST src commit, not after the last green run: the
+  //   first measurement read 952,561 and three later commits (SITE_PR, a
+  //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing
+  //   failed while the comment was wrong — the ceiling had margin — which is
+  //   exactly why the rule is re-derive rather than "check the gate is green".
                         //   RE-DERIVED TWICE, and both times it had moved: the
                         //   first measurement read 928,203, later copy edits took
                         //   it to 929,518, and two render fixes landed it at
