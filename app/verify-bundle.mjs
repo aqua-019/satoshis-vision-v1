@@ -1663,7 +1663,21 @@ const ROUTE_BUDGET_GZ = {
      splash. Rollup chunks per MODULE, not per export. Dropping the import for a
      local literal took it to 4 chunks / 93.61 KB; see CloverOverlay.tsx's
      z-index note for why there is no shared authority to lose. */
-  '/about/site':             99_000, //  96,252
+  /* p4·M2: RE-DERIVED, not raised. The trailing figure read 96,252 and was
+     ALREADY STALE AT THE BASE COMMIT — `e0c87ad` measures 96,448, so the
+     comment had drifted 196 B behind the tree before this release touched
+     anything, the standing defect this repo records against itself: a budget
+     comment is not gated by the budget it annotates, so nothing goes red
+     while the prose rots. Measured on the FINAL tree: 96,519, margin 2,481.
+     The +71 B against base is the section reorder's `data-site-section`
+     markers plus the support CTA, NET of a 13 B eager saving that reaches
+     every route (see the eagerJsRaw note — p4·M2 also removed Main Home's
+     ThemeToggle mount). The ceiling is UNCHANGED at 99,000 and was not
+     approached. Every OTHER route row's trailing figure is likewise ~13-23 B
+     stale for the same eager saving; they are deliberately left, because a
+     concurrent PR owns some of those rows and touching them is a guaranteed
+     conflict for no gate benefit. */
+  '/about/site':             99_000, //  96,519
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
