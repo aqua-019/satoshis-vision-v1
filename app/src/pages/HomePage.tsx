@@ -24,7 +24,6 @@ import { useMoneroLive } from "@/data/DataContext";
 import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { Card, Crumbs, Pill, Stat, NodeProvenance } from "@/design/primitives";
-import { ThemeToggle } from "@/design/ThemeToggle";
 import { R } from "../../scripts/routes.mjs";
 import { PASSAGES } from "./home/passages";
 import { HOME_SECTIONS } from "./home/sections";
@@ -192,7 +191,6 @@ export function HomePage() {
           <div style={CTA_ROW_STYLE}>
             <Link to={R.LIVE_MEMPOOL} className="proto-btn" style={LINK_RESET}>Open the mempool →</Link>
             <Link to={R.LEARN} className="proto-btn" style={LEARN_CTA_STYLE}>Learn the protocols</Link>
-            <ThemeToggle style={{ marginLeft: 8 }} />
           </div>
 
           <div className="kpi-grid" style={STRIP_GRID_STYLE}>
