@@ -445,6 +445,13 @@ R.group('§8 · the support section links out and prints no numbers');
     R.ok((a.rel || '').includes('noopener') && (a.rel || '').includes('noreferrer'),
       `8 · rel="noopener noreferrer" (${a.rel})`);
     R.ok(a.target === '_blank', `8 · target="_blank" (${a.target})`);
+    // NON-VACUITY FLOOR FIRST. The check below is an ABSENCE, and an absence
+    // measured over an empty string is not a finding — the regex would match
+    // nothing and the assertion would pass however the page actually reads.
+    // Same shape as the defect break test M4 exposed in §7.
+    R.ok(a.sectionText.length > 200,
+      `8 · the support section's prose was captured (${a.sectionText.length} chars)`,
+      'the no-figures check below is vacuous over an empty selection');
     // NO figures: no currency amount, no percentage, no "raised/goal"
     const bad = /(?:[$€£]\s?\d|\d+\s?(?:XMR|%)|\braised\b|\bgoal\b|\bof target\b)/i;
     R.ok(!bad.test(a.sectionText),

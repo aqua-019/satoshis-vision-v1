@@ -82,6 +82,7 @@
 
 import * as React from "react";
 import { governorScale, resetFrameBudgetBaseline, sampleFrameBudget } from "@/design/useAnimationClock";
+import { isPageActive, onPageActiveChange } from "@/design/usePageActive";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { cloverCellCount, drawClover, resetCloverGeometry, T_FORMED } from "./cloverField";
 
@@ -101,6 +102,9 @@ const MAX_DPR = 2;
  *  `position: fixed` and sized from the VIEWPORT, so the loop cannot arise —
  *  the clamp is here to make the class impossible rather than merely absent. */
 const MAX_DIM = 4096;
+/** Longest gap credited to animation time. Mirrors `useAnimationClock`'s own
+ *  clamp: a stall must not teleport the animation forward. */
+const MAX_STEP_MS = 50;
 
 export interface CloverOverlayProps {
   /** Fires once when the overlay has finished or been dismissed. */
@@ -138,7 +142,9 @@ export function CloverOverlay({ onDone }: CloverOverlayProps) {
     if (!ctx) return;
 
     let raf = 0;
-    let start = 0;
+    /** ANIMATION milliseconds — excludes time the tab spent hidden. */
+    let elapsed = 0;
+    let lastTs: number | null = null;
     let stopped = false;
     // Clamp the RATIO rather than the resulting dimensions: clamping width and
     // height independently would change the backing store's aspect against the
@@ -149,7 +155,7 @@ export function CloverOverlay({ onDone }: CloverOverlayProps) {
     const finish = () => {
       if (stopped) return;
       stopped = true;
-      cancelAnimationFrame(raf);
+      stopLoop();
       setGone(true);
       doneRef.current?.();
     };
@@ -174,14 +180,46 @@ export function CloverOverlay({ onDone }: CloverOverlayProps) {
       // names ParticleField as the existing precedent for a canvas loop that
       // cannot fold into the shared subscriber loop.
       sampleFrameBudget(now);
-      if (!start) start = now;
-      const T = Math.min(1, (now - start) / RUN_MS);
+      if (lastTs === null) lastTs = now;
+      elapsed += Math.min(now - lastTs, MAX_STEP_MS);
+      lastTs = now;
+      const T = Math.min(1, elapsed / RUN_MS);
 
       // Ambient glyphs shed with the dial; the clover never does.
       drawClover(ctx, w, h, T, governorScale());
 
       if (T >= 1) finish();
     };
+
+    /* ── THE VISIBILITY GATE — verify-govern §5 caught its absence ─────────
+       That gate is a SOURCE assertion over every rAF driver in app/src: each
+       must reach the shared visibility machinery or carry a D0699-EXEMPT
+       marker, and an exemption is for a measurement-only rAF (a deferred read,
+       a bounded settle) rather than a driver like this one. The first version
+       of this loop had neither and was named: `UNPAUSED:
+       src/pages/about/CloverOverlay.tsx`, alone among ten drivers.
+
+       Rolling our OWN loop is fine — that same gate reports four other files
+       doing it — so what was missing is the gate, not the sharing.
+
+       The clock is now ANIMATION time rather than wall-clock, which is the
+       better behaviour as well as the compliant one: a reader who backgrounds
+       the tab mid-animation returns to the clover where they left it instead
+       of to an overlay that finished without them. `lastTs` is dropped on
+       every resume so the hidden gap is never credited as one enormous frame —
+       the same reasoning `useAnimationClock`'s `start()` records. */
+    const startLoop = () => {
+      if (raf || stopped) return;
+      lastTs = null;
+      resetFrameBudgetBaseline();
+      raf = requestAnimationFrame(frame);
+    };
+    const stopLoop = () => {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const unbindActive = onPageActiveChange((active) => (active ? startLoop() : stopLoop()));
 
     const onResize = () => {
       const next = size();
@@ -213,8 +251,7 @@ export function CloverOverlay({ onDone }: CloverOverlayProps) {
       cells: () => cloverCellCount(w, h, dprOf(w, h)),
     };
 
-    resetFrameBudgetBaseline();
-    raf = requestAnimationFrame(frame);
+    if (isPageActive()) startLoop();
     window.addEventListener("resize", onResize, { passive: true });
     window.addEventListener("pointerdown", skip, { passive: true });
     window.addEventListener("touchstart", skip, { passive: true });
@@ -229,7 +266,8 @@ export function CloverOverlay({ onDone }: CloverOverlayProps) {
 
     return () => {
       stopped = true;
-      cancelAnimationFrame(raf);
+      stopLoop();
+      unbindActive();
       window.clearTimeout(cap);
       delete (window as unknown as { __XMR_CLOVER__?: unknown }).__XMR_CLOVER__;
       window.removeEventListener("resize", onResize);
