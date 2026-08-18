@@ -825,9 +825,13 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   entry chunk is byte-identical in SIZE while its hash rotates (`__vite__mapDeps` embeds the
   lazy hashes — p4·01's phenomenon, and it moves `eagerJsGz` by **−4 B** from compressibility
   alone). `cssGz` **18,184 → 18,184**: the release adds no stylesheet rule at all. `chunk
-  count 76 = 76`. `lazyJsRaw` 969,625 → **971,704** of 973,000 and `totalJsRaw` 1,234,106 →
-  **1,236,185** of 1,238,000 — **NOT RAISED because not crossed, said out loud: the lazy
-  margin is now 1,296 B**, which is where the next touch reds, and p4·M2/M3 were in flight.
+  count 76 = 76`. **AND THE SAME +2,079 WAS MEASURED AGAINST THREE DIFFERENT BASES** —
+  `e0c87ad`, then `5c66929` (#197 p4·M2), then `cecfda9` (#198 p4·M3), both of which merged
+  while this was in flight — so this release's weight is independent of theirs rather than
+  assumed to be. p4·M3 raised `lazyJsRaw` to 978,000 and `totalJsRaw` to 1,243,000; on top of
+  its build this lands at **977,169** and **1,241,617**. **NOT RAISED because not crossed,
+  said out loud: the lazy margin is 831 B**, the tightest this file has recorded (p3·17's 894
+  is the previous), and it is where the next touch reds.
   Census RECOUNTED, never incremented, with the script CONTROLLED against THREE commits —
   `768ba13`, `74bc561` and `0f00d26` — all reproduced EXACTLY: **88 / 84 / 22 / 38 / 74 / 6,
   UNCHANGED.** That is the correct outcome for a release that EXTENDS an e2e member rather

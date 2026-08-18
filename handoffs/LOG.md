@@ -653,8 +653,10 @@
   AREA, and a box can be large and empty; the ink figure is 4.0 → 26.3, so the box number
   overstated the fix by 2.3×. Caught by an adversarial panel, not by review.
   Budgets: eager and cssGz BYTE-IDENTICAL, chunk count 76 = 76 (nothing minted), lazy +2,079
-  attributed to ColdBoot +2,008 and Orb +71 — residual ZERO. lazyJsRaw margin is 1,296 B and
-  is NOT raised because it is not crossed. Census RECOUNTED with the instrument CONTROLLED
+  attributed to ColdBoot +2,008 and Orb +71 — residual ZERO, and the SAME +2,079 against all
+  THREE bases this branch was rebased onto (`e0c87ad`, #197, #198), so the weight is
+  independent of theirs rather than assumed to be. lazyJsRaw margin is 831 B on top of p4·M3's
+  raise and is NOT raised because it is not crossed. Census RECOUNTED with the instrument CONTROLLED
   against three commits, all reproduced exactly: 88 / 84 / 22 / 38 / 74 / 6 — UNCHANGED, the
   correct outcome for a release that extends an e2e member rather than adding a gate file.
   · https://github.com/aqua-019/satoshis-vision-v1/pull/199
