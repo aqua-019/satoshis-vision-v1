@@ -820,6 +820,224 @@ R.group('── 8 · the panes conform vertically (log fills, ENTER on the floor
   }
 }
 
+/* ══ §9 · THE PHONE BAND — no overprint, completes, ≥12px, no h-overflow ══
+ *
+ * ── THE BLIND SPOT THIS CLOSES, stated precisely ─────────────────────────
+ * The splash was NOT un-tested below 1100 — §6/§7/§8 above already render at
+ * 390, and §8 renders the stacked branch at 390 AND 1100. What none of them
+ * asserted is that the stacked panes do not OVERPRINT each other. §6 checks
+ * horizontal overflow only; §7 accepts "scrolls inside an ancestor" as
+ * reachable BY DESIGN; §8 checks each pane's internal conformance. So a
+ * console whose three panes overlap by 1288px — the operator's "wall of
+ * overprinted glyphs" — passed every one of them green.
+ *
+ * The mechanism (fixed in ColdBootConsole.tsx#gridStyle): stacked, the grid is
+ * `flex:1; minHeight:0; overflowY:auto`, so it has a DEFINITE height and its
+ * three implicit `auto` rows were stretched to EQUAL fractions (~viewport/3),
+ * crushing the `minHeight:0` panes into ~237px rows while their real content
+ * (HUD 861 · LOG 590 · NETWORK 733) overflowed and overprinted the panes
+ * below. `gridAutoRows: max-content` sizes each row to its pane's content, so
+ * the panes stack cleanly and the grid scrolls.
+ *
+ * ── WHAT THIS ASSERTS, AND WHAT IT DELIBERATELY DOES NOT ─────────────────
+ * It asserts AGAINST THE DEFECT: the three panes do not overlap. It does NOT
+ * cap the console's height at N× the viewport. Three content-rich panes (chain
+ * state + a ring diagram; a boot log; an orb stage) cannot fit one phone
+ * screen no matter how they are laid out, so clean stacking legitimately needs
+ * ~2.6 screens and HONEST vertical scroll is the right answer, not cramming.
+ * A height cap would fight real content and reward the very crush this fixes —
+ * and it inverts: the BROKEN tree's grid scrollHeight is SMALLER (overlap
+ * compresses the layout to 1234px) than the FIXED tree's clean stack (2211px),
+ * so a "height <= N×vh" gate would pass the bug and fail the fix. Overlap is
+ * the only metric that discriminates: measured at base 1389/1288/1103px at
+ * 360/390/430; fixed 0/0/0.
+ *
+ * The band is 360 (narrowest common Android) · 390 · 430 (largest iPhone). */
+R.group('── 9 · the phone band: panes do not overprint (360/390/430) ────────');
+{
+  const PHONES = [
+    ['360x800', { width: 360, height: 800 }],
+    ['390x844', { width: PHONE.width, height: PHONE.height }],
+    ['430x932', { width: 430, height: 932 }],
+  ];
+
+  const measure = (page) => page.evaluate(() => {
+    const root = document.querySelector('[data-coldboot-console]');
+    const grid = root ? root.querySelector('[data-cb-grid]') : null;
+    const panes = grid ? [...grid.children]
+      .filter((c) => c.getAttribute('data-cb-pane'))
+      .map((c) => {
+        const r = c.getBoundingClientRect();
+        return { name: c.getAttribute('data-cb-pane'), top: +r.top.toFixed(1), bottom: +r.bottom.toFixed(1) };
+      }) : [];
+    /* pairwise vertical intersection of the stacked panes */
+    let overlap = 0; const pairs = [];
+    for (let i = 0; i < panes.length; i++)
+      for (let j = i + 1; j < panes.length; j++) {
+        const ov = Math.min(panes[i].bottom, panes[j].bottom) - Math.max(panes[i].top, panes[j].top);
+        if (ov > 1) { overlap += ov; pairs.push(`${panes[i].name}~${panes[j].name} ${ov.toFixed(0)}px`); }
+      }
+    /* sub-12px HTML text (the house floor). SVG <text> presentation is measured
+       separately — verify-legibility and verify-mobile §6 both hold SVG apart,
+       and the ring's "INDISTINGUISHABLE" label is a known 11px SVG node. */
+    let htmlSub12 = 0, svgSub12 = 0; const htmlOffenders = [];
+    const cb = document.querySelector('[data-coldboot]');
+    if (cb) for (const el of cb.querySelectorAll('*')) {
+      const t = (el.textContent || '').trim();
+      if (!t || el.children.length) continue;
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (!(fs < 12)) continue;
+      if (el instanceof SVGElement) svgSub12++;
+      else { htmlSub12++; if (htmlOffenders.length < 4) htmlOffenders.push(`${fs}px "${t.slice(0, 24)}"`); }
+    }
+    return {
+      paneCount: panes.length,
+      overlap: +overlap.toFixed(0), pairs,
+      hOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      consoleH: root ? +root.getBoundingClientRect().height.toFixed(0) : 0,
+      gridScrollH: grid ? grid.scrollHeight : 0,
+      htmlSub12, svgSub12, htmlOffenders,
+    };
+  });
+
+  for (const [label, vp] of PHONES) {
+    const { ctx, page } = await cold({ viewport: vp });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    /* Console mounts within a bound — proves the sequence REACHES the
+       interactive console rather than hanging in the decrypt (the operator's
+       "still showing at 11s"). It stays until Enter by design; §9c presses it. */
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25_000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, `${label}: precondition — the console reached "ready" (the sequence completes to interactive)`,
+      ready ? '' : 'the console never reported ready within 25s — nothing below has a subject');
+    if (!ready) { await ctx.close(); continue; }
+    await page.waitForTimeout(1400);
+
+    const m = await measure(page);
+    R.ok(m.paneCount === 3,
+      `${label}: precondition — all three stacked panes are present (${m.paneCount})`,
+      m.paneCount === 3 ? '' : 'a pane is missing, so the overlap sum below would be vacuously 0');
+    if (m.paneCount !== 3) { await ctx.close(); continue; }
+
+    /* THE DISCRIMINATING ASSERTION. Two-sided by construction: the sum prints
+       either way, so a green run shows "0px" and cannot be mistaken for a
+       vacuous pass. RED on the unfixed tree at 1389/1288/1103px. */
+    R.ok(m.overlap <= 2,
+      `${label}: the stacked panes do NOT overprint — total pane overlap ${m.overlap}px ` +
+      `(console ${m.consoleH}px, grid content ${m.gridScrollH}px, honest scroll)`,
+      m.overlap > 2
+        ? `${m.overlap}px of pane overlap: ${m.pairs.join(', ')}. The stacked grid is crushing its ` +
+          'min-height:0 panes into equal fractional rows while their content overflows and overprints the ' +
+          'panes below — the "wall of glyphs". gridStyle needs gridAutoRows:max-content in the stacked branch.'
+        : '');
+
+    R.ok(m.hOverflow <= 0,
+      `${label}: no horizontal overflow (scrollWidth − clientWidth = ${m.hOverflow})`,
+      m.hOverflow > 0 ? `${m.hOverflow}px past the right edge` : '');
+
+    R.ok(m.htmlSub12 === 0,
+      `${label}: no HTML text under 12px in the splash (SVG <text> reported apart: ${m.svgSub12})`,
+      m.htmlSub12 > 0 ? `${m.htmlSub12} HTML node(s) below 12px: ${m.htmlOffenders.join(', ')}` : '');
+
+    await ctx.close();
+  }
+
+  /* ── §9b · reduced motion — content reachable, no rAF ──────────────────
+   * The same phone that must not overprint must also be reachable with motion
+   * off: no animation loop starts and the console still stacks cleanly. */
+  {
+    const { ctx, page } = await cold({ viewport: { width: PHONE.width, height: PHONE.height }, reducedMotion: 'reduce' });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25_000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, '390 reduced-motion: precondition — the console reached "ready"');
+    if (ready) {
+      await page.waitForTimeout(600);
+      const rm = await page.evaluate(() => ({
+        running: document.getAnimations().filter((a) => a.playState === 'running').length,
+        ...(() => {
+          const grid = document.querySelector('[data-cb-grid]');
+          const panes = grid ? [...grid.children].filter((c) => c.getAttribute('data-cb-pane'))
+            .map((c) => c.getBoundingClientRect()) : [];
+          let ov = 0;
+          for (let i = 0; i < panes.length; i++) for (let j = i + 1; j < panes.length; j++)
+            ov += Math.max(0, Math.min(panes[i].bottom, panes[j].bottom) - Math.max(panes[i].top, panes[j].top));
+          return { overlap: +ov.toFixed(0), panes: panes.length };
+        })(),
+      }));
+      R.ok(rm.running === 0,
+        `390 reduced-motion: no animation loop runs (${rm.running} running)`,
+        rm.running > 0 ? `${rm.running} running animations under prefers-reduced-motion` : '');
+      R.ok(rm.panes === 3 && rm.overlap <= 2,
+        `390 reduced-motion: the console still stacks cleanly (${rm.panes} panes, overlap ${rm.overlap}px)`,
+        rm.overlap > 2 ? `${rm.overlap}px overlap with motion off` : '');
+    }
+    await ctx.close();
+  }
+
+  /* ── §9c · the splash COMPLETES — Enter clears it and #root shows ──────
+   * The splash is Enter-gated (it does not auto-dismiss); the operator's
+   * concern was that it never clears. Assert the handoff works at 390: the
+   * splash is removed and the real page (#root) becomes visible. */
+  {
+    const { ctx, page } = await cold({ viewport: { width: PHONE.width, height: PHONE.height } });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    await page.waitForSelector(COLDBOOT_SEL, { timeout: 15_000 });
+    const rootHiddenFirst = await page.evaluate(() => {
+      const r = document.getElementById('root');
+      return r ? getComputedStyle(r).visibility : 'no-root';
+    });
+    await page.keyboard.press('Enter');
+    await page.waitForSelector(COLDBOOT_DECIDED_SEL, { timeout: 10_000 }).catch(() => {});
+    await page.waitForTimeout(2500);
+    const after = await page.evaluate(() => {
+      const r = document.getElementById('root');
+      return {
+        splash: document.querySelectorAll('[data-coldboot]').length,
+        rootVisible: r ? getComputedStyle(r).visibility === 'visible' : false,
+      };
+    });
+    R.ok(after.splash === 0 && after.rootVisible,
+      `390: Enter completes the splash — it is removed (${after.splash}x) and #root is visible ` +
+      `(was "${rootHiddenFirst}" during the splash)`,
+      after.splash > 0 ? `splash still present ${after.splash}x after Enter`
+        : 'splash cleared but #root did not become visible — a blank page, worse than the splash');
+    await ctx.close();
+  }
+
+  /* ── §9d · the version stamp is DERIVED, and cannot rot ────────────────
+   * The console header and the first boot-log line stamped a frozen `v6.1.8`
+   * for ~24 releases — it rendered on a #194 site. The site's doctrine is that
+   * release identity lives in SITE_PR (data/siteVersion.ts), so the stamp now
+   * reads `SITE_VERSION`. This gate parses SITE_ERA/SITE_PR out of that source
+   * — the §8 idiom, a copied number is a second definition kept in step by
+   * nothing — builds the expected string, and asserts the splash renders it and
+   * carries NO frozen `v6.1.<n>` literal. Break either half and this reds. */
+  {
+    const SV = readFileSync(new URL('./src/data/siteVersion.ts', import.meta.url), 'utf8');
+    const era = (/export const SITE_ERA\s*=\s*"([^"]+)"/.exec(SV) || [])[1];
+    const pr = (/export const SITE_PR\s*=\s*(\d+)/.exec(SV) || [])[1];
+    const parsed = Boolean(era && pr);
+    R.ok(parsed, `390 version: precondition — parsed SITE_ERA "${era}" and SITE_PR ${pr} from siteVersion.ts`,
+      parsed ? '' : 'could not read the version constants; the assertion below would have no expected value');
+    if (parsed) {
+      const expected = `${era} · #${pr}`;
+      const { ctx, page } = await cold({ viewport: { width: PHONE.width, height: PHONE.height } });
+      await page.goto(BASE + '/', { waitUntil: 'load' });
+      await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25_000 });
+      await page.waitForTimeout(600);
+      const txt = await page.evaluate(() => (document.querySelector('[data-coldboot]')?.textContent || ''));
+      const frozen = /v6\.1\.\d/.exec(txt);
+      R.ok(txt.includes(expected) && !frozen,
+        `390 version: the splash stamps the derived SITE_VERSION "${expected}" and no frozen literal`,
+        !txt.includes(expected)
+          ? `the splash does not render "${expected}" — the stamp is not derived from siteVersion.ts`
+          : `a frozen version literal "${frozen ? frozen[0] : ''}" still renders in the splash — it will rot the next release`);
+      await ctx.close();
+    }
+  }
+}
+
 await browser.close();
 
 /* ── §Z · the wire STILL matches, at the end of the chain ─────────────────

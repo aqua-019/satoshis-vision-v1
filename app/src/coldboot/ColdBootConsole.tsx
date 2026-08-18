@@ -1,5 +1,5 @@
 /**
- * coldboot/ColdBootConsole.tsx — the HUD console the v6.1.8 cold-boot splash
+ * coldboot/ColdBootConsole.tsx — the HUD console the cold-boot splash
  * GATES on. It never times out: it renders complete on mount (no multi-second
  * staged reveal — see the note below) and waits for the user to press Enter.
  *
@@ -70,6 +70,7 @@ import { useMemStats, BlockEta } from "@/mempool/mem-stats";
 import { NodeProvenance, Provenance } from "@/design/primitives";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { R } from "../../scripts/routes.mjs";
+import { SITE_VERSION } from "@/data/siteVersion";
 import {
   DECOY_RING,
   DEMO_DISCLOSURE,
@@ -165,15 +166,30 @@ function gridStyle(stacked: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: stacked ? GRID_COLS_STACKED : GRID_COLS_WIDE,
+    /* p4·M1 · THE OVERPRINT FIX, and it is the whole mobile hotfix.
+       Stacked, this grid is `flex:1; minHeight:0; overflowY:auto`, so it has a
+       DEFINITE height (the console body, ~738px at 390x844). With one column and
+       three children the browser makes three IMPLICIT rows, and implicit-`auto`
+       rows under a definite height are stretched by the default `align-content`
+       to EQUAL fractions — measured `236.672px x3` at 390. The three panes carry
+       `minHeight:0` (PANE_STYLE), so they are crushed to those 237px rows while
+       their real content (HUD 861px · LOG 590px · NETWORK 733px) overflows the
+       row and OVERPRINTS the panes below: measured 1288px of total pane overlap
+       at 390 (1389 at 360, 1103 at 430). That overprint is the "wall of glyphs".
+       `gridAutoRows: max-content` sizes each implicit row to its pane's own
+       content instead, so the panes stack cleanly at natural height and the grid
+       scrolls — no overlap, orb floor intact. Stacked ONLY; wide is untouched and
+       its equal-height rows are load-bearing (they hand slack to the orb stage). */
+    ...(stacked ? { gridAutoRows: "max-content" as const } : null),
     gap: 14,
     /* `stretch`, not `start`: the row must be as tall as the grid so the
        Network pane can hand its slack to the orb stage. Stacked, the panes go
-       back to content height and the console scrolls instead. */
+       back to content height (via gridAutoRows above) and the console scrolls. */
     alignItems: stacked ? "start" : "stretch",
     flex: 1,
     minHeight: 0,
-    /* Stacked, the three panes are far taller than the viewport (measured 2282px
-       in 844px at 390 wide) and the stage clips with overflow:hidden, so the
+    /* Stacked, the three panes are far taller than the viewport (measured 2184px
+       of natural stack at 390) and the stage clips with overflow:hidden, so the
        orb was unreachable. The mockup solves it the same way — `.con-grid`
        gains `overflow-y:auto` inside its own 1100px block. */
     overflowY: stacked ? "auto" : "visible",
@@ -513,7 +529,7 @@ function buildLogLines(
   const agreement = nodeOk && nodePop.data && nodePop.data.status !== "unavailable" ? heightAgreementPct(nodePop.data.height) : null;
 
   return [
-    { text: "cold boot · v6.1.8", tone: "acc" },
+    { text: `cold boot · ${SITE_VERSION}`, tone: "acc" },
     { text: "csp connect-src self · ok", tone: "dim" },
     { text: `routes · ${ROUTE_COUNT} static`, tone: "dim" },
     { text: "entropy pool seeded · mulberry32", tone: "dim" },
@@ -684,7 +700,7 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
   return (
     <section data-coldboot-console="ready" style={ROOT_STYLE} aria-label="Cold boot console">
       <div style={TOPBAR_STYLE}>
-        <span>Cold boot · v6.1.8</span>
+        <span>Cold boot · {SITE_VERSION}</span>
         <NodeProvenance source="node" keys={["network", "mempool", "market"]} status={data.status} compact style={{ marginLeft: "auto" }} />
       </div>
 
