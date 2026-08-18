@@ -489,6 +489,70 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 
 ## Known Issues / TODOs
 
+- **p4·M2 SHIPPED WITH 26 DEFECTS AND WAS REPORTED CLEAN — the whole set is ledgered here,
+  UNFIXED, at the operator's instruction.** A five-lane adversarial review was run on the
+  merged diff (`e0c87ad..d41f37a`): **26 findings survived refutation, 23 were refuted**.
+  Nothing here is speculative — the ones named below were each REPRODUCED by hand before
+  being written down, which is this file's own rule about a worker's report.
+  **THE HEADLINE IS PROCESS, NOT CONTENT: the review ran AFTER the work was reported green
+  and after the operator merged on that report.** Ten gates were green, five break tests
+  were red where intended, budgets reconciled to residual zero, and the census was
+  controlled against three commits — and none of that instrumentation could see any of the
+  26, because every one is a CLAIM rather than a computation. A gate suite proves what it
+  asserts; it says nothing about the sentences wrapped around it. **Run the adversarial
+  pass BEFORE reporting, not after merging.**
+  **THE SHARPEST ONE IS A CITATION THAT THE CITED GATE EXPLICITLY DISCLAIMS.** `README.md:70`
+  attaches "reduced motion loses no information" to `verify-reduce.mjs`, whose own header
+  reads **"THE FREEZE-POINT PROBLEM, WHICH THIS GATE DOES NOT COVER … Do not add a 'no
+  motion' assertion and call the contract discharged."** That is the exact reading the gate
+  forbids, in the file whose thesis is "an ethos you cannot check is a slogan". The same row
+  claims "nothing under 12px", which is false above 720px by decision
+  (`--fs-label: clamp(11px, 0.74vw, 12px)`) and false below it by ledger (`verify-mobile` §6
+  BOUNDS 22 sub-12px SVG nodes on `/live/markets/thesis` rather than failing them).
+  **A BREAK TEST WENT RED FOR THE WRONG REASON AND WAS PUBLISHED AS EVIDENCE.** The PR body
+  and the p4·M2 note both cite M3's `42px vs 42px` as "the weight assertion doing real work".
+  It is not. `verify-site` §12 builds its comparison set from
+  `a.v6-res, [data-support-link] ~ a`; M3 mutates the CTA **to** `v6-res`, so the control
+  enters its own set and `cta.h > cta.maxSecondaryH` degenerates to `h > max(h, …)`, which is
+  false however the page renders. Measured live on the shipping tree:
+  `[data-support-link] ~ a` matches **0** elements and structurally always will (the CTA is
+  an only child of its `div.chip-row`), so the working half is a page-wide `a.v6-res` sweep
+  that catches the two support links only by luck of what else is on the page — the operator
+  link renders `a.v6-res` the day `OPERATOR_X` is filled in. **A break test that reddens is
+  not a break test that discriminates**, which is the same family as the recorded
+  refused-to-go-red cases arriving from the opposite side.
+  **AND `/about/site` CONTRADICTS ITSELF ON SCREEN.** `SitePage.tsx:257`'s `sub` still reads
+  "what this site is, **what is on it**, where it came from, how it treats you, and how it
+  stays up" — the PRE-REORDER sequence. p4·M2 added §12 to pin the DOM order and left the
+  page's own one-line table of contents describing the order it replaced.
+  **THE LEGAL SECTION HAS A HOLE EXACTLY WHERE IT IS MOST NEEDED.** `README.md:184` scopes
+  invented values to `/learn`, so `/operate/superstress/explorer` falls into no clause —
+  and `README.md:174` ("figures come from third-party sources") affirmatively MISdescribes
+  it. That page's own header says it "wears an explorer's clothes … one badge away from
+  looking like a chain reading". Rescope on the `MODEL` provenance badge, not on a path.
+  Full ledger, all 26 with per-finding fixes, in
+  `handoffs/HANDOFF-XMRIRISH-20260818-M2.md` §8. The rest, in brief:
+  README `:63` "the browser is forbidden to open a connection to another origin" is false
+  for top-level NAVIGATION (CSP does not restrict it and `verify-origins` exempts anchors);
+  `:79` "randomness exists in exactly two places" contradicts its own next bullet four lines
+  later AND misses two `crypto.getRandomValues` client seeds (`usePolling.ts`,
+  `useMarketHistory.ts`); `:142` "nothing on it is … a solicitation" sits in the same
+  release that promoted a donate CTA to the house primary affordance; `:158` "naming a
+  project is documentation, not endorsement" against `_education/Journey.tsx`'s shipped
+  Wagyu advocacy chapter; `:220` calls `LICENSE` plain MIT when it carries six appended
+  non-MIT clauses. `app/README.md:257` still says Main Home mounts the Theme control — the
+  Part C sweep missed it. `verify-site` §12 walks fixed/sticky ancestors of only the FIRST
+  `[data-support-link]`, hardcodes "six" in a message derived from `EXPECTED.length`, runs
+  its CTA assertions only at 1440 although the label's stated rationale is a 390px failure
+  mode, and `data-support-cta="primary"` is read by nothing. `verify-bundle.mjs:1679` says
+  "13 B eager saving" where it is 33 B raw / 19 B gzip, `:1680` points at an `eagerJsRaw`
+  note that does not exist, and `:1682`'s "~13-23 B" is really 14-31 B.
+  **THREE FIGURES IN THE p4·M2 SESSION NOTE WERE CORRECTED IN PLACE** (`+71`→`+66`,
+  `96,519`→`96,514`, `−8 to −23`→`14-31`): the release re-derived `verify-bundle.mjs` after
+  its last src commit and did NOT update the prose beside it, so the two disagreed by 5 B
+  inside one PR. That is the two-figures-disagreeing defect this file records against itself
+  repeatedly, committed inside the note that describes the discipline.
+
 <!-- Track open items here -->
 - **WHY MOBILE HAS NEVER LOOKED RIGHT — measured root cause, not a polish problem.**
   `.mp-fit` scales a mempool view by `min(1, canvasW / naturalW)`. Sediment's natural size
@@ -835,9 +899,9 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   101,566 → 101,533 = **−33**, lazy member byte-identical at 2,253. +179 lazy − 33 eager
   = **+146 = the `totalJsRaw` delta exactly**. `cssGz` **BYTE-IDENTICAL at 18,184**.
   Chunk count **76 both sides — nothing minted**. **EAGER WENT DOWN, so 17 of 18 routes
-  got SMALLER** (−8 to −23 B); only `/about/site` grew, by **+71**. No ceiling raised or
+  got SMALLER** (14-31 B, measured per row); only `/about/site` grew, by **+66**. No ceiling raised or
   crossed. **The `/about/site` row comment was ALREADY STALE AT BASE** — it read 96,252
-  against a measured 96,448 — re-derived to 96,519; the other rows are left because a
+  against a measured 96,448 — re-derived to 96,514; the other rows are left because a
   concurrent PR owns some of them.
   **CENSUS UNCHANGED — 88 / 84 / 22 / 38 / 74 / 6** — correct for a release that adds no
   gate FILE and extends an e2e member in place. The instrument was CONTROLLED against
