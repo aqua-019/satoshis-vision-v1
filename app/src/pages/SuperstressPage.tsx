@@ -570,7 +570,7 @@ export function SuperstressPage() {
             <span className="led" style={{ background: "var(--tk-accent)", boxShadow: "0 0 6px var(--tk-accent)" }} />
             {FCMP?.tag} on the roadmap →
           </Link>
-          <Link className="v6-res" to={R.ABOUT_PEERS}>
+          <Link className="v6-res" to={R.OPERATE_PEERS}>
             <span className="led" style={{ background: "var(--p-50)", boxShadow: "0 0 6px var(--p-50)" }} />
             Trusted peers →
           </Link>

@@ -25,10 +25,11 @@ export interface RouteMap {
   MONERO: string;
   FUTURE: string;
   FUTURE_OUTLOOK: string;
+  FUTURE_PROTOCOL: string;
   OPERATE_NODE: string;
   OPERATE_MINE: string;
   OPERATE_SUPERSTRESS: string;
-  ABOUT_PEERS: string;
+  OPERATE_PEERS: string;
   ABOUT_SOURCES: string;
   ABOUT_SITE: string;
 }

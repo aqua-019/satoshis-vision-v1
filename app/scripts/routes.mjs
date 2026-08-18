@@ -39,6 +39,22 @@ export const R = {
   MONERO: "/monero",
   FUTURE: "/future",
   FUTURE_OUTLOOK: "/future/outlook",
+  // p4·06 — the SEVENTEENTH route, and the first route on this site whose
+  // CONTENT is selected by a query parameter rather than by its path. One
+  // route, five destinations (`?p=fcmp|seraphis|jamtis|carrot|cuprate`),
+  // exactly the shape `/learn/sim?p=` already ships.
+  //
+  // WHY ONE ROUTE AND NOT FIVE. Five paths would be five ROUTES entries, five
+  // prerendered files, five sitemap rows and five budget rows for five
+  // renderings of one component over one array. The `?p=` surface is
+  // deliberately NOT in ROUTES beyond this bare path — the same decision
+  // `/learn/sim` records — so the bare path prerenders and the query is a
+  // client concern. A reader arriving with no `?p=` gets the index of five.
+  //
+  // NO REDIRECT SOURCE: this URL has never existed. The ten `/future#<id>`
+  // fragments it replaces were never server-visible (a fragment is not
+  // transmitted), so there is nothing for a 301 to catch — see HASH_REDIRECTS.
+  FUTURE_PROTOCOL: "/future/protocol",
   OPERATE_NODE: "/operate/node",
   // p3·16 — the FIRST route minted since the v6.1.6 restructure, and the
   // Operate section's second item. `/operate` itself is a section GROUPING
@@ -61,7 +77,21 @@ export const R = {
   // has never existed.
   OPERATE_MINE: "/operate/mine",
   OPERATE_SUPERSTRESS: "/operate/superstress",
-  ABOUT_PEERS: "/about/peers",
+  // p4·06 — MOVED from ABOUT_PEERS (`/about/peers`). The collaborator
+  // directory is a list of things you RUN or USE, not a statement about this
+  // site, so it belongs beside the node/mine/superstress leaves rather than
+  // beside `/about/sources` and `/about/site`.
+  //
+  // Declared LAST in the Operate group, deliberately: `nav/ia.ts`'s section
+  // header navigates to `cols[0].items[0].p`, so anything placed ahead of
+  // `OPERATE_NODE` would silently move where clicking "Operate" goes. It is
+  // also the one Operate leaf that is not a how-to, which is the reading
+  // order the section already implies.
+  //
+  // THIS ONE DOES CARRY A REDIRECT SOURCE, unlike every other route added
+  // since the restructure: `/about/peers` SERVED CONTENT and moved, which is
+  // exactly the condition REDIRECTS exists for.
+  OPERATE_PEERS: "/operate/peers",
   ABOUT_SOURCES: "/about/sources",
   // p4·05 — the SIXTEENTH route, and the About section's third leaf. It is
   // declared LAST in the About group deliberately: `ROUTES = Object.values(R)`
@@ -76,7 +106,7 @@ export const R = {
 };
 
 /**
- * The 16 routes App.tsx serves that have a fixed path, in R's declared
+ * The 17 routes App.tsx serves that have a fixed path, in R's declared
  * order. Consumed by prerender.mjs (emits dist/<route>/index.html, so the
  * site works with JS off) and gen-sitemap.mjs (emits sitemap.xml).
  *
@@ -116,11 +146,12 @@ export const ROUTES = Object.values(R);
  * aspirational ones. verify-ia.mjs fails the build if either `/pro` or
  * `/operate/pro` reappears here.
  *
- * 9 of these 12 fall directly out of the old→new path map; 3 more
+ * 9 of these 13 fall directly out of the old→new path map; 3 more
  * (`/education/:tab`, `/mempool/tx/:txid`, `/monero/future`) are added for
  * completeness — Requirement 1 ("never break a shared link") already
  * requires them, so they are reported as real rows, never folded into "the
- * map's 9" or "12 of 9".
+ * map's 9" or "13 of 9". The 13th (`/about/peers`) is p4·06's own move,
+ * and is neither: it protects a URL this repo minted and then relocated.
  */
 export const REDIRECTS = [
   { from: "/mempool", to: R.LIVE_MEMPOOL },
@@ -131,10 +162,21 @@ export const REDIRECTS = [
   { from: "/simulate", to: R.LEARN_SIM },
   { from: "/simulate/:id", to: `${R.LEARN_SIM}?p=:id` },
   { from: "/node", to: R.OPERATE_NODE },
-  { from: "/peers", to: R.ABOUT_PEERS },
+  // p4·06 — REPOINTED, not left alone, and a gate is why. `/about/peers`
+  // stopped being a route in this release, so leaving this row pointing at it
+  // would make `/peers` the first hop of a TWO-HOP CHAIN — and verify-ia §6
+  // ("every redirect destination resolves") reds on exactly that, because the
+  // destination is no longer in ROUTES and sits under no route. One hop, one
+  // 301, measured rather than tidied.
+  { from: "/peers", to: R.OPERATE_PEERS },
   { from: "/sources", to: R.ABOUT_SOURCES },
   { from: "/mempool/tx/:txid", to: `${R.LIVE_MEMPOOL}/tx/:txid` },
   { from: "/monero/future", to: R.FUTURE },
+  // p4·06 — the THIRTEENTH, and the first added since the restructure. Every
+  // other row here protects a pre-v6.1.6 URL; this one protects a URL v6.1.6
+  // itself minted and p4·06 moved. The rule is the same either way: a path
+  // that once served content never 404s.
+  { from: "/about/peers", to: R.OPERATE_PEERS },
 ];
 
 /**

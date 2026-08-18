@@ -2469,6 +2469,44 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
    reading order is already in the DOM. Note this is also why the delay
    cannot merely be zeroed while keeping the animation — a zero-delay fade
    is still motion, and this reader asked for none. */
+/* p4·06 — THE PEERS GRID. Until this release `.v6-peer-grid` carried NO rule
+   at all: it was a bare hook `verify-discrete` selects on, and the columns
+   were an inline `repeat(auto-fit, minmax(300px, 1fr))` on the section.
+
+   EXPLICIT TRACKS, NOT auto-fit, and the difference is what can be asserted.
+   With auto-fit the column count is EMERGENT — a consequence of the container
+   width and the min track, so "three columns at desktop" is not a fact the
+   stylesheet states, it is an outcome that changes if a card's content or the
+   container's padding moves. At 1440 (PageShell's `standard` tier) the old
+   `minmax(300px, 1fr)` yields FOUR columns, which is why the four partners
+   rendered as one row. `repeat(3, 1fr)` states the shape, so the fourth card
+   wraps to a second row and the grid FLOWS.
+
+   IT FLOWS, IT NEVER PADS. There is no rule here that fills the two empty
+   cells of row two. An empty cell is honest; a placeholder card would be a
+   fabricated partner on the one page whose entire subject is who we vouch
+   for. Fill order is plain document order — left to right, then wrap — so
+   `grid-auto-flow` stays at its `row` default and there is no `dense`,
+   which would let a later card jump a gap and break reading order.
+
+   THE BREAKPOINTS ARE THE REPO'S OWN, not new numbers: ≤768 phone,
+   769–1199 the tablet band v6.0.8 added for exactly this gap, ≥1200 desktop.
+   Mobile-first, so the single-column case needs no query at all.
+
+   `min-width: 0` ON THE ITEMS is load-bearing rather than defensive. A grid
+   item's default `min-width: auto` floors it at min-content, so one long
+   unbroken token (a repo path, a URL in a blurb) inflates its track and the
+   `1fr`s stop being equal — the `.sync-rows` defect p4·02 fixed, one level
+   out. The items are `.v6-stagger` wrappers, which are themselves grids. */
+.v6-peer-grid { grid-template-columns: 1fr; }
+.v6-peer-grid > * { min-width: 0; }
+@media (min-width: 769px) and (max-width: 1199px) {
+  .v6-peer-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1200px) {
+  .v6-peer-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
 .v6-stagger { display: grid; }
 @media (prefers-reduced-motion: no-preference) {
   .v6-stagger {

@@ -100,6 +100,12 @@ const ROUTE_TABLE: RouteObject[] = [
   { path: `${R.MONERO}/:tab`, handle: "monero" },
   { path: R.FUTURE, handle: "future" },
   { path: R.FUTURE_OUTLOOK, handle: "outlook" },
+  // p4·06 — the `?p=` surface needs NO row of its own: chunkKeyFor strips the
+  // query before matching, so all five protocol URLs resolve through this one
+  // path. The handle must equal App.tsx's markChunkResolved key, which p4·04
+  // recorded the hard way when a missing row made a page's transition wait on
+  // the 404 chunk.
+  { path: R.FUTURE_PROTOCOL, handle: "protocol" },
   { path: R.OPERATE_NODE, handle: "node" },
   { path: R.OPERATE_MINE, handle: "mine" },
   // p4·04 — BACKFILL, not a new registration. `/operate/superstress` shipped
@@ -110,7 +116,7 @@ const ROUTE_TABLE: RouteObject[] = [
   // had loaded: a true answer to the wrong question, which is exactly what
   // this table's own header warns a mismatched handle does.
   { path: R.OPERATE_SUPERSTRESS, handle: "superstress" },
-  { path: R.ABOUT_PEERS, handle: "peers" },
+  { path: R.OPERATE_PEERS, handle: "peers" },
   { path: R.ABOUT_SOURCES, handle: "sources" },
   { path: R.ABOUT_SITE, handle: "site" },
   { path: "*", handle: "notfound" },
@@ -128,9 +134,9 @@ const ROUTE_ORDER = [
   R.LIVE_MEMPOOL, R.LIVE_MARKETS, R.MARKETS_THESIS, R.LIVE_NETWORK,
   R.MONERO,
   R.LEARN, R.LEARN_SIM,
-  R.FUTURE, R.FUTURE_OUTLOOK,
-  R.OPERATE_NODE, R.OPERATE_MINE, R.OPERATE_SUPERSTRESS,
-  R.ABOUT_PEERS, R.ABOUT_SOURCES, R.ABOUT_SITE,
+  R.FUTURE, R.FUTURE_OUTLOOK, R.FUTURE_PROTOCOL,
+  R.OPERATE_NODE, R.OPERATE_MINE, R.OPERATE_SUPERSTRESS, R.OPERATE_PEERS,
+  R.ABOUT_SOURCES, R.ABOUT_SITE,
 ];
 
 function directionFor(fromPath: string, toPath: string): "fwd" | "back" {

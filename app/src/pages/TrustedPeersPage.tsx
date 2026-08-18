@@ -47,7 +47,7 @@ export function TrustedPeersPage() {
 
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
-      <Crumbs path={R.ABOUT_PEERS} status={partners.length + " collaborators"} />
+      <Crumbs path={R.OPERATE_PEERS} status={partners.length + " collaborators"} />
       <PageHeader
         kicker="Trusted peers · the surfaces around the protocol"
         title='The projects we <em style="color:var(--p-50);text-shadow:var(--glow-soft-p);font-style:normal">stand beside</em>.'
@@ -61,7 +61,12 @@ export function TrustedPeersPage() {
           `animation` slot already belongs to the ambient breathe (see the
           CSS rule). The wrapper is `display: grid`, so it becomes the grid
           item and the card stretches inside it unchanged. */}
-      <section className="v6-peer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
+      {/* p4·06 — gridTemplateColumns moved OUT of this inline style and into
+          styles.css's `.v6-peer-grid`, because an inline declaration cannot
+          carry a media query and the column count is now explicit per band
+          (1 / 2 / 3). See that rule for why explicit beats auto-fit here and
+          why the grid flows rather than pads. */}
+      <section className="v6-peer-grid" style={{ display: "grid", gap: 18 }}>
         {partners.map((e, i) => {
           const primary = (e.links.find(([, href]) => href) || e.links[0] || [])[0];
           /* Card click → the partner's own site (new tab, noopener). The

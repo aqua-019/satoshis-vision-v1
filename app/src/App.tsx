@@ -16,10 +16,10 @@ import { markChunkResolved } from "@/design/useViewTransitionNavigate";
 import { NavTransitions } from "@/routes/NavTransitions";
 import { RouteAnnouncer } from "@/routes/RouteAnnouncer";
 import { RedirectTo } from "@/routes/RedirectTo";
-// R (named route constants) + REDIRECTS (the 12 old->new pairs) are the
+// R (named route constants) + REDIRECTS (the 13 old->new pairs) are the
 // single authority scripts/routes.mjs declares — see that file's header.
 // Every <Route path> below reads through R rather than restating a path
-// literal, and the 12 <RedirectTo> routes are GENERATED from REDIRECTS
+// literal, and the 13 <RedirectTo> routes are GENERATED from REDIRECTS
 // (below the real route table) rather than hand-typed one at a time.
 import { R, REDIRECTS } from "../scripts/routes.mjs";
 // HomePage stays EAGER. It is the LCP route — lazy-loading it would add a
@@ -50,6 +50,7 @@ const MoneroPage         = React.lazy(() => import("@/pages/MoneroPage").then((m
 const FuturePage         = React.lazy(() => import("@/pages/FuturePage").then((m) => { markChunkResolved("future"); return { default: m.FuturePage }; }));
 const OutlookPage        = React.lazy(() => import("@/pages/future/OutlookPage").then((m) => { markChunkResolved("outlook"); return { default: m.OutlookPage }; }));
 const TrustedPeersPage   = React.lazy(() => import("@/pages/TrustedPeersPage").then((m) => { markChunkResolved("peers"); return { default: m.TrustedPeersPage }; }));
+const ProtocolPage       = React.lazy(() => import("@/pages/future/ProtocolPage").then((m) => { markChunkResolved("protocol"); return { default: m.ProtocolPage }; }));
 const NodePage           = React.lazy(() => import("@/pages/NodePage").then((m) => { markChunkResolved("node"); return { default: m.NodePage }; }));
 const MinePage           = React.lazy(() => import("@/pages/MinePage").then((m) => { markChunkResolved("mine"); return { default: m.MinePage }; }));
 const SuperstressPage    = React.lazy(() => import("@/pages/SuperstressPage").then((m) => { markChunkResolved("superstress"); return { default: m.SuperstressPage }; }));
@@ -205,18 +206,23 @@ export function App({ useFeed }: AppProps = {}) {
           {/* ── Future ───────────────────────────────────────────── */}
           <Route path={R.FUTURE}                           element={<FuturePage />} />
           <Route path={R.FUTURE_OUTLOOK}                   element={<OutlookPage />} />
+          {/* ONE route for five destinations. `?p=` is read inside the
+              component (useUrlState), exactly as {R.LEARN_SIM} does above —
+              a query is not a path segment, so there is nothing here to
+              enumerate and nothing extra to prerender. */}
+          <Route path={R.FUTURE_PROTOCOL}                  element={<ProtocolPage />} />
 
           {/* ── Operate ──────────────────────────────────────────── */}
           <Route path={R.OPERATE_NODE}                     element={<NodePage />} />
           <Route path={R.OPERATE_MINE}                     element={<MinePage />} />
           <Route path={R.OPERATE_SUPERSTRESS}              element={<SuperstressPage />} />
+          <Route path={R.OPERATE_PEERS}                    element={<TrustedPeersPage />} />
 
           {/* ── About ────────────────────────────────────────────── */}
-          <Route path={R.ABOUT_PEERS}                      element={<TrustedPeersPage />} />
           <Route path={R.ABOUT_SOURCES}                    element={<SourcesPage />} />
           <Route path={R.ABOUT_SITE}                       element={<SitePage />} />
 
-          {/* ── Redirects · the 12 old paths, generated from REDIRECTS ──
+          {/* ── Redirects · the 13 old paths, generated from REDIRECTS ──
               (scripts/routes.mjs — vercel.json's server 301s mirrored 1:1).
               Static segments outrank a `:param` in react-router v6 by
               specificity, not declaration order, so e.g. /monero/future

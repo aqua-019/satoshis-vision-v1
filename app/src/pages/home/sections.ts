@@ -13,12 +13,23 @@
  * This card is a consumer, not an authority, and it corrected itself the
  * moment ia.ts started deriving. Only the comment needed a human.
  *
- * `IA`'s public shape does not expose a protocols-vs-ecosystem split for the
- * Future section (`FUTURE_PROTOCOL_META` and `ECOSYSTEM_META` are internal to
- * ia.ts, unexported, and both write their paths as `${R.FUTURE}#${id}` —
- * indistinguishable from outside). Rather than hardcode the mockup's
- * protocols-only "5", the Future card below counts the combined total (9) and
- * is worded to match — derived-and-honest over matching-the-mockup.
+ * ── THE FUTURE COUNT, AND A DERIVATION THAT WOULD HAVE SILENTLY READ 0 ──
+ * This paragraph used to say `IA`'s public shape "does not expose a
+ * protocols-vs-ecosystem split for the Future section", because both metas
+ * wrote their paths as `${R.FUTURE}#${id}` and were indistinguishable from
+ * outside. So the count below filtered on `p.includes("#")` and the card was
+ * worded "protocols & ecosystem" to match what it could actually measure.
+ *
+ * p4·06 gave the five protocols a real `?p=` destination and deleted
+ * ECOSYSTEM_META outright. THE FILTER STILL COMPILED AND STILL RAN — it just
+ * matched nothing, so this card would have rendered "0 protocols & ecosystem"
+ * on Main Home. Nothing reds: the number is derived, and a derivation that
+ * has stopped matching is indistinguishable from a section that is empty.
+ * Found by reading the derivation against the new URL shape, not by a gate.
+ *
+ * The filter is now `?p=`, the same discriminator MEMPOOL_VIEWS uses for
+ * `?v=`, and the split the old paragraph called impossible is now free:
+ * every `?p=` leaf in the Future section IS a protocol. The card says so.
  */
 
 import { IA } from "@/nav/ia";
@@ -47,8 +58,10 @@ const MONERO_CHAPTERS = (() => {
   return monero ? monero.cols[0].items.length : 0;
 })();
 
-/** Future protocols + ecosystem combined (see file header — cannot split). */
-const FUTURE_ITEMS = itemsOf("future").filter((i) => i.p.includes("#")).length;
+/** Future PROTOCOL links carry `?p=`; the rail and outlook entries do not —
+ *  the same shape-based discriminator MEMPOOL_VIEWS uses above. Since p4·06
+ *  there are no ecosystem leaves in this section to fold in. */
+const FUTURE_PROTOCOLS_N = itemsOf("future").filter((i) => i.p.includes("?p=")).length;
 
 export interface HomeSection {
   to: string;
@@ -96,7 +109,7 @@ export const HOME_SECTIONS: HomeSection[] = [
   {
     to: R.FUTURE,
     title: "Future",
-    meta: `${FUTURE_ITEMS} protocols & ecosystem`,
+    meta: `${FUTURE_PROTOCOLS_N} protocols · roadmap · outlook`,
     body: "FCMP++ and what comes after it, with a betanet you can actually run.",
     cta: "roadmap",
     color: "var(--c-50)",
@@ -104,7 +117,12 @@ export const HOME_SECTIONS: HomeSection[] = [
   {
     to: R.OPERATE_NODE,
     title: "Operate",
-    meta: "run a node",
+    // p4·06 — these two metas are hand-written, not derived, and BOTH named a
+    // leaf that moved in this release: "trusted peers" was advertised under
+    // About while the leaf itself moved to Operate. A hand-written summary of
+    // a section's contents is a claim about the IA, and this one was false the
+    // moment the IA changed. Nothing gates it.
+    meta: "run a node · mine · peers",
     body: "monerod in one command. Tor + I2P optional. Free seed peers.",
     cta: "start",
     color: "var(--y-50)",
@@ -112,8 +130,8 @@ export const HOME_SECTIONS: HomeSection[] = [
   {
     to: R.ABOUT_SOURCES,
     title: "About",
-    meta: "sources · trusted peers",
-    body: "Where every number on this site comes from, and who else is worth reading.",
+    meta: "sources · provenance · ethos",
+    body: "Where every number on this site comes from, and what this site is for.",
     cta: "sources",
     color: "var(--ink-60)",
   },
