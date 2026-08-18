@@ -98,8 +98,18 @@ export function ProtocolPage() {
         </>
       ) : notFound ? (
         <>
+          {/* THE TITLE DOES NOT NAME THE REQUESTED ID, AND THAT IS A SECURITY
+              DECISION rather than an omission. `PageHeader` renders `title`
+              through `dangerouslySetInnerHTML` (AppShell.tsx:101) so the house
+              style can put an <em> in a headline — interpolating `requested`,
+              which comes straight off the URL, would be script injection on a
+              page anyone can hand someone a link to. SimulatePage names the id
+              in ITS h1 safely because that h1 is a plain React child and React
+              escapes it; this one cannot borrow that. The id IS named, one
+              element down, as a React child in <ProtocolNotFound>. Do not
+              "improve" this by moving it up. */}
           <PageHeader
-            kicker="Future protocol · no such protocol"
+            kicker="Future protocol · not found"
             title='There is no protocol with that <em style="color:var(--y-50);font-style:normal">id</em>.'
             sub="You were not redirected to a different protocol, because showing you the wrong one would be worse than showing you nothing."
           />
@@ -159,8 +169,12 @@ function ProtocolIndex() {
  *  §11c pins for the sibling route. */
 function ProtocolNotFound({ requested }: { requested: string }) {
   return (
+    /* No kicker here. PageHeader above already carries one, and an earlier
+       draft had both saying "NO SUCH PROTOCOL" within a few lines of each
+       other — the duplicate-label defect p3·16 recorded when a page printed
+       "5 APPS" twice within 60px. The header states the condition; this
+       states the particular id, which is the thing only this element knows. */
     <div role="alert" data-protocol-notfound style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: "72ch" }}>
-      <div className="kicker" style={{ color: "var(--y-50)" }}>NO SUCH PROTOCOL</div>
       <p className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.75, color: "var(--ink-60)" }}>
         Nothing on this site is published under the id{" "}
         <em style={{ fontStyle: "normal", color: "var(--y-50)" }}>“{requested}”</em>. Pick one of the{" "}
