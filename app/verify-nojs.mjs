@@ -136,7 +136,7 @@ const routes = await p.evaluate(() =>
   [...document.querySelectorAll('#root a')]
     .map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } })
     .filter(Boolean));
-// The 16-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
+// The 17-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
 // no import (see verify-lib.mjs's ROUTES for the same constraint reasoned
 // out in full).
 //

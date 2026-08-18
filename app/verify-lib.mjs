@@ -217,6 +217,21 @@ export const ROUTES = [
   '/operate/mine',
   '/about/sources',
   '/operate/peers',
+  /* p4·06 — the FOURTH top-level route added since the restructure, and the
+     first whose CONTENT is keyed by a query. TWO entries, not five: the bare
+     path is the INDEX state (its own layout — five linked cards, no protocol
+     body) and `?p=fcmp` is the DETAIL state (PageHeader + the shared
+     ProtocolDetail). Those are the two distinct renderings; the other four ids
+     differ only in their strings, and five entries would multiply the shot
+     matrix by five to screenshot the same layout again.
+
+     LEAVING IT OUT WAS THE ALTERNATIVE AND IT HAD A MEASURED COST: verify-nav
+     walks THIS list asserting exactly one `#page-title` per route, so an
+     unlisted /future/protocol would have been the one route in the site whose
+     single-h1 invariant nothing checks. Total 50 -> 52 — MEASURED, see the
+     header: do not read that figure off this comment. */
+  '/future/protocol',
+  '/future/protocol?p=fcmp',
   /* p4·05 — the THIRD top-level route added since the restructure, on the same
      argument p3·16 and p4·04 make above: this page's layout (a full-bleed
      foreground glyph overlay over an IA-derived overview) is rendered by no
