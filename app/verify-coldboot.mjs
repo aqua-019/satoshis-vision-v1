@@ -1101,10 +1101,6 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
      360 / 390 / 430). 4,800 is that plus the loop's own measured startup, and
      it reds on the 5,785ms the same tree took before this release. */
   const PHONE_FLIP_MAX_MS = 4800;
-  /* Under 6x CPU throttle the wall ceiling is what bounds the run: measured
-     5,824ms against 9,015ms before it existed. 7,500 leaves 29% and still
-     reds on the old behaviour — and on the operator's reported ~11s. */
-  const PHONE_FLIP_6X_MAX_MS = 7500;
   /* The wide stage is bounded BOTH WAYS: 5,556ms nominal, measured 5,745-5,798
      before and after. Below 4,900 means the narrow duration leaked onto
      desktop; above 7,000 means the wide sequence grew. */
@@ -1274,28 +1270,52 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
    * against a baseline that the OTHER half of this release had already moved.
    * A bound that only reds on a defect nobody can reintroduce is not a bound.
    *
-   * Two changes. It measures the LOOP (from the instant the field publishes its
-   * report, which is the loop's setup) rather than the navigation, so bundle
-   * and hold time are not in the number the ceiling is supposed to govern. And
-   * the bound is DERIVED FROM THE REPORTED CEILING rather than written down:
-   * `wallCeilMs * 1.15`. That is not a tautology — `wallCeilMs` is a constant
-   * the page reports, and the assertion is that the loop's ACTUAL wall duration
-   * respected it. Remove the `Math.max` that enforces it and the loop runs to
-   * ~6,060ms against a 4,500ms ceiling, which reds. */
+   * Two changes, and the SECOND one is the interesting half.
+   *
+   * (1) It measures the LOOP (from the instant the field publishes its report,
+   * which is the loop's own setup) rather than the whole navigation, so bundle
+   * and hold time are not inside the number the ceiling is supposed to govern.
+   * Navigation time under throttle is dominated by parse and is not even
+   * monotonic in the throttle rate — measured 18,539ms at 16x against 11,978ms
+   * at 20x on the same tree — so it is the wrong quantity to bound. The bound
+   * is DERIVED FROM THE CEILING THE PAGE REPORTS rather than written down:
+   * `wallCeilMs * 1.15`. Not a tautology — `wallCeilMs` is a constant the page
+   * states, and the assertion is that the loop's ACTUAL wall duration respected
+   * it.
+   *
+   * (2) THE THROTTLE IS 10x, NOT THIS REPO'S CUSTOMARY 6x, AND THAT IS THE
+   * WHOLE REASON THE FIRST VERSION COULD NOT SEE ITS SUBJECT. Deleting the
+   * ceiling and re-running left the gate green TWICE — once against a 7,500ms
+   * end-to-end bound and again against this loop bound at 6x. Measured across
+   * the rate, loop ms with the ceiling vs without:
+   *
+   *      1x   3,315  /  3,315   — inert by construction (no frame clamps)
+   *      6x   4,187  /  4,486   — 1.07x: the ceiling barely binds
+   *     10x   3,922  /  7,348   — 1.87x
+   *     16x   3,930  / 11,977   — 3.05x
+   *     20x   3,636  / 15,138   — 4.16x
+   *
+   * 6x on this sandbox is simply not slow enough to make the 64ms clamp lie:
+   * the median frame is still under 64ms and only the tail clamps. The operator
+   * reported the splash "still showing at 11s", which on that curve is a device
+   * around 14-16x — so the customary 6x understates the phone this release is
+   * for. 10x is the first rate where the separation is unambiguous, and the
+   * 1x row is the empirical form of the arithmetic proof that this ceiling
+   * changes nothing on a machine that keeps up. */
   {
-    const { flipped, flipMs, loopMs, report } = await runStage({ width: PHONE.width, height: PHONE.height }, 6);
+    const { flipped, flipMs, loopMs, report } = await runStage({ width: PHONE.width, height: PHONE.height }, 10);
     R.ok(Boolean(report) && flipped,
-      '390 @6x CPU: precondition — the field ran and handed off under throttle',
+      '390 @10x CPU: precondition — the field ran and handed off under throttle',
       'the sequence did not complete under 6x throttle at all — the timing below has no subject');
     if (report && flipped) {
       const ceil = Number(report.wallCeilMs) || 0;
       R.ok(ceil > 0,
-        `390 @6x CPU: precondition — the page reports its own wall ceiling (${ceil}ms)`,
+        `390 @10x CPU: precondition — the page reports its own wall ceiling (${ceil}ms)`,
         'no wallCeilMs in the field report, so the bound below would be derived from zero');
       if (ceil > 0) {
         const bound = Math.round(ceil * 1.15);
         R.ok(loopMs <= bound,
-          `390 @6x CPU: the decrypt LOOP ran ${loopMs}ms against its own ${ceil}ms wall ceiling ` +
+          `390 @10x CPU: the decrypt LOOP ran ${loopMs}ms against its own ${ceil}ms wall ceiling ` +
           `(bound ${bound}ms; whole navigation ${flipMs}ms)`,
           `${loopMs}ms of loop against a ${ceil}ms ceiling. The progress ramp's per-frame delta is clamped ` +
           'at 64ms, so a device that cannot hit 15.6fps advances it more slowly than real time and the ' +
@@ -1303,11 +1323,13 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
           'schedule.ts#WALL_CEIL_FACTOR existed, and reported by the operator at ~11s. The unclamped wall ' +
           'accumulator in ColdBoot.tsx is what bounds it, and this reading says it is not doing so.');
       }
-      /* Kept as a second, coarser bound on the whole navigation: it is what a
-         visitor actually waits, and it reds on M2 (the duration reverted). */
-      R.ok(flipMs <= PHONE_FLIP_6X_MAX_MS,
-        `390 @6x CPU: decrypt -> console in ${flipMs}ms end to end (bound ${PHONE_FLIP_6X_MAX_MS}ms)`,
-        `${flipMs}ms under 6x throttle — what a visitor on a mid-range phone actually waits.`);
+      /* REPORTED, NOT ASSERTED. What a visitor waits end to end is the number
+         that matters to them, and it is also the one this gate cannot bound
+         honestly: under throttle it is dominated by bundle parse and is not
+         monotonic in the rate (18,539ms at 16x against 11,978ms at 20x). A
+         bound on it would be a bound on the runner. The 1x end-to-end bounds
+         above are stable and are where that claim is made. */
+      R.info(`390 @10x CPU: whole navigation ${flipMs}ms (parse-dominated — reported, not bounded)`);
     }
   }
 
