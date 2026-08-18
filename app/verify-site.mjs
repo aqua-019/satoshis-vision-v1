@@ -342,9 +342,43 @@ R.group('§7 · the ethos claims cite mechanisms that exist and say what is clai
        || /no-referrer/.test(vercel),
     '7 · …and Referrer-Policy: no-referrer, which is what the outbound-link claim rests on');
 
+  /* THE NUMBER IS READ OUT OF THE CLAIM, NOT RETYPED HERE.
+     The first version of this section asserted `fonts.length === 12` against
+     the tree and never looked at the page — so break test M4, which edited the
+     rendered citation to say "40 files", left all 64 assertions GREEN. A true
+     fact about the wrong subject: the section's entire job is that the page's
+     citations are true, and it was checking the tree against a literal typed
+     into the gate. */
   const fonts = readdirSync(join(__dirname, 'public/fonts')).filter((f) => f.endsWith('.woff2'));
-  R.ok(fonts.length === 12,
-    `7 · the "12 self-hosted woff2" claim matches the tree (${fonts.length})`);
+  const fontClaim = CLAIMS.find((c) => /font/i.test(c.mech) || /font/i.test(c.head));
+  R.ok(!!fontClaim, '7 · the fonts claim is on the page to be checked');
+  const claimed = Number((fontClaim?.mech.match(/(\d+)\s*(?:files?|woff2)/) || [])[1]);
+  R.ok(Number.isFinite(claimed),
+    `7 · …and its citation states a countable number (${fontClaim?.mech})`);
+  R.ok(claimed === fonts.length,
+    `7 · the page's own font count matches the tree — page says ${claimed}, tree has ${fonts.length}`);
+
+  /* Every path-shaped token in EVERY citation must resolve. A citation naming
+     a file that does not exist is worse than no citation: it looks checkable
+     and is not. */
+  const PATHY = /(?:app\/)?(?:src|api|scripts|public)\/[A-Za-z0-9_./-]+|verify-[a-z-]+/g;
+  const unresolved = [];
+  let cited = 0;
+  for (const c of CLAIMS) {
+    for (const tok of c.mech.match(PATHY) || []) {
+      cited++;
+      const bare = tok.replace(/^app\//, '');
+      const cands = [
+        join(__dirname, bare), join(repoRoot, tok), join(repoRoot, 'app', bare),
+        join(__dirname, `${bare}.mjs`), join(__dirname, bare.replace(/\/$/, '')),
+      ];
+      if (!cands.some((x) => existsSync(x))) unresolved.push(`${c.head} → ${tok}`);
+    }
+  }
+  R.ok(cited >= 4, `7 · the citations name checkable paths (${cited} tokens across ${CLAIMS.length} claims)`);
+  R.ok(unresolved.length === 0,
+    `7 · every cited path resolves on disk (${unresolved.length} dangling)`,
+    unresolved.join(' · '));
 
   R.ok(existsSync(join(__dirname, 'scripts/prerender.mjs')) &&
        existsSync(join(__dirname, 'dist/about/site/index.html')),
