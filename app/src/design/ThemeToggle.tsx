@@ -6,20 +6,28 @@
  * `<input type="radio">`, which gives arrow-key traversal and roving
  * tabindex from the platform for free — no hand-rolled `role="radiogroup"`.
  *
- * Mounted twice:
- *   - pages/HomePage.tsx, beside the hero CTA row — a first-class control on
- *     Main Home, not a footnote.
- *   - design/DesignPanel.tsx, replacing its inline Theme RadioGroup.
- * Both instances render from this one definition so the two toggles can
- * never drift out of sync with `ThemeKey`. `React.useId()` keys each
- * instance's `id`/`name` attributes so two toggles mounted on the same page
- * (Home always has both — DesignPanel lives in the topbar on every route)
- * never collide on duplicate DOM ids or share one native radio group.
+ * MOUNTED ONCE, in design/DesignPanel.tsx — the ⌘ DESIGN dropdown, which
+ * rides the topbar on every route, so the control is reachable everywhere
+ * without any page carrying its own copy.
+ *
+ * It was mounted TWICE until p4·M2: pages/HomePage.tsx also rendered one
+ * beside the hero CTA row. That mount is gone — themes are a display
+ * preference and belong with the other display preferences, not as a
+ * first-class control on the site's front door.
+ *
+ * `React.useId()` KEYS ARE KEPT, and the reason has changed rather than
+ * lapsed. The old rationale was collision between two instances on one page,
+ * which no longer arises. What remains is that the `id`/`name` attributes
+ * must not be a fixed literal: a second mount is one JSX line away, the
+ * failure it would cause (duplicate DOM ids, two toggles sharing one native
+ * radio group) is silent, and `useId()` costs nothing. Do not "simplify" it
+ * to a constant on the strength of there being one mount today.
  *
  * `data-testid="theme-toggle"` on the root element is load-bearing:
  * verify-contrast.mjs finds the control by this testid rather than a
- * positional selector, because a positional `.first()` can no longer tell
- * the two mounted instances apart.
+ * positional selector. That indirection is also kept deliberately — a
+ * positional selector would start passing for the wrong reason the moment a
+ * second instance returns.
  *
  * Tokens only — `var(--ui-accent)`, `var(--ink-60)`, `var(--f-mono)`,
  * `var(--fs-label)` etc. No hardcoded hex/rgba, no text under 12px.
