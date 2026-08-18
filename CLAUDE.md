@@ -740,6 +740,53 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-18**: p4·M1 "THE COLD BOOT ON A PHONE" (app/) — mobile hotfix, jumps ahead of
+  p4·07. The splash was a wall of overprinted glyphs on a phone; the operator called it
+  unusable. **THE ✓-BLOCK'S DIAGNOSIS WAS WRONG IN TWO WAYS AND A MEASUREMENT OVERTURNED
+  BOTH.** It said the stacked branch "has only ever been rendered at its widest possible
+  width, never below 1100" — FALSE: `verify-coldboot` §6/§7/§8 already render at 390 AND 1100.
+  And "the cold-boot content container measures 390 × 2,919" is NOT reproducible as any single
+  element — the console root is **796px (0.94× viewport — it fits)**. The reproducible defect
+  is **1288px of PANE OVERLAP** at 390 (1389 at 360, 1103 at 430): stacked, the grid is
+  `flex:1; minHeight:0; overflowY:auto` (definite height), so its three implicit `auto` rows
+  are stretched to EQUAL fractions (`236.672px ×3`), crushing the `minHeight:0` panes into
+  ~237px rows while their content (HUD 861 · LOG 590 · NETWORK 733) overflows and overprints
+  the panes below. `gridAutoRows: max-content` (stacked branch only, ONE property) sizes each
+  row to its pane's content — panes stack cleanly, grid scrolls, overlap 0/0/0. Desktop
+  untouched (its equal-height rows hand slack to the orb stage).
+  **THE HEIGHT CAP INVERTS, and only a measurement shows it.** The obvious gate — "container
+  ≤ N× viewport" — would PASS the bug and FAIL the fix: the broken tree's grid scrollHeight is
+  SMALLER (1234px, because overlap compresses the layout) than the fixed clean stack (2211px).
+  OVERLAP is the only metric that discriminates. Three content-rich panes cannot fit one phone
+  screen; clean stacking + honest ~2.6-screen vertical scroll is the answer, cramming is the
+  bug. Console scroll holds **60fps under 6× throttle**; the ~6fps decrypt is the FIELD's
+  pre-existing per-frame cost (a CSS grid property cannot touch canvas rAF) — proved innocent,
+  out of scope, as was `MATRIX_COLS` (168px fixed columns — the wrong axis).
+  **THE GATE EXTENDS THE EXISTING FILE, NOT A NEW ONE** — `verify-coldboot.mjs` already renders
+  at 390 and is already EXEMPT from `verify-coldboot-live`'s §0 bypass audit; a new gate
+  reaching `/` without bypassing would fail that audit. New §9 (phone band 360/390/430: no
+  overprint, no h-overflow, ≥12px HTML, reduced-motion no-rAF, Enter completes) + §9d (version
+  anti-rot). Census UNCHANGED: **88 / 84 / 22 / 38 / 74 / 6** — the correct outcome for
+  extending an e2e member. Two-polarity: unfixed **97 · 4**, fixed **103 · 0**; the four reds
+  are exactly the overlap assertions, nothing else moves.
+  **THE FROZEN v6.1.8 STAMP** rendered on a #196 site (header + first boot-log line). DERIVED
+  from `SITE_VERSION` (`v6 · #196`, already eager via NavTop — mints no chunk), gated by §9d.
+  SITE_PR 195→196.
+  **THREE THINGS I GOT WRONG, cycle 24.** (1) I nearly gated a height cap per the prompt's §1
+  before measuring that a cap passes the bug and fails the fix; the operator's mid-turn steer
+  confirmed "assert against the defect." (2) §9d's version regex matched the COMMENT
+  `SITE_PR = 99999` (siteVersion.ts:89) instead of the export — parsed 99999; anchored to
+  `export const`. (3) §9d's failure-message template evaluated `frozen[0]` eagerly on the PASS
+  case (frozen=null) → a gate that CRASHED on its own green path; guarded `frozen ? frozen[0]
+  : ''`. Budgets: chunk count **76 == base 76** (built both, minted nothing); lazy 969,625,
+  total 1,234,106, cssGz byte-level unchanged (zero new CSS rule). **No human has seen the
+  rendered result in a browser** — read from screenshots at 360/390/430 (before overprint,
+  after clean, scrolled), reduced-motion, 1440 desktop (unchanged), post-dissolve → home.
+  **NOT FIXED, and named**: the orb globe is empty in the console's NETWORK slot on phone (the
+  orb is `position:fixed` tracking a slot now inside a scroll container — pre-existing, the
+  one-property change does not affect that interaction); the field decrypt's ~6fps under 6×.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/196
+
 - **2026-08-18**: p4·07 "THE STRESSNET EXPLORER, SIMULATED MODE" (app/ + .github/) —
   `/operate/superstress/explorer`, the EIGHTEENTH route and the FIRST this repo has nested
   UNDER another route rather than beside it. The classic mempool-explorer layout — block

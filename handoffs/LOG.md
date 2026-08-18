@@ -615,3 +615,4 @@
   Census RECOUNTED with the instrument CONTROLLED against three commits: 88 / 84 / 22 / 38 /
   74 / 6. `cssGz` BYTE-IDENTICAL — zero new stylesheet rules.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/195
+- XMRIRISH-20260818-M1 · done · p4·M1 cold boot on a phone (overprint fix + §9 gate) · https://github.com/aqua-019/satoshis-vision-v1/pull/196
