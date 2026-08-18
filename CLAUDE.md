@@ -740,6 +740,176 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-18**: p4·M3 "THE PEERS PAGE, MADE REAL" (app/) — every partner brief gets a
+  real dated screenshot, the tap target that was sending phones to the wrong site gets
+  fixed, two peers join, and the X links land. Content release: no new route, no new
+  module, no new stylesheet rule, census UNCHANGED.
+  **BOTH DEFECTS WERE REPRODUCED ON THE UNTOUCHED BUILD BEFORE A LINE WAS EDITED**, which
+  is what makes the fixes attributable. All four briefs rendered **`imgs:0`** — the
+  "SCREENSHOT ·…" boxes a reader saw were `slots`, dashed reservations — and the `our
+  brief` control measured **52.8 × 16 on all six cards** at 390.
+  **THE TAP-TARGET BUG IS NOT "SMALL TEXT", AND THE OPERATOR'S REPORT NAMED THE WRONG
+  CARD FOR THE RIGHT REASON.** It was reported as "kyc.rip has no popup — it links to the
+  site". kyc.rip has a complete `body[]`. What it has is a 16px-tall control inside a
+  `<Card onClick={visit}>` whose `visit` calls `window.open(partner.url)` — so a thumb
+  landing a few pixels off does not MISS, it hits the card and sends the reader off-site.
+  A target whose surroundings are inert can be argued about; one whose surroundings
+  navigate away cannot. Now 82.8 × 44, and **visibly a control**: a 44px hit area on text
+  that still looks like text teaches nothing, and the reader who was missing it goes on
+  aiming at the words. **THE SIBLING `visit … ↗` ANCHOR IS DELIBERATELY LEFT SMALL, and
+  the asymmetry is the argument** — a near-miss there lands on the card, whose click does
+  the SAME THING that anchor does, so missing it costs nothing.
+  **THE SIX CAPTURES ARRIVED AS CONVERSATION ATTACHMENTS, NOT AS REPO FILES**, and were
+  recovered from the session transcript's own base64. **Each was then READ BACK AND
+  MAPPED BY CONTENT, never by attachment order** — the one that matters is
+  `peer-superbrain.webp`, which shows the **Superstress app running on a testnet**, not
+  the store listing anyone would assume from the filename. Its alt text and caption say
+  what the capture shows rather than what the entry is about, and **BOTH of Superbrain's
+  reserved slots therefore STAY**: a reservation is satisfied by the artifact it names or
+  it is not satisfied at all, and "close enough" is how a placeholder quietly becomes a
+  lie. That entry is the one partner where a real capture and an open reservation sit in
+  the same column, which is simply the true state of the world.
+  **`EcoShot` IS A NEW TYPE RATHER THAN A FIELD ON `EcoSlot`, and the reason is the
+  failure modes.** A slot is a RESERVATION — an empty one is fine forever. A shot is the
+  opposite claim — an empty one is a broken image. `captured` is RENDERED, not merely
+  stored: a screenshot of somebody else's site starts aging on capture, and undated it
+  silently claims to be current (`LEGALITY_MATRIX.reviewed`'s doctrine, one surface over).
+  **NO `onError` FALLBACK, DELIBERATELY** — a shot that degrades gracefully to a
+  placeholder is a shot no assertion can ever catch.
+  **TWO EMBED SLOTS RETIRED WHERE THE BRIEF NAMED ONE, on the brief's own structural
+  ground.** `vercel.json` grants NO `frame-src` under `connect-src 'self'`, so XMRHUB's
+  "swap widget (iframe target pending)" and kyc.rip's "panel embed" are not late, they are
+  impossible. **AND THE SENTENCE THAT PROMISED ONE WENT WITH IT** — XMRHUB's body[1] read
+  "the swap embed lands here once finalized", and deleting the box while leaving the clause
+  is the WORSE half: a promise with no box reserved for it reads as an oversight, where the
+  box at least said what was missing. Flagged for one-line reversal if the operator
+  disagrees about kyc.rip's.
+  **THE kyc.rip CAPTURE CONTRADICTED THE COPY IT WAS ABOUT TO SHIP UNDER.** Its two
+  paragraphs describe a site that DOCUMENTS; the shot shows one that also OPERATES — a
+  no-KYC swap panel above the fold and two tools it labels "operator-built". Shipping the
+  image under documentation-only copy would have put a contradiction in one screenful,
+  p3·16's recorded defect. ONE clause added, sourced from the capture alone, **ADDITIVE
+  rather than a rewrite**: "documents the route" stays, because xmr.club's entry
+  differentiates against that exact phrase and this release leaves xmr.club **BYTE-
+  UNTOUCHED**.
+  **PRIVACY GATEWAY IS THE ONE ENTRY WITH NO CONFIRMED TEXT SOURCE AND THE FILE SAYS SO.**
+  privacygateway.io answered **403** to this build, so its two sources are named in the
+  entry: the operator, and the capture — which adds a fourth surface the operator did not
+  name (an RPC node). **NO NUMBERS, and the shot is full of them** — hashrate, miner count,
+  effort, fee, minimum payout, a "first block bonus". Every one is a point-in-time reading
+  of somebody else's box. **PPLNS SURVIVES because a payout SCHEME is not a reading**, and
+  the pool hostname on the same ground; the four ports are dropped as rot with no
+  load-bearing role in a brief.
+  **MONERICA IS SOURCED FROM ITS OWN WORDS, and the differentiation is now a FOUR-way
+  problem rather than p4·06's two.** kyc.rip and xmr.club both grade where you ACQUIRE
+  Monero; Monerica indexes where it already CIRCULATES — businesses, merchant services,
+  jobs, freelancers, non-profits. That is the other half of a currency, which is why a
+  fourth directory is not a fourth of the same thing. NO COUNTS, on this page's standing
+  rule. **Two claims are the operator's and are flagged as such**: "the oldest directory"
+  is a superlative about the world nothing reachable from here can settle.
+  **THE TWO NEW HUES WERE MEASURED, NOT PICKED.** Eight hues already carry meaning in
+  `data.ts` or the semantic palette (25 · 50 · 142 · 188 · 193 · 268 · 306 · 349).
+  `#8ba3ff` (hue 228) and `#a3e635` (hue 83) sit **35° and 33°** from their nearest
+  neighbour and clear **6.86:1 and 10.89:1** against all three theme grounds and their
+  `bg-2`s. `#ff5cf0` was excluded by name — p4·07 reserved it for the betanet accent.
+  **A DEFECT FOUND BY LOOKING THAT 58 GREEN ASSERTIONS COULD NOT SEE.** On the first
+  six-partner build, `visit privacygateway.io ↗` — the longest partner domain on the page,
+  arriving with this release — squeezed its `space-between` sibling to 79.7px and the label
+  **SHATTERED to "our / brief"** over two lines, while the anchor orphaned its ↗. p4·04's
+  recorded shape verbatim. **Neither existing check could fire**: 79.7 clears the 44 floor,
+  and the label wrapped INSIDE the 44px box rather than overflowing it, so
+  `scrollHeight === clientHeight` and the clip check was correctly green.
+  **AND THE BREAK TEST FOR THE FIX REFUSED TO GO RED, WHICH IS WHERE THE RELEASE LEARNED
+  THE MOST.** Removing `flexShrink: 0` + `whiteSpace: nowrap` left all 59 green. So did
+  removing `flexWrap`. Only removing **BOTH** reproduces the shatter, and then the new
+  assertion fires at `spread 3.1px`. The two defences are **INDEPENDENTLY SUFFICIENT**, not
+  jointly necessary — a fact about the page nobody had measured, and one my own comment had
+  already claimed the other way before the mutation corrected it. Both are kept and both
+  are now explained, and the assertion's **BLIND SPOT is stated**: it cannot say which
+  defence is holding the box, so a reviewer deleting one "because the gate is still green"
+  would be reading it correctly and still be wrong.
+  **`verify-origins` WAS MEASURING THE WRONG SUBJECT ON THIS ROUTE, AND HAD BEEN SINCE
+  p4·06.** `/operate/peers` was already in its phase-2 sweep — but the screenshots live in
+  the `our brief` DIALOG, and `V6Modal` unmounts when closed, so on a page nobody clicked
+  the `<img>` tags do not exist. "Zero off-origin requests" was a true statement about a
+  page that had not loaded the assets most likely to be off-origin, and **a hotlinked
+  partner screenshot would have sailed straight through**. All six briefs are opened now
+  and `shotsSeen` is asserted POSITIVE, so silent no-op clicks cannot restore the vacuum.
+  Break test B10 is the sharpest artifact in the set:
+  `❌ 2 · the app requests exactly one origin: https://xmr.club/screenshot.webp`.
+  **THE ✓-BLOCK WAS HALF RIGHT ABOUT THE PARTNER COUNT, AND THE HALF IT MISSED REDS.** It
+  says `verify-peers` DERIVES the count from `data.ts` so new entries move the gate
+  automatically. It derives it **and pins it to a literal `4`** at `:52`. Recounted to 6 —
+  and the literal is deliberately KEPT rather than derived, because a gate whose
+  expectation is computed from its own subject cannot notice the subject changing.
+  **BUDGETS: RESIDUAL ZERO, 74 of 77 STEMS SIZE-IDENTICAL, AND FIVE CEILINGS RAISED WHERE
+  THREE WERE EXPECTED.** Paired per stem against a build of `e0c87ad`: `repoPulse`
+  **+4,589** (the chunk `data.ts` lands in — p3·19's label-not-a-contents-list, still true)
+  · `EcoPopup` **+520** · `TrustedPeersPage` **+121** = **+5,230**, which IS `lazyJsRaw`'s
+  whole delta AND `totalJsRaw`'s whole delta — the arithmetic form of "eager moved by
+  zero". `eagerJsRaw` byte-count-identical at **264,481**; `eagerJsGz` moves **−10** from
+  compressibility alone. **`cssGz` BYTE-IDENTICAL at 18,184** of 18,600 — the 44px control
+  and the figure are both inline styles, which was the constraint rather than the outcome.
+  `CHUNK_COUNT` **76, unchanged — nothing minted**, and the 190 KB of screenshots are
+  `public/` assets in no chunk closure at all.
+  `lazyJsRaw` 973,000 → **978,000** · `totalJsRaw` 1,238,000 → **1,243,000** ·
+  `/operate/peers` 103,000 → **106,000**.
+  **THE OTHER TWO ARE A FINDING, NOT A COST OF DOING BUSINESS — THE LEAF LESSON, NINTH
+  SIGHTING.** `/future` 107,000 → **112,000** and `/operate/superstress` 105,000 →
+  **110,000**, and **neither route renders one word of what made it bigger**: /future draws
+  the stressnet band and the protocol cards, /operate/superstress reads exactly two
+  ECOSYSTEM entries by id and neither is new. They paid **+1,791 and +1,652 B gzip for
+  prose they never draw**, because `data.ts` lands in a chunk they both download.
+  `/future`'s margin was **497 B** and this file named it as where the next touch would
+  red; the next touch was this one. **NOT FIXED, and the reason is OPERATIONAL rather than
+  technical**: the structural answer is the split this repo has taken eight times, and a
+  second PR was editing `data.ts` concurrently — splitting a file mid-flight under another
+  author is how a clean merge becomes a bad one. Raised, measured, ledgered.
+  **CENSUS RECOUNTED AND UNCHANGED — 88 / 84 / 22 / 38 / 74 / 6** (80 invocations − 6
+  duplicates), which is the correct outcome for a release that adds no gate FILE and wires
+  no orphan. The instrument was **CONTROLLED against FOUR commits before being trusted** —
+  `768ba13` 85/81/22/35/71, `74bc561` 86/82/22/36/72, `0f00d26` 87/83/22/37/73/6 and
+  `e0c87ad` 88/84/22/38/74/6 — all reproduced EXACTLY including the invocation arithmetic.
+  `verify-peers` **32 → 44**, `verify-mobile` **55 → 59**, `verify-origins` **+2**,
+  `verify-protocol` 62 unchanged (its §6 assertion is untouched; only its MESSAGE was
+  corrected, having read "the fourth card WRAPS to a second row" when six cards in three
+  columns is two FULL rows — the number it asserts stayed right while the sentence stopped
+  describing what it measures).
+  **THREE OF MY OWN INSTRUMENTS WERE WRONG, all three found by measurement rather than
+  review, and two are the same family.** (1) **§9's first shot parser was ONE regex**
+  demanding `src`/`alt`/`captured` in order with nothing between, so a break test that
+  inserted a comment after `src:` made the whole shot VANISH from the parse — the gate then
+  reported a floor failure, the right alarm for the wrong reason, while the assertion the
+  mutation targeted was never exercised. The `>= 6` floor is what caught it, which is what
+  floors are for. Brace-matched now. (2) **The render probe's shutter fired MID-
+  TRANSITION**, writing six files showing the dialog overprinted on the page beneath — a
+  filename claiming a state its content did not carry. (3) Its repair then **measured the
+  wrong subject twice in a row**: a document-wide running-animation check reads the site's
+  ambient loops, which never stop; scoped to the dialog it still could not pass, because a
+  `span.led pulse` inside every dialog animates FOREVER by design. Measured rather than
+  reasoned: the OPACITY lives on the veil (0.31 → 1 by ~400ms) and the dialog's own
+  entrance is a TRANSFORM.
+  **ELEVEN BREAK TESTS.** B1 an off-origin src → **4** reds across the source and rendered
+  halves · B2 a src naming a missing file → 2, headline `DECODED … (5 of 6; sizes:
+  1000x625, 0x0)` · B3 a capture date that stops being a date → 2 · B4 a duplicated alt →
+  1 · B5 the `<img>` deleted → 3 at `0 of 6`, with the CAPTION check staying green, which
+  is what proves the two are independent rather than redundant · B6 the shot moved onto the
+  card face → 1 · B7 a seventh PARTNER → **5**, headline `§1 · data.ts declares exactly 6
+  PARTNER entries (parsed: 7)` · B8 the tap target reverted → 1 at `smallest side 16px` ·
+  B9/B9b/B9c the two-defence result above · B10 a hotlinked screenshot → 3 including the
+  one-origin red. **TWO ROUNDS WERE CORRECTLY VOIDED BY THE HARNESS RATHER THAN COUNTED**:
+  both early B5 mutations failed `tsc` (`'e.shot' is possibly 'undefined'`, then
+  `This kind of expression is always falsy`), and a round whose build failed is VOID, not a
+  pass — p4·03's recorded trap, guarded against here and fired twice.
+  **NOT FIXED, and named**: the `data.ts` leaf split above; `/future`'s margin, now 3,488 B
+  but on a route that still pays for other pages' content; the `↗` still orphaning on
+  `visit privacygateway.io ↗` at **320** (the label is whole and the button is intact —
+  truncating a 24-character domain to tidy a glyph would destroy information to fix
+  appearance); `NodePage`'s copy button still reporting a success it has not achieved.
+  **No human has seen the rendered result in a browser** — read from screenshots at 1440,
+  390 and 320: the six-card grid, all six briefs open with their captures, the figure at
+  390, and the footer row before and after the shatter fix.
+
 - **2026-08-18**: p4·M1 "THE COLD BOOT ON A PHONE" (app/) — mobile hotfix, jumps ahead of
   p4·07. The splash was a wall of overprinted glyphs on a phone; the operator called it
   unusable. **THE ✓-BLOCK'S DIAGNOSIS WAS WRONG IN TWO WAYS AND A MEASUREMENT OVERTURNED
