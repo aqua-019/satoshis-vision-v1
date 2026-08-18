@@ -130,14 +130,20 @@ export async function throttle(ctx, page) {
  *  /learn/<tab>) + 7 monero tabs (markets/outlook removed) + 21 simulators
  *  + 1 404.
  *
- *  IT IS 50 NOW, and this paragraph said "stays 43" for four releases while
+ *  IT IS 53 NOW, and this paragraph said "stays 43" for four releases while
  *  the per-entry comments below correctly counted 43 → 44 → 45 → 46 → 47.
  *  Two figures in one file disagreeing, which is the defect CLAUDE.md
  *  records against ITSELF twice — each `?v=` PR updated its own comment and
  *  not the summary. p3·16 adds `/operate/superstress` (47 → 48), p4·04
- *  adds `/operate/mine` (48 → 49) and p4·05 adds `/about/site` (49 → 50);
- *  all three RECOUNT the summary by running the line below rather than
- *  incrementing it:
+ *  adds `/operate/mine` (48 → 49) and p4·05 adds `/about/site` (49 → 50).
+ *
+ *  AND IT RECURRED IMMEDIATELY: p4·06 added TWO entries (`/future/protocol`
+ *  bare and `?p=fcmp`), taking the list to 52, and updated its own session
+ *  note to "50 → 52" without touching this sentence — so this paragraph read
+ *  50 against a measured 52 for a whole release. p4·07 adds
+ *  `/operate/superstress/explorer` (52 → 53) and RECOUNTS rather than
+ *  increments, which is the only reason the figure above is trustworthy.
+ *  Run the line below; do not add one to whatever it currently says:
  *    node -e "import('./verify-lib.mjs').then(m=>console.log(m.ROUTES.length))"
  *  MEASURE it; do not read it off this sentence. */
 export const ROUTES = [
@@ -208,6 +214,13 @@ export const ROUTES = [
      rendered. Leaving it out would mean the site's newest page were the one
      page none of them walked. */
   '/operate/superstress',
+  /* p4·07 — the 18th route, and ONE entry rather than two. p4·06 added two
+     for `/future/protocol` because its bare path and its `?p=` path are two
+     genuinely different renderings (an index of five, and a detail page).
+     This route has one state at load: the block detail only appears after a
+     click, which no ROUTES-walking gate performs, so a second entry would
+     screenshot the same layout twice. 52 -> 53. */
+  '/operate/superstress/explorer',
   /* p4·04 — the SECOND top-level route added since the restructure, on the
      same argument p3·16 makes directly above: this page's layout (a
      four-row disclosure accordion over a seeded SVG field) is rendered by no

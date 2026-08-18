@@ -136,10 +136,11 @@ const routes = await p.evaluate(() =>
   [...document.querySelectorAll('#root a')]
     .map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } })
     .filter(Boolean));
-// The 17-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
+// The 18-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
 // no import (see verify-lib.mjs's ROUTES for the same constraint reasoned
 // out in full).
 //
+// p4·07 · 17 -> 18 (/operate/superstress/explorer).
 // p4·05 · 15 -> 16 (/about/site).
 // p4·04 · 14 -> 15 (/operate/mine).
 // p3·16 · 13 -> 14. Note what this list does and does NOT catch. It asserts
@@ -153,7 +154,8 @@ const routes = await p.evaluate(() =>
 for (const r of ['/', '/live/mempool', '/live/markets', '/live/markets/thesis', '/live/network',
                   '/monero', '/learn', '/learn/sim', '/future', '/future/outlook',
                   '/future/protocol',
-                  '/operate/node', '/operate/mine', '/operate/superstress', '/operate/peers',
+                  '/operate/node', '/operate/mine', '/operate/superstress',
+                  '/operate/superstress/explorer', '/operate/peers',
                   '/about/sources', '/about/site']) {
   ok(routes.includes(r), `no-JS: ${r} is a real anchor in the prerendered nav`);
 }

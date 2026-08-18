@@ -14,6 +14,30 @@
 // public endpoint for this file to consume — not "not yet wired", but no such
 // thing to wire (see AUTOMATION_ROWS in pages/future/data.ts, and the answer
 // on /operate/superstress). Nothing here may read as a measurement from it.
+//
+// ── p4·07 AMENDS THAT PARAGRAPH, DELIBERATELY, AND NARROWS NOTHING ──────
+// The sentence above is a claim about DIRECTION, and it still holds exactly as
+// written: the `data` prop is still never read, `ViewProps.data` is still
+// destructured away unused, and no live feed reaches this file. What changed is
+// the OTHER direction — this model now FEEDS a surface. p4·07's
+// `/operate/superstress/explorer` renders a simulated beta-chain explorer whose
+// every number comes from `model()`, which moved to the pure leaf
+// `stressnet-model.ts` so the explorer could import the arithmetic without
+// importing this component.
+//
+// The distinction is the whole reason the amendment is safe to make, so it is
+// written down rather than left implied: "this file consumes no measurement"
+// and "this file's output is consumed" are different properties, and only the
+// first was ever the permanent one. A model that nothing reads is a model
+// nobody can be misled by; a model that feeds a page is exactly where the
+// misleading starts, which is why that page carries a persistent
+// BETANET · NOT MAINNET · TEST FUNDS ONLY banner, the word SIMULATED, its own
+// accent and a MODEL provenance badge — the rule /operate/superstress wrote
+// down in p3·19 before there was anything to apply it to.
+//
+// What has NOT changed and must not: nothing here, and nothing downstream of
+// here, may read as a measurement of the real Superstress Net. The chain
+// parameters remain undocumented and un-invented.
 
 import * as React from "react";
 import { Link } from "react-router-dom";
@@ -23,6 +47,9 @@ import type { ProtoDrawFn } from "@/protocols/use-proto-canvas";
 import { Stat } from "@/design/primitives";
 import { Provenance } from "@/design/provenance";
 import type { MoneroLive } from "@/data/types";
+import {
+  model, kb, FLOOR_KB, CAP_KB, BLOCK_SEC, PROOF_KB, VERIFY_MS,
+} from "@/protocols/stressnet-model";
 
 interface ViewProps {
   data: MoneroLive;
@@ -30,41 +57,6 @@ interface ViewProps {
 }
 
 const MONO = '"JetBrains Mono", ui-monospace, monospace';
-const FLOOR_KB = 300;   // penalty-free zone — 300 kB under the current rules
-const LTM_KB = 300;     // long-term median at rest; the ratchet's anchor
-const CAP_KB = 2 * Math.round(1.7 * LTM_KB); // hard per-block ceiling: 2× median
-const BLOCK_SEC = 120;  // 2-minute target
-const PROOF_KB = 3.5;   // FCMP++ tx footprint, per this site's own FCMP++ card
-const VERIFY_MS = 35;   // ~35 ms per proof, same source
-
-interface Model {
-  demandKB: number; medianKB: number; blockKB: number;
-  penaltyPct: number; backlogKB: number; feeMult: number;
-  tier: string; verifyMs: number; verifyPct: number; broken: boolean;
-}
-
-/** Closed-form steady state for a storm level. Derived from the dial alone, so
- *  the readouts are identical whether the canvas is animating or frozen at t=0
- *  under prefers-reduced-motion. */
-function model(intensity: number): Model {
-  const u = intensity / 100;
-  const demandKB = 55 + Math.pow(u, 1.5) * 2400;
-  const medianKB = Math.max(FLOOR_KB, Math.min(demandKB, Math.round(1.7 * LTM_KB)));
-  const blockKB = Math.min(demandKB, CAP_KB);
-  const over = blockKB / medianKB;
-  const penaltyPct = over > 1 ? Math.pow(over - 1, 2) * 100 : 0;
-  const backlogKB = Math.max(0, demandKB - CAP_KB);
-  const broken = backlogKB > 0;
-  const feeMult = 1 + Math.pow(Math.max(0, over - 1), 2) * 6 + (broken ? backlogKB / 220 : 0);
-  const tier = feeMult < 1.4 ? "low" : feeMult < 4 ? "normal" : feeMult < 18 ? "high" : "highest";
-  const verifyMs = (blockKB / PROOF_KB) * VERIFY_MS;
-  return {
-    demandKB, medianKB, blockKB, penaltyPct, backlogKB, feeMult, tier,
-    verifyMs, verifyPct: (verifyMs / (BLOCK_SEC * 1000)) * 100, broken,
-  };
-}
-
-const kb = (n: number) => (n >= 1000 ? (n / 1000).toFixed(2) + " MB" : Math.round(n) + " kB");
 
 export function StressnetView({ bg }: ViewProps) {
   const [intensity, setIntensity] = React.useState(28);

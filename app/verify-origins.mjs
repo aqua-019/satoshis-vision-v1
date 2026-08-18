@@ -194,8 +194,15 @@ await coldBootOffBrowser(b);
      is now the page in this sweep where an anchor most plausibly becomes a
      request by accident — which is the sentence directly above. /operate/peers
      renders four partner cards whose hrefs all point off-origin. */
+  /* p4·07 adds '/operate/superstress/explorer' on the same precedent. It is
+     the only page on the site that renders a whole simulated blockchain, and
+     the failure it would hide is specific: an explorer is exactly the shape
+     of page that grows a "look this up on a block explorer" fetch. It must
+     issue ZERO off-origin requests, like every other page, and now that is
+     measured rather than assumed. */
   for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn',
-                       '/about/site', '/future/protocol', '/operate/peers']) {
+                       '/about/site', '/future/protocol', '/operate/peers',
+                       '/operate/superstress/explorer']) {
     await p.goto(base + route, { waitUntil: 'load' }).catch(() => {});
     // v6.1.8 PRECONDITION — Home only. This gate counts OFF-ORIGIN REQUESTS;
     // if the splash covered Home and issued none, the zero would be the

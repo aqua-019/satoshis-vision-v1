@@ -102,7 +102,7 @@ function stripStrings(src) {
 // ============================================================================
 // §1 · routes.mjs canonical list
 // ============================================================================
-R.group('§1 · routes.mjs exports exactly 17 ROUTES in specified order');
+R.group('§1 · routes.mjs exports exactly 18 ROUTES in specified order');
 
 try {
   const routesModule = await import(join(__dirname, 'scripts', 'routes.mjs'));
@@ -131,13 +131,16 @@ try {
     // changed is exactly the p2·10 CHUNK_COUNT lesson in a different file.
     // p4·06 · 16 -> 17, and the THIRD literal (the group title above) moves
     // with them, exactly as the p4·04 note below says to count.
-    R.ok(routes.length === 17, `ROUTES length: ${routes.length} (expected 17)`);
+    // p4·07 · 17 -> 18, all THREE literals, exactly as the note above says
+    // to count them.
+    R.ok(routes.length === 18, `ROUTES length: ${routes.length} (expected 18)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
       '/live/network', '/learn', '/learn/sim', '/monero', '/future',
       '/future/outlook', '/future/protocol', '/operate/node', '/operate/mine',
-      '/operate/superstress', '/operate/peers', '/about/sources', '/about/site',
+      '/operate/superstress', '/operate/superstress/explorer',
+      '/operate/peers', '/about/sources', '/about/site',
     ];
 
     const ordered = routes.length === expected.length &&

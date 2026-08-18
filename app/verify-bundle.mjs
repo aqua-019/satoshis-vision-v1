@@ -176,6 +176,7 @@ const PAGE_MODULE = {
   '/operate/node': 'src/pages/NodePage.tsx',
   '/operate/mine': 'src/pages/MinePage.tsx',
   '/operate/superstress': 'src/pages/SuperstressPage.tsx',
+  '/operate/superstress/explorer': 'src/pages/operate/StressnetExplorerPage.tsx',
   '/future/protocol': 'src/pages/future/ProtocolPage.tsx',
   '/operate/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
@@ -656,7 +657,14 @@ const BUDGETS = {
   // broken — 280,000 + 933,000 = 1,213,000 against this line's 1,196,000, a
   // 17,000 B window against p4·03's 18,000. Still recorded rather than
   // quietly repaired: repairing it means deciding what the backstop is FOR.
-  totalJsRaw: 1_220_000,  // p4·06: built 1,216,317 on the FINAL tree, margin 3,683.
+  /* p4·07 RAISE, 1,220,000 -> 1,238,000. Moves WITH lazyJsRaw as always. Built
+     1,234,050 on the FINAL tree, margin 3,950. The stated construction ("the
+     sum of the two real budgets") remains broken — 280,000 + 973,000 =
+     1,253,000 against this line's 1,238,000, a 15,000 B window, narrowing again
+     from p4·06's 17,000. Still recorded rather than quietly repaired, for the
+     reason the note above gives: repairing it means deciding what the backstop
+     is FOR, which is its own change. */
+  totalJsRaw: 1_238_000,  // p4·07: built 1,234,050 on the FINAL tree, margin 3,950.
   //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
   //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
   //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
@@ -1206,7 +1214,42 @@ const BUDGETS = {
   // importer group and split it into a chunk of its own — a second mint on
   // top of this route's, against a CHUNK_COUNT already on its band ceiling.
   // MinePage.tsx's header records why linking beat deriving.
-  lazyJsRaw: 956_000,   // p4·06: built 952,496 on the FINAL tree, margin 3,504.
+  /* p4·07 RAISE, 956,000 -> 973,000. Built 969,578 on the FINAL tree, margin
+     3,422; red first at `❌ lazy JS 969578 B raw ≤ 956000`.
+
+     ATTRIBUTION, paired per stem against the 0f00d26 baseline build, RESIDUAL
+     ZERO on both halves — 68 of 73 shared stems SIZE-IDENTICAL:
+         StressnetExplorerPage   0 -> 16,564   a MINTED chunk, the new lazy route
+         index (both members)         +651     ALL of it eager — see below
+         SuperstressPage              +212     the explorer crosslink
+         stressnet + stressnet-model  +211     the extraction's boundary cost
+         repoPulse                     +55     data.ts's link row closing
+         SimulatePage                  +40     the model's import path moving
+         -----------------------------------------------------------------
+         sum                       +17,733
+         measured lazy  952,496 -> 969,578  = +17,082
+         measured eager 263,821 -> 264,472  =    +651
+         17,082 + 651 = 17,733                RESIDUAL 0 ✓
+
+     THE EAGER +651 IS ENTIRELY THE ENTRY CHUNK, and that was read out of
+     dist/index.html's own <script src> rather than taken by basename: the
+     `index` stem holds THREE files (the CSS, the 101,557 B entry, a 2,253 B
+     lazy chunk), and p2·9 recorded that its members can move in opposite
+     directions and land in different budgets. The lazy member is
+     BYTE-IDENTICAL at 2,253.
+
+     Of that +651, ~86 B is the preload table gaining two strings
+     (`assets/StressnetExplorerPage-*.js` and `assets/stressnet-model-*.js`);
+     the rest is the registration SHAPE across five eager modules plus ia.ts's
+     new leaf note, and is NOT claimed as residual-zero.
+
+     NEGATIVE CONTROL, run rather than reasoned: every string only the explorer
+     declares — `BETANET`, `TEST FUNDS ONLY`, `sim:`, `STORM CAMPAIGN`,
+     `ff5cf0`, `SIMULATED POOL` — greps to ZERO in the eager entry and >0 in
+     the explorer's own chunk. The single expected exception is `wind tunnel`
+     at 1, which is ia.ts's nav-leaf note; ia.ts is eager via NavTop, so that
+     is a correctly-attributed eager cost rather than a leak. */
+  lazyJsRaw: 973_000,   // p4·07: built 969,578 on the FINAL tree, margin 3,422.
   //   RE-DERIVED after the LAST src commit, not after the last green run: the
   //   first measurement read 952,561 and three later commits (SITE_PR, a
   //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing
@@ -1499,7 +1542,7 @@ const ROUTE_BUDGET_GZ = {
   //   ProtocolDetail. It is the cheapest new route in the Phase 4 series
   //   because it mints almost no markup of its own — the body is a component
   //   that already existed and the data is FUTURE_PROTOCOLS unchanged.
-  '/future/protocol':       106_000, // 102,584
+  '/future/protocol':       106_000, // 102,561
   '/operate/node':           92_000, //  83,305
   // p4·04: NEW ROW — the 15th route. Built 97,918 on the FINAL tree, margin
   //  3,082. Set from measurement, never by eye, for the reason the row below
@@ -1534,6 +1577,14 @@ const ROUTE_BUDGET_GZ = {
   //  export — canvasColor.ts and repoPulse.tsx already record this, and it is
   //  now the third release in which the fix was to move a file, not a ceiling.
   '/operate/superstress':   105_000, // 101,893
+  /* p4·07 · the 18th route. Built 94,719 gzip on the FINAL tree (margin 3,281),
+     a FOUR-chunk closure: entry + vendor + StressnetExplorerPage + the 634 B
+     stressnet-model leaf. It is the LIGHTEST of the three Operate leaves
+     despite rendering a whole simulated blockchain — /operate/superstress is
+     104,635 and /operate/mine 98,149 — because the chain is arithmetic rather
+     than content: 12 blocks and 33 pool rows are GENERATED from a seeded hash
+     at render time, where the hub and the mining page ship their prose. */
+  '/operate/superstress/explorer': 98_000, //  94,719
   // p3·15: 100,100 measured, margin 2,900. The comment previously read 91,082
   // and was stale by 6,437 — the table-wide staleness the /live/mempool note
   // above already records; only this row is re-baselined here, because
@@ -1556,7 +1607,7 @@ const ROUTE_BUDGET_GZ = {
   // ProtocolCard/MoneroNewsCard leaving, not from the readout moving somewhere
   // new. "It did not mint a chunk" and "it landed where I expected" are
   // different facts; this is the first.
-  '/operate/peers':         103_000, // 100,100 — RENAMED from /about/peers
+  '/operate/peers':         103_000, // 101,253 — RENAMED from /about/peers
   //   in p4.06. The row moved; the ceiling did not, because the closure did not:
   //   same component, same imports, same chunk. Re-measured on the final tree.
   // p3·17 RAISE, 95,000 -> 98,000. Built 95,027 on the FINAL tree (margin
@@ -1612,7 +1663,7 @@ const ROUTE_BUDGET_GZ = {
      splash. Rollup chunks per MODULE, not per export. Dropping the import for a
      local literal took it to 4 chunks / 93.61 KB; see CloverOverlay.tsx's
      z-index note for why there is no shared authority to lose. */
-  '/about/site':             99_000, //  96,154
+  '/about/site':             99_000, //  96,252
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
@@ -1773,7 +1824,62 @@ const ROUTE_BUDGET_GZ = {
  * shared ACROSS GROUPS costs a chunk" — and it is visible in the paired
  * measurement rather than inferred: ProtocolDetail +7,851 while FuturePage
  * −7,463, i.e. the bytes LEFT the page they used to sit in. */
-const CHUNK_COUNT = 71;
+/* p4·07 · RE-CENTRED 71 -> 73, not widened, and by TWO because this release
+ * mints two chunks. The build measures 76 against the old band [67, 75] — over
+ * it. [69, 77] restores the one rung of upward headroom every release since
+ * p4·03 has re-established, and keeps the ±4 that makes this a DETECTOR.
+ *
+ * ── THE FOURTH CONSECUTIVE RE-CENTRE, ARGUED RATHER THAN ASSERTED ───────
+ * This line has now moved 60 -> 64 -> 66 -> 67 -> 68 -> 69 -> 71 -> 73, seven
+ * times, each time by exactly the number of chunks that release minted. The
+ * fair objection is that a centre which always follows the build is a lagging
+ * indicator of the build rather than a bound on it. Three things answer it,
+ * and the third is the one that has not been written down before.
+ *
+ * 1 · WHAT THE BAND IS. It is a per-release DELTA detector, not a ceiling on
+ *     the count. The count legitimately grows about one per route, forever —
+ *     that is what code-splitting IS — so a fixed centre would red on every
+ *     new page and mean nothing. The quantity worth watching is the JUMP, and
+ *     a jump is measured against a baseline. A baseline that does not track
+ *     reality measures nothing at all, so re-centring is the mechanism, not a
+ *     concession to it. What actually says "no" on this project is the BYTE
+ *     budgets — lazyJsRaw, totalJsRaw, the per-route ceilings — and those do
+ *     bind: each is raised deliberately, red-then-green, with an attribution
+ *     table beside it.
+ *
+ * 2 · WHY THE CENTRE AND NOT THE WIDTH. ±4 is the whole sensitivity. Widening
+ *     to ±5 would make the band blind to a five-chunk mint — and five is not
+ *     hypothetical: p4·06 minted two from ONE extraction, and a broader
+ *     import-graph refactor (a design-system leaf gaining importers in four
+ *     groups) mints more than that without touching a route. Widening trades
+ *     away the only failure this line exists to catch in exchange for not
+ *     having to think about it next release, which is the wrong trade.
+ *
+ * 3 · THE TEST THAT WOULD FALSIFY IT, stated so the next release has a
+ *     criterion instead of a feeling. A re-centre is HEALTHY when the release
+ *     can name each new chunk and show it is either (a) a net-new lazy route
+ *     or (b) a leaf that crossed a group boundary. All seven re-centres so far
+ *     have done exactly that, in this file, in the release that caused them —
+ *     which is the band working: it has forced an explanation seven times and
+ *     got one seven times. The day a release has to re-centre and CANNOT name
+ *     the chunk is the day this instrument has stopped working, and the answer
+ *     then is not a wider band — it is per-stem accounting, which this file
+ *     already produces beside lazyJsRaw and could assert instead.
+ *
+ * ── THE TWO CHUNKS, NAMED ───────────────────────────────────────────────
+ * The 75th is `StressnetExplorerPage`, 16,564 B — a plain new lazy route,
+ * category (a).
+ *
+ * The 76th is `stressnet-model`, 634 B — category (b), and it is the leaf
+ * lesson's EIGHTH application in this file's history. That module had exactly
+ * ONE importer group (stressnet.tsx, in SimulatePage's) and now has two, so
+ * Rollup hoists it out. It is visible as a MOVE rather than inferred: the
+ * `stressnet` chunk went 9,283 -> 8,860, i.e. −423, while the extracted leaf
+ * is 634 — the bytes LEFT the chunk they used to sit in, and the +211
+ * difference is chunk-boundary overhead. That extraction is the whole reason
+ * the explorer's own closure is four chunks instead of dragging ProtoArtboard,
+ * ProtoCanvas and react-router-dom in behind one pure function. */
+const CHUNK_COUNT = 73;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

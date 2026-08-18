@@ -244,6 +244,12 @@ const operateCol: IaCol = {
     { l: "Run a node", p: R.OPERATE_NODE },
     { l: "Mine Monero", p: R.OPERATE_MINE, note: "RandomX · CPU · four platforms" },
     { l: "Superstress hub", p: R.OPERATE_SUPERSTRESS, note: "Umbrel community app store" },
+    // p4·07 — the explorer, directly under the hub it belongs to, which is
+    // both the reading order and the URL nesting. Its note carries the word
+    // SIMULATED because a nav leaf is the one place a reader decides whether
+    // to expect a chain reading, and by the time the banner tells them it is
+    // simulated they have already clicked.
+    { l: "Beta-chain explorer", p: R.OPERATE_SUPERSTRESS_EXPLORER, note: "simulated · the wind tunnel as an explorer" },
     // p4·06 — MOVED here from the About column, and appended rather than
     // inserted for the reason the two comments above already give twice: the
     // section header navigates to `cols[0].items[0].p`, so only a leaf placed

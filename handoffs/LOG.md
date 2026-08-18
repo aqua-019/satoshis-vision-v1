@@ -582,3 +582,36 @@
   than `git status`; `.probe-*` is now ignored. `pkill -f` killed the shell running it, exit
   144 — the fourth recorded instance of that trap in this repo.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/194
+
+- XMRIRISH-20260818-48 · p4·07 "THE STRESSNET EXPLORER, SIMULATED MODE" · done ·
+  `/operate/superstress/explorer`, the EIGHTEENTH route and the FIRST nested under another
+  route rather than beside it. The classic explorer layout driven entirely by the wind tunnel,
+  behind a persistent BETANET · NOT MAINNET · TEST FUNDS ONLY · SIMULATED banner, an accent
+  used nowhere else in the tree, and a MODEL badge on every panel.
+  **THE ✓-BLOCK'S OWN CORRECTION WAS WRONG AND I CAUGHT IT BEFORE THE RETRACTION ARRIVED**:
+  `MemViewShell` EXISTS (`mempool-shared.tsx:372`, 12 files). But the reuse answer is not
+  "which shell" — it is WHICH PARTS ARE PROVENANCE-NEUTRAL, and the ledger is in the PR:
+  the IDIOM taken (four-tier bucketing, confirmation depth, tile ribbon), every component
+  that renders liveness or a NODE badge LEFT. `MemViewShell` renders `MempoolHeartbeat`
+  unconditionally — "LIVE · updated Ns ago" — which is a false statement in the chrome of a
+  simulated page.
+  **THE A/A CONTROL CLOSED A QUESTION NO AMOUNT OF A/B SAMPLING COULD HAVE.** I had
+  base-vs-branch at +68..132ms on `/live/mempool` LCP across two rounds and was about to
+  sample harder. Built `0f00d26` into TWO worktrees, byte-identical (same md5s), served on
+  two ports: **4356 ❌ vs 4300 ✅** — one red, one green, across the same 4350 ceiling, with
+  zero code difference. Four A/A samples span 64ms; six samples of that one commit span 84ms.
+  The precise conclusion, not over-claimed: the instrument's spread on identical trees is the
+  same order as the observed A/B delta, so **the A/B result carries no information about this
+  branch at this sample count.** Same discipline as the census recount — control the
+  instrument before trusting a figure it produces.
+  **TEN BREAK TESTS, and M5 REFUSED TO GO RED** — an invented port sailed through because the
+  assertion demanded the digits touch the word and the copy said "port IS 18085". Widened to
+  proximity; the false-positive surface was verified, not assumed.
+  **`pkill -f` KILLED THE SHELL TWICE, the second time taking down the Claude Code session** —
+  fifth and sixth recorded instances, both after reading the other four in the same session.
+  The second was `pgrep -f … | kill`, which is the same construct in different clothes.
+  **AND I NEVER OPENED THE PR** until the operator pointed at it: four commits and three green
+  suites with no PR is not "nearly done"; the PR is the deliverable.
+  Census RECOUNTED with the instrument CONTROLLED against three commits: 88 / 84 / 22 / 38 /
+  74 / 6. `cssGz` BYTE-IDENTICAL — zero new stylesheet rules.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/195

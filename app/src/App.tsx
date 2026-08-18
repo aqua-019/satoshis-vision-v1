@@ -54,6 +54,7 @@ const ProtocolPage       = React.lazy(() => import("@/pages/future/ProtocolPage"
 const NodePage           = React.lazy(() => import("@/pages/NodePage").then((m) => { markChunkResolved("node"); return { default: m.NodePage }; }));
 const MinePage           = React.lazy(() => import("@/pages/MinePage").then((m) => { markChunkResolved("mine"); return { default: m.MinePage }; }));
 const SuperstressPage    = React.lazy(() => import("@/pages/SuperstressPage").then((m) => { markChunkResolved("superstress"); return { default: m.SuperstressPage }; }));
+const StressnetExplorerPage = React.lazy(() => import("@/pages/operate/StressnetExplorerPage").then((m) => { markChunkResolved("superstress-explorer"); return { default: m.StressnetExplorerPage }; }));
 const SourcesPage        = React.lazy(() => import("@/pages/SourcesPage").then((m) => { markChunkResolved("sources"); return { default: m.SourcesPage }; }));
 const SitePage           = React.lazy(() => import("@/pages/SitePage").then((m) => { markChunkResolved("site"); return { default: m.SitePage }; }));
 const NotFoundPage       = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
@@ -216,6 +217,7 @@ export function App({ useFeed }: AppProps = {}) {
           <Route path={R.OPERATE_NODE}                     element={<NodePage />} />
           <Route path={R.OPERATE_MINE}                     element={<MinePage />} />
           <Route path={R.OPERATE_SUPERSTRESS}              element={<SuperstressPage />} />
+          <Route path={R.OPERATE_SUPERSTRESS_EXPLORER}     element={<StressnetExplorerPage />} />
           <Route path={R.OPERATE_PEERS}                    element={<TrustedPeersPage />} />
 
           {/* ── About ────────────────────────────────────────────── */}

@@ -77,6 +77,32 @@ export const R = {
   // has never existed.
   OPERATE_MINE: "/operate/mine",
   OPERATE_SUPERSTRESS: "/operate/superstress",
+  // p4·07 — the EIGHTEENTH route, and the first route on this site nested
+  // UNDER another route rather than beside it. `/live/markets/thesis` is the
+  // precedent for the SHAPE (a flat three-segment <Route path>, not a nested
+  // <Route> element); what is new is that the parent is itself a leaf page.
+  //
+  // WHY UNDER THE HUB AND NOT AT `/future/stressnet`. Both were measured and
+  // the router and the breadcrumbs are INDIFFERENT — `sectionForPath` and
+  // `findSectionLeaf` (design/primitives.tsx) both use longest-prefix-with-a-
+  // segment-boundary, so either resolves cleanly and the longer one wins over
+  // its parent. So the decision is semantic, and it turns on there already
+  // being TWO homes for stressnet on this site: the hub at
+  // /operate/superstress and the wind tunnel at /learn/sim?p=stressnet. A
+  // third, in a third section, is the "two lists, one truth" defect this repo
+  // records against itself repeatedly. Nesting under the hub keeps the guide
+  // and the instrument together, and `/operate` is by this file's own
+  // description the section for things you RUN or USE (see OPERATE_PEERS
+  // below) — which a beta-chain explorer is, and which a roadmap entry under
+  // /future is not.
+  //
+  // Declared immediately after its parent and BEFORE OPERATE_PEERS, which
+  // keeps two orderings intact at once: peers stays last in the group for the
+  // reason recorded below, and ROUTES inherits hub-then-instrument, which is
+  // the dependency order this group already encodes.
+  //
+  // NO REDIRECT SOURCE: this URL has never existed.
+  OPERATE_SUPERSTRESS_EXPLORER: "/operate/superstress/explorer",
   // p4·06 — MOVED from ABOUT_PEERS (`/about/peers`). The collaborator
   // directory is a list of things you RUN or USE, not a statement about this
   // site, so it belongs beside the node/mine/superstress leaves rather than

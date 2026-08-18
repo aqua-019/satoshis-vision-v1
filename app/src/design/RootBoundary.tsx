@@ -96,6 +96,7 @@ const ROUTES: ReadonlyArray<readonly [string, string]> = [
   [R.OPERATE_NODE, "Run a node"],
   [R.OPERATE_MINE, "Mine"],
   [R.OPERATE_SUPERSTRESS, "Superstress hub"],
+  [R.OPERATE_SUPERSTRESS_EXPLORER, "Beta-chain explorer (simulated)"],
   [R.OPERATE_PEERS, "Peers"],
   [R.ABOUT_SOURCES, "Sources"],
   [R.ABOUT_SITE, "Mission"],
