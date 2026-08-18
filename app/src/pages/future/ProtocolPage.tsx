@@ -79,10 +79,19 @@ export function ProtocolPage() {
 
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
+      {/* `status` is carried on every state EXCEPT the index, and that is the
+          p3·16 duplicate-label rule rather than a whim: on the index the header
+          Pill already says "5 protocols", so both slots said the same thing
+          within ~120px — and the crumbs LED PULSES, which implies a live
+          reading for a constant. On a detail page the Pill carries that
+          protocol's PHASE instead, so the two say different things and both
+          earn their place. TrustedPeersPage is the precedent that keeps both
+          ("4 collaborators" / "4 partners"). Found by looking at the render;
+          nothing compares two labels for saying the same thing. */}
       <Crumbs
         path={active ? `${R.FUTURE_PROTOCOL}?p=${active.id}` : R.FUTURE_PROTOCOL}
         tail={notFound ? "not found" : undefined}
-        status={`${FUTURE_PROTOCOLS.length} protocols`}
+        status={active || notFound ? `${FUTURE_PROTOCOLS.length} protocols` : undefined}
       />
 
       {active ? (
@@ -195,7 +204,13 @@ function ProtocolNotFound({ requested }: { requested: string }) {
 function ProtocolSwitcher({ activeId, onPick }: { activeId: string | null; onPick: (id: string) => void }) {
   return (
     <div data-protocol-switcher style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--rule)" }}>
-      <span className="kicker" style={{ alignSelf: "center", color: "var(--ink-40)" }}>Other protocols</span>
+      {/* "Other protocols" is only true when there IS a current one. Under
+          not-found nothing is active, so "other" has no referent — the label
+          says what the row is instead. Found by reading the rendered
+          not-found page. */}
+      <span className="kicker" style={{ alignSelf: "center", color: "var(--ink-40)" }}>
+        {activeId ? "Other protocols" : "Registered protocols"}
+      </span>
       {FUTURE_PROTOCOLS.map((p) => {
         const on = p.id === activeId;
         return (
