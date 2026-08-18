@@ -842,34 +842,55 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   automatically. It derives it **and pins it to a literal `4`** at `:52`. Recounted to 6 —
   and the literal is deliberately KEPT rather than derived, because a gate whose
   expectation is computed from its own subject cannot notice the subject changing.
-  **BUDGETS: RESIDUAL ZERO, 74 of 77 STEMS SIZE-IDENTICAL, AND FIVE CEILINGS RAISED WHERE
-  THREE WERE EXPECTED.** Paired per stem against a build of `e0c87ad`: `repoPulse`
-  **+4,589** (the chunk `data.ts` lands in — p3·19's label-not-a-contents-list, still true)
-  · `EcoPopup` **+520** · `TrustedPeersPage` **+121** = **+5,230**, which IS `lazyJsRaw`'s
-  whole delta AND `totalJsRaw`'s whole delta — the arithmetic form of "eager moved by
-  zero". `eagerJsRaw` byte-count-identical at **264,481**; `eagerJsGz` moves **−10** from
-  compressibility alone. **`cssGz` BYTE-IDENTICAL at 18,184** of 18,600 — the 44px control
-  and the figure are both inline styles, which was the constraint rather than the outcome.
-  `CHUNK_COUNT` **76, unchanged — nothing minted**, and the 190 KB of screenshots are
-  `public/` assets in no chunk closure at all.
-  `lazyJsRaw` 973,000 → **978,000** · `totalJsRaw` 1,238,000 → **1,243,000** ·
-  `/operate/peers` 103,000 → **106,000**.
+  **p4·M2 MERGED INTO `main` MID-FLIGHT, AND §0.0's PARALLEL-WORK PROTOCOL PREDICTED THE
+  COLLISION EXACTLY** — conflicts in `CLAUDE.md`, `siteVersion.ts` and `LOG.md`, with
+  `verify-bundle.mjs` auto-merging because the two PRs own different ROWS of it. Resolved
+  by KEEPING BOTH RECORDS rather than either/or, and **MERGED rather than REBASED**: the
+  branch was already pushed with an open PR, so a history rewrite buys nothing and
+  invalidates every checkout. `SITE_PR` is **198** — read off the opened PR rather than
+  predicted, because GitHub gave 198 where the LOG implied 197.
+  **THE RE-DERIVATION IS THE PART WORTH KEEPING: THE ATTRIBUTION CAME BACK IDENTICAL
+  AGAINST THE NEW BASE.** Every figure had to be re-measured, because main moved
+  `HomePage`, `SitePage` and `ThemeToggle` and every route's first load moved with them.
+  Re-paired against an ISOLATED worktree build of `5c66929`: **the same three stems, the
+  same +5,286**, 74 of 77 size-identical. That is a result rather than a chore — it says
+  this PR's delta is ORTHOGONAL to p4·M2's, and that the eager figures which differ
+  between the two measurements are entirely theirs.
+  **BUDGETS: RESIDUAL ZERO ON BOTH HALVES, AND FIVE CEILINGS RAISED WHERE THREE WERE
+  EXPECTED.** `repoPulse` **+4,589** (the chunk `data.ts` lands in — p3·19's
+  label-not-a-contents-list, still true) · `EcoPopup` **+520** · `TrustedPeersPage`
+  **+177** = **+5,286**, which IS `lazyJsRaw`'s whole delta AND `totalJsRaw`'s whole
+  delta. **`eagerJsRaw` AND `eagerJsGz` are BOTH byte-identical across the pair** (264,448
+  and 88,505), so the eager delta is exactly zero on both measures rather than
+  zero-plus-compressibility. **`cssGz` BYTE-IDENTICAL at 18,184** of 18,600 — the 44px
+  control and the figure are both inline styles, which was the constraint rather than the
+  outcome. `CHUNK_COUNT` **76, unchanged — nothing minted**, and the 190 KB of screenshots
+  are `public/` assets in no chunk closure at all.
+  `lazyJsRaw` 973,000 → **978,000** (975,090) · `totalJsRaw` 1,238,000 → **1,243,000**
+  (1,239,538) · `/operate/peers` 103,000 → **106,000** (103,330).
+  **THE RE-MEASURE RULE FIRED THREE TIMES AND EVERY CEILING WAS GREEN EACH TIME**, which
+  is the whole content of the rule: a budget comment is not gated by the budget it
+  annotates.
   **THE OTHER TWO ARE A FINDING, NOT A COST OF DOING BUSINESS — THE LEAF LESSON, NINTH
   SIGHTING.** `/future` 107,000 → **112,000** and `/operate/superstress` 105,000 →
   **110,000**, and **neither route renders one word of what made it bigger**: /future draws
   the stressnet band and the protocol cards, /operate/superstress reads exactly two
-  ECOSYSTEM entries by id and neither is new. They paid **+1,791 and +1,652 B gzip for
+  ECOSYSTEM entries by id and neither is new. They paid **+1,812 and +1,669 B gzip for
   prose they never draw**, because `data.ts` lands in a chunk they both download.
-  `/future`'s margin was **497 B** and this file named it as where the next touch would
-  red; the next touch was this one. **NOT FIXED, and the reason is OPERATIONAL rather than
+  **`/future`'s margin was 310 B ON THE POST-MERGE BASE.** This file named 497 B as where
+  the next touch would red — and p4·M2 had already spent 187 of it before this PR
+  measured, which is the two-PRs-one-budget hazard §0.0 exists for, arriving on the one
+  figure already flagged as the next to go. **NOT FIXED, and the reason is OPERATIONAL rather than
   technical**: the structural answer is the split this repo has taken eight times, and a
   second PR was editing `data.ts` concurrently — splitting a file mid-flight under another
   author is how a clean merge becomes a bad one. Raised, measured, ledgered.
   **CENSUS RECOUNTED AND UNCHANGED — 88 / 84 / 22 / 38 / 74 / 6** (80 invocations − 6
   duplicates), which is the correct outcome for a release that adds no gate FILE and wires
-  no orphan. The instrument was **CONTROLLED against FOUR commits before being trusted** —
-  `768ba13` 85/81/22/35/71, `74bc561` 86/82/22/36/72, `0f00d26` 87/83/22/37/73/6 and
-  `e0c87ad` 88/84/22/38/74/6 — all reproduced EXACTLY including the invocation arithmetic.
+  no orphan. The instrument was **CONTROLLED against FIVE commits before being trusted** —
+  `768ba13` 85/81/22/35/71, `74bc561` 86/82/22/36/72, `0f00d26` 87/83/22/37/73/6,
+  `e0c87ad` 88/84/22/38/74/6 and the post-merge base `5c66929`, also 88/84/22/38/74/6 —
+  all reproduced EXACTLY including the invocation arithmetic. p4·M2 adds no gate file
+  either, which is why the base figure does not move under it.
   `verify-peers` **32 → 44**, `verify-mobile` **55 → 59**, `verify-origins` **+2**,
   `verify-protocol` 62 unchanged (its §6 assertion is untouched; only its MESSAGE was
   corrected, having read "the fourth card WRAPS to a second row" when six cards in three
