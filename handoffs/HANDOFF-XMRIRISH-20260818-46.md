@@ -54,8 +54,8 @@ vitals-last e2e ordering.
 - [x] `node verify-future.mjs` exits 0 — the phrasing embargo is intact
 - [x] `node verify-bundle.mjs` exits 0 with the new route row set from measurement
 - [x] `node verify-site.mjs` exits 0
-- [x] `npm run verify:e2e` exits 0 across all 36 members
-- [x] `node verify-mobile.mjs` exits 0 (the new route is swept automatically)
+- [ ] `npm run verify:e2e` exits 0 across all 36 members — RUNNING on the shipping tree
+- [ ] `node verify-mobile.mjs` exits 0 (the new route is swept automatically) — PENDING
 - [x] Ten break tests, each red where intended, each restore proven against the
       COMMITTED BLOB
 - [x] Renders captured and READ at 1440, 390, mid-animation, formed, dissolved
