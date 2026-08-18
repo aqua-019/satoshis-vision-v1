@@ -12,7 +12,7 @@
  * entry's "The five apps" block also derives from, so the two surfaces cannot
  * disagree. The install steps are the same entry's `blocks[]`. This page adds
  * detail — what each app is, why running it yourself changes anything, its
- * prerequisites — and reads everything it shares with /about/peers.
+ * prerequisites — and reads everything it shares with /operate/peers.
  *
  * ── TWO EMBARGOES, BOTH LIVE ─────────────────────────────────────────────
  * (1) MoneroSpace's provenance is an open question with its maintainer. It is
@@ -570,7 +570,7 @@ export function SuperstressPage() {
             <span className="led" style={{ background: "var(--tk-accent)", boxShadow: "0 0 6px var(--tk-accent)" }} />
             {FCMP?.tag} on the roadmap →
           </Link>
-          <Link className="v6-res" to={R.ABOUT_PEERS}>
+          <Link className="v6-res" to={R.OPERATE_PEERS}>
             <span className="led" style={{ background: "var(--p-50)", boxShadow: "0 0 6px var(--p-50)" }} />
             Trusted peers →
           </Link>

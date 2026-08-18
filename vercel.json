@@ -34,10 +34,11 @@
     { "source": "/simulate", "destination": "/learn/sim", "statusCode": 301 },
     { "source": "/simulate/:id", "destination": "/learn/sim?p=:id", "statusCode": 301 },
     { "source": "/node", "destination": "/operate/node", "statusCode": 301 },
-    { "source": "/peers", "destination": "/about/peers", "statusCode": 301 },
+    { "source": "/peers", "destination": "/operate/peers", "statusCode": 301 },
     { "source": "/sources", "destination": "/about/sources", "statusCode": 301 },
     { "source": "/mempool/tx/:txid", "destination": "/live/mempool/tx/:txid", "statusCode": 301 },
-    { "source": "/monero/future", "destination": "/future", "statusCode": 301 }
+    { "source": "/monero/future", "destination": "/future", "statusCode": 301 },
+    { "source": "/about/peers", "destination": "/operate/peers", "statusCode": 301 }
   ],
   "rewrites": [
     { "source": "/api/xmr/:path*", "destination": "/api/xmr?_p=:path*" },

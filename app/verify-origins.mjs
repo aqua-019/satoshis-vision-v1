@@ -188,8 +188,14 @@ await coldBootOffBrowser(b);
   // page where an anchor could most plausibly become a request by accident (an
   // embedded widget, a progress badge, a favicon). Phase 1 above deliberately
   // does not flag <a href>; this is the run that proves the distinction held.
+  /* p4·06 adds BOTH of its routes, on p4·05's own precedent (which added
+     /about/site here for exactly this reason). /future/protocol carries the
+     five off-origin resource anchors including the two new audit links, so it
+     is now the page in this sweep where an anchor most plausibly becomes a
+     request by accident — which is the sentence directly above. /operate/peers
+     renders four partner cards whose hrefs all point off-origin. */
   for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn',
-                       '/about/site']) {
+                       '/about/site', '/future/protocol', '/operate/peers']) {
     await p.goto(base + route, { waitUntil: 'load' }).catch(() => {});
     // v6.1.8 PRECONDITION — Home only. This gate counts OFF-ORIGIN REQUESTS;
     // if the splash covered Home and issued none, the zero would be the

@@ -176,7 +176,8 @@ const PAGE_MODULE = {
   '/operate/node': 'src/pages/NodePage.tsx',
   '/operate/mine': 'src/pages/MinePage.tsx',
   '/operate/superstress': 'src/pages/SuperstressPage.tsx',
-  '/about/peers': 'src/pages/TrustedPeersPage.tsx',
+  '/future/protocol': 'src/pages/future/ProtocolPage.tsx',
+  '/operate/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
   '/about/site': 'src/pages/SitePage.tsx',
 };
@@ -655,7 +656,17 @@ const BUDGETS = {
   // broken — 280,000 + 933,000 = 1,213,000 against this line's 1,196,000, a
   // 17,000 B window against p4·03's 18,000. Still recorded rather than
   // quietly repaired: repairing it means deciding what the backstop is FOR.
-  totalJsRaw: 1_213_000,  // p4·05: built 1,210,544 on the FINAL tree, margin 2,456.
+  totalJsRaw: 1_220_000,  // p4·06: built 1,216,317 on the FINAL tree, margin 3,683.
+  //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
+  //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
+  //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
+  //   ProtocolPage 0 -> 4,354; repoPulse +786 (data.ts gained the audit rows
+  //   and the xmr.club rewrite); the EAGER entry +365, identified by reading
+  //   dist/index.html's own <script src> rather than by basename, since the
+  //   `index` stem holds two chunks; TrustedPeersPage -57 (gridTemplateColumns
+  //   left the inline style for the sheet); SuperstressPage +2 (a route
+  //   constant two characters longer). eager +365 + lazy +5,408 = +5,773 =
+  //   the measured total delta. RESIDUAL ZERO on both halves.
                           // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
                           // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
@@ -1195,7 +1206,12 @@ const BUDGETS = {
   // importer group and split it into a chunk of its own — a second mint on
   // top of this route's, against a CHUNK_COUNT already on its band ceiling.
   // MinePage.tsx's header records why linking beat deriving.
-  lazyJsRaw: 950_000,   // p4·05: built 947,088 on the FINAL tree, margin 2,912.
+  lazyJsRaw: 956_000,   // p4·06: built 952,496 on the FINAL tree, margin 3,504.
+  //   RE-DERIVED after the LAST src commit, not after the last green run: the
+  //   first measurement read 952,561 and three later commits (SITE_PR, a
+  //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing
+  //   failed while the comment was wrong — the ceiling had margin — which is
+  //   exactly why the rule is re-derive rather than "check the gate is green".
                         //   RE-DERIVED TWICE, and both times it had moved: the
                         //   first measurement read 928,203, later copy edits took
                         //   it to 929,518, and two render fixes landed it at
@@ -1472,7 +1488,18 @@ const ROUTE_BUDGET_GZ = {
   '/monero':                115_000, // 104,154 — 7 tab modules now (was 9: markets and outlook
                                      //           moved out to their own top-level routes above)
   '/future':                107_000, //  96,895
+  //   p4·06 · NOT RAISED, because not crossed — but said out loud: this row's
+  //   margin is now 484 B (built 106,516). /future did not shrink when
+  //   FuturePage's chunk lost 7,463 B to the extraction; it grew by 1,172,
+  //   because ProtoPopup still imports the extracted body, so the route now
+  //   pays for FuturePage + ProtocolDetail as two chunks instead of one
+  //   larger. 484 B is where the next touch to this route reds.
   '/future/outlook':         92_000, //  83,652 — new: split out of the old /monero/outlook tab
+  //   p4·06 · NEW ROW. A four-chunk closure: entry + vendor + ProtocolPage +
+  //   ProtocolDetail. It is the cheapest new route in the Phase 4 series
+  //   because it mints almost no markup of its own — the body is a component
+  //   that already existed and the data is FUTURE_PROTOCOLS unchanged.
+  '/future/protocol':       106_000, // 102,584
   '/operate/node':           92_000, //  83,305
   // p4·04: NEW ROW — the 15th route. Built 97,918 on the FINAL tree, margin
   //  3,082. Set from measurement, never by eye, for the reason the row below
@@ -1529,7 +1556,9 @@ const ROUTE_BUDGET_GZ = {
   // ProtocolCard/MoneroNewsCard leaving, not from the readout moving somewhere
   // new. "It did not mint a chunk" and "it landed where I expected" are
   // different facts; this is the first.
-  '/about/peers':           103_000, // 100,100
+  '/operate/peers':         103_000, // 100,100 — RENAMED from /about/peers
+  //   in p4.06. The row moved; the ceiling did not, because the closure did not:
+  //   same component, same imports, same chunk. Re-measured on the final tree.
   // p3·17 RAISE, 95,000 -> 98,000. Built 95,027 on the FINAL tree (margin
   // 2,973), red first at `❌ /about/sources first load 95027 B gzip ≤ 95000`.
   //
@@ -1731,7 +1760,20 @@ const ROUTE_BUDGET_GZ = {
    the overlay host live in the page's own group rather than importing
    coldboot/field.ts, which is lazy and in a DIFFERENT group and would therefore
    have been hoisted into a chunk of its own. See cloverField.ts's header. */
-const CHUNK_COUNT = 69;
+/* p4·06 · RE-CENTRED 69 -> 71, not widened, and by TWO because this release
+ * mints TWO chunks rather than the usual one. The build measures 74 against
+ * the old band [65, 73] — over it. [67, 75] restores the one rung of upward
+ * headroom p4·04 and p4·05 both re-established, and keeps the ±4 sensitivity
+ * that makes this a drift DETECTOR rather than a ceiling.
+ *
+ * WHY TWO. A new lazy page is always one chunk. The second is `ProtocolDetail`,
+ * the body shared by the /future modal and the new page: it had exactly ONE
+ * importer group (FuturePage's) and now has two, so Rollup hoists it out. That
+ * is the leaf lesson's SEVENTH application in this file's history — "a leaf
+ * shared ACROSS GROUPS costs a chunk" — and it is visible in the paired
+ * measurement rather than inferred: ProtocolDetail +7,851 while FuturePage
+ * −7,463, i.e. the bytes LEFT the page they used to sit in. */
+const CHUNK_COUNT = 71;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

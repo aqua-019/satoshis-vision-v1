@@ -28,7 +28,17 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **86** `verify-*.mjs` files (`app/` ×77, `app/scripts/` ×1, `api/_tests/` ×8) — **82 gates**
+- Verification: **87** `verify-*.mjs` files (`app/` ×78, `app/scripts/` ×1, `api/_tests/` ×8) — **83 gates**
+  (p4·06 added `verify-protocol.mjs` for the seventeenth route AND WIRED IT, so FOUR figures
+  move where a bare add moves fewer: files, gates, `verify:e2e` and CI. `verify:static` and
+  the orphan count are UNCHANGED, which is the correct outcome and worth stating — a gate
+  that is added and wired in the same release never passes through the orphan list.
+  Recounted, never incremented, with the script CONTROLLED against SIX commits — the five
+  p4·05 used plus `74bc561` itself — all reproduced EXACTLY including the invocation
+  arithmetic. Measured: **87 / 83 / 22 / 37 / 73 / 6**, i.e. 79 invocations − 6 duplicates.
+  **A WORKER'S CENSUS COUNTED THE THREE SHARED MODULES AS ORPHANS** and reported 9; the
+  lead re-derived independently and got 6, the same six this file already names. A count is
+  a REPORT until the lead has reproduced it — p4·03's rule, earning its keep again.)
   (p4·04 added `verify-mine.mjs` for the fifteenth route and wired it MID-CHAIN at `verify:e2e`
   position 16, beside the other page gates — never the tail, which carries `verify-vitals`.
   Recounted, never incremented, with the script CONTROLLED against the same three commits, all
@@ -78,14 +88,14 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **71 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **73 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
   `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
   into `verify:e2e`, then p3·15's `verify-peers`, p3·16's `verify-superstress`, p3·17's
   `verify-releases-dom` at position 16 and p3·18's `verify-legality` at position 17, then
   p4·04's `verify-mine` at position 16 (pushing releases-dom to 17 and legality to 18)
-  (**35** members).
+  (**37** members — p4·05's `verify-site` at 17 and p4·06's `verify-protocol` at 18).
   **THE TWO CI FIGURES DISAGREED AGAIN — FOURTH RECORDED INSTANCE — AND THEY DISAGREED AT THE BASE
   COMMIT, not because of this release.** The line above read `69 distinct files` while `:39` read
   CI **70** for `fdb105e`; a controlled recount at that commit measures 70, so the 69 had been
@@ -192,19 +202,27 @@ chain and market data.
 
 ## Site Routes
 
-The 16 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
+The 17 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
 both `scripts/prerender.mjs` (emits `dist/<route>/index.html` so the site works with JS
 off) and `scripts/gen-sitemap.mjs` (emits `dist/sitemap.xml` + `dist/robots.txt`).
 Add or remove a route there and both follow.
 
 `/` · `/live/mempool` · `/live/markets` · `/live/markets/thesis` · `/live/network` ·
-`/learn` · `/learn/sim` · `/monero` · `/future` · `/future/outlook` ·
-`/operate/node` · `/operate/mine` · `/operate/superstress` · `/about/peers` · `/about/sources` ·
-`/about/site`
+`/learn` · `/learn/sim` · `/monero` · `/future` · `/future/outlook` · `/future/protocol` ·
+`/operate/node` · `/operate/mine` · `/operate/superstress` · `/operate/peers` ·
+`/about/sources` · `/about/site`
+
+**`/operate/peers` MOVED from `/about/peers` in p4·06, and it is the FIRST route this repo
+has relocated rather than minted.** Both layers carry the 301 and `/peers` — a redirect
+source since v6.1.6 — was REPOINTED at the new path rather than left pointing at the old
+one, because a chain's first hop resolves to something no longer in ROUTES and `verify-ia`
+§6 reds on exactly that. A route that moves is the one case where REDIRECTS grows for a
+URL this repo minted itself.
 
 Not in that list, by design: `/live/mempool/tx/:txid` (unbounded param, falls through to
 the SPA shell), the `:tab` paths (`/monero/:tab`, `/learn/:tab`), the `?v=` / `?p=` /
-`?range=` query surfaces, and every REDIRECT SOURCE — v6.1.6 added 12 of those, each a
+`?range=` query surfaces, and every REDIRECT SOURCE — 13 of those now, 12 from v6.1.6
+plus p4·06's own relocation, each a
 301 in `vercel.json` mirrored 1:1 by a client `<Navigate>`, plus 2 fragment redirects that
 a server structurally cannot see. Listing a redirect source would advertise a URL that
 never serves its own content; `verify-redirects.mjs` proves the two lists agree.
@@ -445,7 +463,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **72 of the 82** gates on every PR to `main` and on every push to `main`
+- CI runs **73 of the 83** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **6**
   are wired to nothing (p3·18 wired `verify-legality`, an orphan since v6.0.10). This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -704,6 +722,245 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-18**: p4·06 "THE FUTURE DROPDOWN GETS REAL PAGES, AND THE PEERS COME HOME"
+  (app/ + .github/) — `/future/protocol`, the SEVENTEENTH route and the first whose CONTENT
+  is keyed by a query; `/about/peers` → `/operate/peers`, the FIRST route this repo has
+  RELOCATED rather than minted; and the #184 hollow-anchor ledger item closed.
+  **FOUR OF THE PROMPT'S ✓-BLOCK PREMISES DID NOT SURVIVE THE BASE, and two of them changed
+  what got built.**
+  (1) **THE APPROVED MOCKUP DOES NOT EXIST.** §1.4b says "the operator has approved a
+  mockup: `claude/mockups/peers-grid-3x3.html`. Read it for composition and vocabulary."
+  Measured: neither that file nor `claude/FINDING-maxcontent-grid-amplification.md` is in the
+  tree, in any branch, or anywhere in the 447-commit shallow history. The grid was built from
+  §1.4b's PROSE and from the repo's own tokens — which is what that section says to do for
+  every number anyway — and the shape it specifies (3/2/1, reading-order fill, flows-never-
+  pads, ghost slots do not ship) is fully determined without the file. **A brief that says
+  "the operator approved X, read it" must carry X into the repo**, or the instruction is
+  unexecutable and no reviewer can check the result against what was approved.
+  (2) **THE LITERAL SWEEP WAS UNDERCOUNTED BY AN ORDER OF MAGNITUDE.** The ✓-block names ONE
+  literal (`verify-pageshell.mjs:109`) and adds "~10 prose mentions". Measured: THIRTEEN files
+  carry FUNCTIONAL `/about/peers` literals — `index.html`'s `#boot-fallback` nav, six gates'
+  `goto` targets, `verify-nojs`'s path list, `verify-ia`'s order array, `verify-lib`'s ROUTES,
+  `verify-bundle`'s PAGE_MODULE *and* its budget row, `verify-discrete`'s selector pair, and
+  `vercel.json`. The ✓-block's sweep was a CONSTANT-only grep reported as if it were the union.
+  (3) **`verify-future`'s pulse `n` IS a literal 9** — the ✓-block calls it "unconfirmed,
+  re-measure". It is the second ARGUMENT to `waitForFunction` (`:250`, `:348`) and `:247`
+  states "5 protocol cards + 4 registry pulses = 9". A grep inside the callback cannot see an
+  argument passed beside it. It did not need to move: this release adds no FUTURE_PROTOCOLS
+  entry and renders no pulse on /future.
+  (4) **`REDIRECTS` DOES have a count literal in a gate.** The ✓-block says it does not, and
+  that "the pair registers by derivation". `verify-redirects.mjs:162` asserts
+  `canon.length === 12` and RED on the thirteenth row.
+  **THE HOLLOW ANCHORS WERE LOAD-BEARING FOR A NUMBER ON MAIN HOME, and nothing would have
+  gone red.** `pages/home/sections.ts:52` counted the Future section's items with
+  `i.p.includes("#")` — a filter over the very URL shape this release deletes. It still
+  compiled and still ran; it simply matched nothing, so the Future card would have rendered
+  **"0 protocols & ecosystem"** on `/`. A derived number that has stopped matching is
+  indistinguishable from a section that is genuinely empty, which is why no gate speaks. Found
+  by reading the derivation against the new URL shape. The filter is now `?p=`, the same
+  discriminator `MEMPOOL_VIEWS` already uses for `?v=`, and the protocols-vs-ecosystem split
+  that file's header called impossible is now free. The About card's hand-written meta had the
+  same defect one level up — it advertised "trusted peers" for a section that no longer has it.
+  **ECOSYSTEM_META WAS DELETED, NOT REPOINTED, AND THAT IS THE STRONGER FIX.** It was the
+  SECOND hand-copy of data.ts in `ia.ts`, existing only to feed five hollow rows, and
+  `verify-ia` §7c existed to catch it drifting. The four PARTNERs are now reached through ONE
+  working "Trusted peers" leaf and `stressnet`/`superbrain` through the Superstress hub beside
+  it — four broken links replaced by one that resolves. **The drift class did not get a better
+  gate; it stopped existing.** A list this file does not hold cannot disagree with data.ts.
+  **AND THE GATE THAT POLICED THE HOLLOW ANCHORS WAS BUILT ON THEM.** `verify-ia` §7c located
+  its subject column by `i.p.includes('/future#')` and parsed ids with `/#([a-z]+)$/`. Removing
+  the anchors turned it red at `found 0` **and DECLINED the four assertions inside its guard**
+  rather than failing them — 35 reached where 40 had. A gate keyed on a URL shape dies with
+  that URL shape. Re-keyed to `?p=` for the protocol half, with the ecosystem half replaced by
+  an ABSENCE assertion so a half-restored hand-copy reds, and both absences floored against an
+  empty IA. 40 → **43**.
+  **MY OWN NEW ABSENCE ASSERTION WENT RED AGAINST A CORRECT TREE.** Written unscoped it matched
+  `/learn/sim?p=stressnet` — `stressnet` is BOTH an ECOSYSTEM id and a registered simulator,
+  and `?p=` is two different namespaces. A simulator sharing a name with a partner project is
+  not a defect. Scoped to Future destinations, which is the claim actually being made.
+  **THE PAGE SHARES THE MODAL'S BODY, AND THE SEAM IS DRAWN WHERE THE DIALOG STOPS BEING A
+  DIALOG.** The brief says to promote the popup's content and share the rendering, never fork
+  the data. Sharing the whole popup was measured and refused: `V6Modal` portals to
+  `document.body`, sets `role="dialog"`, installs a focus trap plus focus capture/restore, a
+  document-level Escape handler and a TWO-TARGET scroll lock on `document.body` AND
+  `main.main`, with no inline mode — rendering it as page content would lock the page's own
+  scrolling. So `ProtocolDetail` is the `v6-modal-body` and nothing above it; `ProtoPopup`
+  keeps the ✕ and the `proto-title` morph target, both meaningless on a page, and the page
+  supplies a `PageHeader`. **The JSX was MOVED PROGRAMMATICALLY, not retyped**, and the build
+  proves it: `ProtocolDetail` +7,851 against `FuturePage` −7,463.
+  **THE ONE PARAMETER IS `onNavigate`, NOT `onClose`** — two controls in that body navigate
+  away (the simulator CTA, and any resource whose href starts with "/"), and inside a dialog
+  those must close it first while on a page there is nothing to close. A prop called `onClose`
+  on a page is a prop that lies.
+  **THE TITLE DOES NOT NAME THE REQUESTED ID, AND THAT IS SECURITY, NOT OMISSION.**
+  `PageHeader` renders `title` through `dangerouslySetInnerHTML` (`AppShell.tsx:101`), so
+  mirroring `SimulatePage`'s id-naming h1 there would put a URL-controlled string into an HTML
+  sink on a page anyone can hand you a link to. SimulatePage can do it safely because its h1 is
+  a plain React child and React escapes it; this one cannot borrow that. The id IS named one
+  element down, as a React child. An independent sweep confirms this is the only page in the
+  repo where URL-derived input comes near such a sink.
+  **THE BARE PATH IS AN INDEX, NOT A DEFAULT PROTOCOL, and the reason is that it is a real
+  destination**: `/future/protocol` is in ROUTES, so it prerenders, it is in `sitemap.xml`, it
+  is a row in `index.html`'s JS-off nav and it is "Protocols" in `RootBoundary`. A URL naming
+  no protocol must not quietly serve FCMP++ to a search engine. Measured on the artifact: the
+  prerendered file carries all five `?p=` links as real anchors and exactly one `<h1>`, and
+  `/future`'s own JS-off content is BYTE-IDENTICAL to the base — so the index is a pure
+  addition rather than a redistribution.
+  **THE GRID IS A CLASS AND NOT AN INLINE STYLE, AND THAT IS THE POINT.** The ≤768 layer
+  collapses grids by matching `[style*="grid-template-columns"]` — the inline ATTRIBUTE — with
+  `!important`, and `styles.css:789` already records the preferred escape: "A class-based grid
+  the selector cannot see needs no escape hatch, no `!important`, and no horizontal scroll."
+  So the phone case is stated as the class's own mobile-first default rather than won by
+  `.keep-cols`, which is the `min-width: max-content` trap p4·02 fixed elsewhere. EXPLICIT
+  tracks rather than `auto-fit`, because with auto-fit the column count is EMERGENT: at 1440
+  the old `minmax(300px, 1fr)` yields FOUR columns, which is why four partners rendered as one
+  row. Measured across the repo's OWN bands (≤768 / 769–1199 / ≥1200): **3 · 3 · 2 · 2 · 1 · 1
+  · 1** at 1440/1280/1199/900/768/390/320, four cards in TWO rows at desktop, and 0 elements
+  past the edge at 390 and at 320. `minmax(0, 1fr)` plus `> * { min-width: 0 }` because the
+  blanket `min-width: 0 !important` lives inside the ≤768 block only.
+  **THE GRID FLOWS AND NEVER PADS.** No rule fills row two's two empty cells. An empty cell is
+  honest; a placeholder card on the one page whose subject is who we vouch for would be a
+  fabricated partner. **NO NEW PEERS SHIPPED** — the operator supplied none.
+  **THE AUDIT IS VERIFIED FROM PRIMARY SOURCE, and the obvious date is a month wrong.** The
+  gateway answers 403 to CONNECT for `magicgrants.org`, `xmr.club` and `kyc.rip`, but
+  `raw.githubusercontent.com` resolves — so Trail of Bits' own publications README was read
+  directly: the entry sits under **"Cryptography Reviews"** (which is what licenses the word
+  "cryptography"), their Date column reads **Jul 2026**, their filename says `2026-07`, and the
+  PDF returns 200 at 818,386 B. The MAGIC Grants announcement is **Aug 2026**. Dating the
+  audit by its announcement — which is what the brief's suggested status line does — is a
+  month later than the work, so the two rows are dated by their own publishers and the gate
+  asserts them APART. **NOT CLAIMED**: ToB's index marks the entry with their "fix review
+  report" glyph. That is their fact and it is deliberately unrendered — "the findings were
+  fixed" is a completion claim this page did not verify. The `status` line is UNTOUCHED, and
+  that is a decision: its first `·`-delimited token is parsed by `roadmapStatus()` against
+  PHASE_ORDER, so it is load-bearing for the roadmap rail this release is scoped out of.
+  **xmr.club WAS DESCRIBED AS SOMETHING IT IS NOT**, on the page whose entire claim is trust:
+  "the social layer", "community hub … discussion, projects, culture", "where the humans hang
+  out … meetup coordination". It is a manually audited no-KYC DIRECTORY with a published
+  grading rubric. Rewritten so every clause traces to one of the site's own headings, with
+  **NO COUNTS** — a listing total is true the day it ships and wrong the day the directory
+  grows — and re-differentiated against `kyc.rip`, whose territory it now overlaps: kyc.rip
+  documents the ROUTE, xmr.club grades the DESTINATIONS. **NOT RE-PROBEABLE from CI or from
+  this sandbox**, so no gate pretends to check it against the live site; the shipped text is
+  quoted in the PR report for the operator.
+  **NEW `verify-protocol.mjs` — 62 assertions in nine sections, wired MID-CHAIN at `verify:e2e`
+  18 of 37**, immediately after `verify-site` and beside the other page gates; the tail is
+  untouched at `verify-orb` · `verify-stream` · `verify-vitals`. It installs NO cold-boot
+  bypass, and that is STRUCTURAL rather than asserted: the splash predicate ends
+  `pathname === R.HOME` and this gate never visits `/`.
+  **THREE OF ITS OWN ASSERTIONS MEASURED THE WRONG SUBJECT, AND EACH WAS CAUGHT BY THE CONTROL
+  PAIRED WITH IT RATHER THAN BY REVIEW.** (a) §4 swept `a[href]` on a freshly loaded `/future`
+  — the nav dropdown only renders the OPEN section, so "zero `/future#` anchors" was passing
+  against a page containing no nav leaves at all; the positive control read **0** and said so.
+  (b) The fix then RACED: waiting for "some panel is open with some links" is already true of
+  the PREVIOUS section, so 108 anchors accumulated where six sections hold 67 and the Future
+  column was missed entirely — p4·03's click-and-read race, in a hover. It waits on THAT
+  button now, and **67 reconciles against the nav's own per-section counts (18+7+27+8+4+3)**.
+  (c) §8 asserted the kyc.rip differentiation against the CARD; that copy lives in `body[]`,
+  which renders in the "our brief" modal. **Every one of the three was an absence or a
+  comparison that would have shipped green.**
+  **AND A LOCATOR CRASHED IT, MASKING FOUR ASSERTIONS.** `getByRole('button', {name: /our
+  brief/i})` resolves to TWO elements because the Card itself carries `role="button"`, and
+  Playwright's strict mode throws — p3·16's recorded shape (one unresolvable locator masking
+  every later assertion) from the other side. The exact `aria-label` now.
+  **THE CHAIN DIED AT POSITION 2 ON A CONSTANT THE COMPILER COULD NOT SEE.**
+  `verify-palette.mjs:297` read `R.ABOUT_PEERS`, which this release deletes, so it navigated to
+  `http://localhost:4173undefined`. TypeScript caught the three `.ts`/`.tsx` call sites of the
+  same rename and is structurally blind to this one, because a gate is `.mjs` and outside
+  tsconfig — **the route-list gate that has protected every previous rename does not cover the
+  gates themselves.** Swept every `app/*.mjs` for `R.*` keys no longer in `routes.mjs`; this
+  was the only one, and that sweep is the instrument to keep.
+  **`verify-palette.mjs` IS INVISIBLE TO BOTH INSTRUMENTS THE SETTLED METHOD USES** — it
+  carries no path literal (the sibling-literal grep cannot see it) and names exactly ONE `R.*`
+  key (the ≥8-key census cannot see it). A rename needs a THIRD instrument the settled list
+  does not name: grep the CONSTANT across `.mjs` too, or resolve every `R.*` against the map.
+  **TWO COVERAGE GAPS CLOSED, both found by a completeness critic rather than by a gate.**
+  `verify-lib.mjs`'s ROUTES had the peers RENAME but no entry for the new route — and
+  `verify-nav` walks that list asserting exactly one `#page-title` per route, so
+  `/future/protocol` would have been the one route in the site whose single-h1 invariant
+  nothing checks. TWO entries added, not five: the bare path is the INDEX state and `?p=fcmp`
+  is the DETAIL state; the other four ids differ only in their strings, and five entries would
+  screenshot one layout five times. 50 → **52**. And `verify-origins`' curated browser sweep
+  gains both routes on p4·05's own precedent — `/future/protocol` is now the page in that sweep
+  where an anchor most plausibly becomes a request by accident, carrying five off-origin
+  resource anchors including the two new audit links.
+  **AND `git add -A` COMMITTED THREE SCRATCH PROBES** — the hazard this file records twice
+  (p3·13, p3·15), walked into again. Found by sweeping **`git ls-tree`** (the COMMITTED tree)
+  rather than `git status`, because a clean status says nothing about what is already
+  committed. Removed, and `.probe-*` is now in `.gitignore` so the class is impossible rather
+  than repeatedly caught; `scripts/probe-*.mjs` are real tools and are verified NOT matched.
+  **`pkill -f 'serve-dist.mjs 4173'` KILLED THE SHELL RUNNING IT** — exit 144, SIGTERM. The
+  command line doing the matching contains the pattern, so the kill matched the killer. That is
+  the FOURTH recorded instance in this file and it was committed by someone who had just read
+  the other three. Kill by PID, from `lsof -tiTCP:<port> -sTCP:LISTEN`.
+  **BUDGETS: RESIDUAL ZERO ON BOTH HALVES, 67 of 74 stems SIZE-IDENTICAL.** Paired per stem
+  against an ISOLATED `git worktree` build of `74bc561`. `ProtocolDetail` 0 → **7,851** (a
+  minted chunk) against `FuturePage` **−7,463** — the extraction proving itself a MOVE rather
+  than a copy, in the numbers. `ProtocolPage` 0 → **4,354** · `repoPulse` **+786** (data.ts
+  gained the audit rows and the rewrite) · the EAGER entry **+365**, identified by reading
+  `dist/index.html`'s own `<script src>` and never by basename, since the `index` stem holds
+  two chunks · `TrustedPeersPage` **−57** (gridTemplateColumns left the inline style for the
+  sheet) · `SuperstressPage` **+2** (a route constant two characters longer).
+  eager +365 + lazy +5,408 = **+5,773 = the measured total delta.**
+  `lazyJsRaw` 950,000 → **956,000** (built 952,496, margin 3,504) · `totalJsRaw` 1,213,000 →
+  **1,220,000** (built 1,216,317, margin 3,683) · NEW row `/future/protocol` **106,000** (built
+  102,561) · `/operate/peers` **RENAMED, ceiling unmoved at 103,000** — the row moved and the
+  closure did not.
+  **`cssGz` NOT RAISED, because not crossed, and said out loud: 18,184 of 18,600, margin 416.**
+  The whole grid cost **34 B gzip**. **`CHUNK_COUNT` RE-CENTRED 69 → 71, by TWO**, because this
+  release mints two chunks rather than the usual one; the build measures 74 against the old
+  band [65, 73] — over it — and [67, 75] restores the one rung of upward headroom p4·04 and
+  p4·05 both re-established. **`/future` is NOT raised and its margin is now 497 B** (built
+  106,503): the route did not shrink when FuturePage lost 7,463 B, it GREW by 1,172, because
+  ProtoPopup still imports the extracted body so the route now pays for two chunks instead of
+  one larger. 497 B is where the next touch to `/future` reds.
+  **THE RE-MEASURE RULE FIRED AND EVERY CEILING WAS GREEN WHILE THE PROSE WENT STALE.** The
+  first measurement read `lazyJsRaw` 952,561; the SITE_PR bump, a stylesheet repair and two copy
+  fixes landed after it and moved the figure by 65 B. Nothing failed — the ceiling had margin —
+  which is precisely why the rule is RE-DERIVE AFTER THE LAST SRC COMMIT rather than "check the
+  gate is green". A budget comment is not gated by the budget it annotates.
+  **TEN BREAK TESTS, EVERY ONE RED WHERE INTENDED — and the one that REFUSED taught the most.**
+  M1 a hollow anchor returns → **2** reds, one per instrument (the exported IA and the rendered
+  nav) · M2 `?p=` ignored → **5**, headline `all 5 ids render DISTINCT titles (1 distinct)` ·
+  M3 an unknown id falls back → **3** · M4 the relocation row deleted → **3** across two gates ·
+  M6 the audit dated by its announcement → **1** · M7 the superseded copy returns → **1**,
+  naming both phrases · M8 an ECOSYSTEM id returns to the Future column → **2**, the second
+  being §7c's ← direction catching it as the #174 defect · M9 an eighteenth route → **3** ·
+  M10 a count in the copy → **1**, naming the number.
+  **M5 REFUSED TO GO RED, AND IT WAS NOT THE ASSERTION.** Reverting the grid to the auto-fit
+  rule that draws four columns left §6 green reading three, with the mutation confirmed present
+  in the built CSS carrying `!important` — which cannot lose to a non-important rule, so the
+  assertion looked vacuous. **It was 19 lines of STRAY TEXT in `styles.css`**: the hardening
+  edit that added `minmax(0, 1fr)` closed the preceding comment with `*/` and then kept writing
+  prose, so a block of English sat outside any comment as bare stylesheet text. The minifier
+  was discarding it, so the whole cost was **ONE byte of cssGz** and a page that looked
+  perfect — syntactically inert, visually invisible, and shipped. **A break test that refuses
+  to go red is the only instrument that pointed at it.** Repaired, then M5 fires **3** reds
+  including `320: 1 column, 16 elements past the edge`.
+  Every restore proven against the **COMMITTED BLOB** (`git show HEAD:<path> | diff -`) rather
+  than the working tree, with a bracketed marker sweep so empty is distinguishable from
+  crashed, and a rebuild between restore and re-measure. The harness ABORTS unless the mutation
+  landed, unless the build succeeded, and unless the server answers 200 — three guards this
+  repo has each paid for at least once.
+  **TWO DEFECTS FOUND BY LOOKING, neither visible to a gate that had just passed 62.** The
+  index printed **"5 PROTOCOLS" twice within ~120px** — the crumbs status and the header Pill —
+  and the crumbs LED PULSES, so a constant was dressed as a live reading. That is p3·16's
+  duplicate-label defect, quoted in this release's own gate and then committed anyway; `status`
+  is now withheld on the index alone, where the Pill already says it, and on a detail page the
+  Pill carries the PHASE so the two differ. And the switcher read **"Other protocols" under
+  not-found**, where nothing is active and "other" has no referent.
+  Census RECOUNTED, never incremented, with the script CONTROLLED against SIX commits — the
+  five p4·05 used plus `74bc561` — all reproduced EXACTLY: **87 files / 83 gates / static 22 /
+  e2e 37 / CI 73 / orphans 6** (79 invocations − 6 duplicates). A worker's census counted the
+  three SHARED MODULES as orphans and reported 9; the lead re-derived and got 6.
+  **NOT FIXED, and named**: `/future`'s 497 B margin; `verify-lib.mjs`'s ROUTES docblock
+  misnames its own consumers; NINE of ten source-text `id:` parsers still use the
+  digit-and-hyphen-blind `[a-z]+` alphabet (only `verify-ia`'s was widened here); there is NO
+  sitemap or robots gate at all; `NodePage`'s copy button still reports a success it has not
+  achieved; the ten `/future#<id>` anchors are gone but nothing yet gates the ROADMAP rail's
+  own fragments. **No human has seen the rendered result in a browser** — read from
+  screenshots at 1440, 1000, 390 and under reduced motion.
 
 - **2026-08-18**: p4·05 "ABOUT XMR.IRISH" (app/ + .github/) — `/about/site`, the SIXTEENTH
   route and the About section's third leaf: the site's page about itself, opened by a glyph

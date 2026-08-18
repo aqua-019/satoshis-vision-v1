@@ -397,7 +397,7 @@ console.log(`  engine: chromium ${uaVersion}  ·  base: ${BASE}`);
 
     for (const [route, sel, label] of [
       ['/future', '.v6-proto-grid > .v6-stagger', 'protocol cards'],
-      ['/about/peers', '.v6-peer-grid > .v6-stagger', 'partner cards'],
+      ['/operate/peers', '.v6-peer-grid > .v6-stagger', 'partner cards'],
     ]) {
       await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector(sel, { timeout: 15000 });

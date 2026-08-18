@@ -294,7 +294,7 @@ REPORT.group('── §7 · dialog-stack and typing-field guards ─────
   // second [role="dialog"] on top of it.
   {
     const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
-    await open(page, R.ABOUT_PEERS);
+    await open(page, R.OPERATE_PEERS);
     await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
     await soft(page.locator('button', { hasText: 'our brief' }).first().click());
     await waitDialogVisible(page);

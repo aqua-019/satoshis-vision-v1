@@ -172,8 +172,44 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
     // live", which is a claim about a chain the reader has no way to reach from
     // here — the hub is the page that says what that chain is and how to join
     // it, so it belongs in the resources list rather than only in the nav.
+    // p4·06 — THE TRAIL OF BITS AUDIT. Two rows, each dated by its OWN
+    // publisher rather than by one date applied to both, because they are
+    // two artifacts:
+    //
+    //   · the REVIEW is dated Jul 2026. That is Trail of Bits' own Date
+    //     column for this entry, and their filename says `2026-07` too.
+    //   · the ANNOUNCEMENT is dated Aug 2026 — MAGIC Grants' post.
+    //
+    // Worth stating because the obvious shortcut is to date the audit by its
+    // announcement and write "audited … Aug 2026", which is a month later
+    // than the work. `Resource` is a positional tuple [label, href, kind]
+    // with no date field, so the date lives in the label; that is the only
+    // place it can go without changing the type for every other resource.
+    //
+    // VERIFIED FROM PRIMARY SOURCE, not from the brief: this sandbox's
+    // gateway answers 403 to CONNECT for magicgrants.org, but
+    // raw.githubusercontent.com resolves, and Trail of Bits' publications
+    // README lists this review under "Cryptography Reviews" — which is what
+    // licenses the word "cryptography" below — while the PDF itself returns
+    // 200 at 818,386 B. The announcement URL could NOT be reached from here
+    // and is carried on the brief's authority; it is an anchor, never a
+    // fetch, so a wrong URL is a dead link and never a broken page.
+    //
+    // NOT CLAIMED: ToB's index marks this entry with their "fix review
+    // report" glyph. That is a real fact from their own legend and it is
+    // deliberately not rendered — "the findings were fixed" is a completion
+    // claim, and this page does not make one it did not verify. The links
+    // say what they are and the reader can read them.
+    //
+    // The `status` line above is UNTOUCHED, and that is a decision. Its
+    // first " · "-delimited token is parsed by roadmapStatus() against
+    // PHASE_ORDER, so it is load-bearing for the roadmap rail this release
+    // is scoped out of; "BETA · stressnet live" is also still true. The
+    // audit is fully expressed by these two rows.
     resources: [
       ["Reference implementation", "https://github.com/kayabaNerve/fcmp-plus-plus", "github"],
+      ["Trail of Bits · cryptography implementation review · Jul 2026", "https://github.com/trailofbits/publications/blob/master/reviews/2026-07-magicgrants-monerofcmp++crypto-securityreview.pdf", "audit"],
+      ["MAGIC Grants · the audit announced · Aug 2026", "https://magicgrants.org/2026/08/17/Monero-FCMP-Cryptography-Implementation-ToB", "blog"],
       ["MRL tracking issue", "https://github.com/monero-project/research-lab/issues/100", "research-lab"],
       ["getmonero.org · FCMP dev update", "https://www.getmonero.org/2024/04/27/fcmps.html", "blog"],
       ["monero-project/monero", "https://github.com/monero-project/monero", "github"],
@@ -317,7 +353,7 @@ export function roadmapStatus(stop: RoadmapStop): string {
  *
  * ── WHY THIS EXISTS ──────────────────────────────────────────────────────
  * Two surfaces describe these apps: the Superbrain partner brief on
- * /about/peers (rendered by EcoPopup from the `blocks[]` below) and the
+ * /operate/peers (rendered by EcoPopup from the `blocks[]` below) and the
  * Superstress hub on /operate/superstress, which gives each app a row of its
  * own. The one-line function is the line BOTH carry, so it is written here
  * exactly once and the partner entry's "The five apps" block is DERIVED from
@@ -488,15 +524,41 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     links: [["kyc.rip", "https://kyc.rip/"]],
   },
   {
-    id: "xmrclub", name: "xmr.club", head: "the social layer.",
-    kind: "Collaborator · community", status: "PARTNER", c: "#b87aff",
+    // p4·06 — REWRITTEN. Every string in this entry described a different
+    // site. It said "the social layer", "Community hub for Monero people —
+    // discussion, projects, culture", and "where the humans hang out …
+    // meetup coordination". xmr.club is a manually audited no-KYC DIRECTORY
+    // with a published grading rubric. On the one page whose whole subject is
+    // who we vouch for, describing a partner as something it is not is the
+    // ethos inverted — so this is a correction, not a copy edit.
+    //
+    // SOURCED FROM THE SITE'S OWN HEADINGS, and every clause below traces to
+    // one: the title "xmr.club — 2026 No-KYC Monero Directory · Manually
+    // Audited"; "No-KYC services for the Monero economy"; "Directory index";
+    // "recently verified"; "methodology · public rubric"; and "curator's
+    // stack · what the curator actually uses".
+    //
+    // NO COUNTS, deliberately. Listing and category totals were available and
+    // are not written here: a number like that rots the day the directory
+    // grows, and this file has already paid for a figure nothing re-measures.
+    // Describe what the thing IS, never how much it holds.
+    //
+    // NOT RE-PROBEABLE FROM CI OR FROM THIS SANDBOX — the gateway answers 403
+    // to CONNECT for xmr.club, so no gate can check these sentences against
+    // the live site and none pretends to. They are the operator's to review.
+    id: "xmrclub", name: "xmr.club", head: "the directory that shows its marking.",
+    kind: "Collaborator · audited directory", status: "PARTNER", c: "#b87aff",
     url: "https://xmr.club/",
-    blurb: "Community hub for Monero people — discussion, projects, culture.",
+    blurb: "A manually audited index of no-KYC services for the Monero economy, graded against a rubric the site publishes.",
     body: [
-      "xmr.club is where the humans hang out. Project showcases, meetup coordination, and the culture that keeps a cypherpunk project alive across decades.",
-      "Panel content and feed embeds land here once the club finalizes its public API surface.",
+      "xmr.club is a directory with a marking scheme. Entries are checked by hand rather than crowd-submitted, each carries when it was last verified, and the methodology they are graded against is published on the site — so a reader who disagrees with a rating can see exactly which criterion they are disagreeing with.",
+      // The differentiation is load-bearing: two partners cannot both be "the
+      // no-KYC one" without this page saying how they differ. kyc.rip's own
+      // entry describes the ROUTE (where to acquire XMR peer-to-peer, what the
+      // mainstream on-ramps record); this one grades the DESTINATIONS.
+      "It sits beside kyc.rip rather than on top of it. kyc.rip documents the route — how to arrive on-chain unprofiled, and what the mainstream on-ramps actually record. xmr.club grades the places that route ends at, and publishes a curator's stack naming what the curator actually uses.",
     ],
-    slots: [{ label: "panel embed · xmr.club feed", h: 150 }],
+    slots: [{ label: "screenshot · xmr.club directory index", h: 150 }],
     links: [["xmr.club", "https://xmr.club/"]],
   },
   {

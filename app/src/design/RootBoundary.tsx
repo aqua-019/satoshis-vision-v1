@@ -92,10 +92,11 @@ const ROUTES: ReadonlyArray<readonly [string, string]> = [
   [R.LEARN_SIM, "Simulators"],
   [R.FUTURE, "Future"],
   [R.FUTURE_OUTLOOK, "Outlook"],
+  [R.FUTURE_PROTOCOL, "Protocols"],
   [R.OPERATE_NODE, "Run a node"],
   [R.OPERATE_MINE, "Mine"],
   [R.OPERATE_SUPERSTRESS, "Superstress hub"],
-  [R.ABOUT_PEERS, "Peers"],
+  [R.OPERATE_PEERS, "Peers"],
   [R.ABOUT_SOURCES, "Sources"],
   [R.ABOUT_SITE, "Mission"],
 ];

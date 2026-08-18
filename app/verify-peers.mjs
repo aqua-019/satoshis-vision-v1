@@ -1,4 +1,7 @@
-// verify-peers.mjs — DOM gate for /about/peers Monero Superbrain partner card.
+// verify-peers.mjs — DOM gate for /operate/peers Monero Superbrain partner card.
+// (p4·06 moved this page from /about/peers; §7's four PARTNER cards are now a
+//  3-column grid whose geometry verify-protocol.mjs §6 owns — this file makes
+//  no column assertion and never did.)
 //
 // Verifies the fourth (fifth overall) ecosystem entry lands correctly, rendering:
 //   1. Four PARTNER cards (exact count from source parse)
@@ -12,14 +15,14 @@
 //
 // CROSS-GATE DEPENDENCY: verify-future.mjs asserts the Superbrain pulse does NOT
 // appear on /future (counts exactly 9 data-pulse="live" on that page). This gate
-// asserts it DOES appear on /about/peers. The two checks together prevent the pulse
+// asserts it DOES appear on /operate/peers. The two checks together prevent the pulse
 // from migrating to the wrong surface.
 //
 // BLIND SPOTS (cannot verify in sandbox):
 //   — Live GitHub API responses and repo stats (mocked here)
 //   — Whether the installed Umbrel app actually works
 //   — The GitHub URL's reachability (egress to github.com blocked)
-//   — Whether previous /about/peers content is still intact (gate assumes page renders)
+//   — Whether previous /operate/peers content is still intact (gate assumes page renders)
 //
 // Run against serve-dist (NOT vite preview — see verify-future.mjs header).
 //   npm run build && npm run wait-preview && node verify-peers.mjs
@@ -86,7 +89,7 @@ console.log(`  engine: ${engine}`);
 /* NO COLD-BOOT BYPASS HERE, DELIBERATELY — do not "restore" it.
  *
  * The splash is HOME-ONLY. Measured in a genuinely cold context with no
- * bypass installed anywhere: `/` has [data-coldboot]=1, `/about/peers` has
+ * bypass installed anywhere: `/` has [data-coldboot]=1, `/operate/peers` has
  * 0 and renders all four partner cards. This gate never visits `/`, so it
  * has nothing to bypass.
  *
@@ -125,7 +128,7 @@ try {
     }
   });
 
-  await page.goto(BASE + '/about/peers', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/operate/peers', { waitUntil: 'networkidle' });
 
   // §1: Rendered card count matches parsed source count
   const cards = page.locator('.v6-stagger');
@@ -389,7 +392,7 @@ try {
     }
   });
 
-  await reducedMotionPage.goto(BASE + '/about/peers', { waitUntil: 'networkidle' });
+  await reducedMotionPage.goto(BASE + '/operate/peers', { waitUntil: 'networkidle' });
 
   const cardsReduced = await reducedMotionPage.locator('.v6-stagger').count();
   R.ok(cardsReduced === expectedPartnerCount,

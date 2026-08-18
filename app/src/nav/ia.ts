@@ -109,11 +109,28 @@ const MARKET_RANGE_META: readonly { id: string; label: string }[] = [
 ];
 
 /**
- * Future protocol + ecosystem ids/labels, hand-copied from
- * pages/future/data.ts's FUTURE_PROTOCOLS and ECOSYSTEM — see this file's
- * header for why that module can't be imported directly. The fifth
- * protocol is `cuprate`, NOT tail emission — tail emission is the `hearth`
- * Learn simulator (PROTOCOL_METAPHORS_META), a distinct destination.
+ * Future protocol ids/labels, hand-copied from pages/future/data.ts's
+ * FUTURE_PROTOCOLS — see this file's header for why that module can't be
+ * imported directly. The fifth protocol is `cuprate`, NOT tail emission —
+ * tail emission is the `hearth` Learn simulator (PROTOCOL_METAPHORS_META),
+ * a distinct destination.
+ *
+ * ── ECOSYSTEM_META IS GONE (p4·06), AND THAT IS THE FIX ──────────────────
+ * A sibling `ECOSYSTEM_META` array sat here and was spread into futureCol as
+ * five more `/future#<id>` rows. All five were hollow, and the list was the
+ * SECOND hand-copy of data.ts in this file — so it could drift, and
+ * verify-ia §7c existed to catch it drifting.
+ *
+ * It was not repointed, it was DELETED. The four PARTNER entries are now
+ * reached through the "Trusted peers" leaf in the Operate column, which is
+ * ONE working destination in place of four broken ones, and `stressnet` /
+ * `superbrain` are covered by the Superstress hub beside it. Nothing became
+ * unreachable: /future still renders the ecosystem band and its popups.
+ *
+ * The drift class did not get a better gate — it stopped existing. A list
+ * this file does not hold cannot disagree with data.ts. §7c keeps the
+ * protocol half (now keyed on `?p=`) and adds one assertion in its place:
+ * that no IA leaf names an ECOSYSTEM id, so a half-restored copy reds.
  */
 const FUTURE_PROTOCOL_META: readonly { id: string; label: string }[] = [
   { id: "fcmp", label: "FCMP++" },
@@ -121,13 +138,6 @@ const FUTURE_PROTOCOL_META: readonly { id: string; label: string }[] = [
   { id: "jamtis", label: "Jamtis" },
   { id: "carrot", label: "Carrot" },
   { id: "cuprate", label: "Cuprate" },
-];
-const ECOSYSTEM_META: readonly { id: string; label: string }[] = [
-  { id: "stressnet", label: "Umbrel Superstress Net" },
-  { id: "xmrhub", label: "XMRHUB" },
-  { id: "kycrip", label: "kyc.rip" },
-  { id: "xmrclub", label: "xmr.club" },
-  { id: "superbrain", label: "Monero Superbrain" },
 ];
 
 // ── Live ───────────────────────────────────────────────────────────────
@@ -202,8 +212,13 @@ const futureCol: IaCol = {
   items: [
     { l: "Roadmap rail", p: R.FUTURE },
     { l: "Outlook", p: R.FUTURE_OUTLOOK, note: "moved from /monero" },
-    ...FUTURE_PROTOCOL_META.map((m) => ({ l: m.label, p: `${R.FUTURE}#${m.id}` })),
-    ...ECOSYSTEM_META.map((m) => ({ l: m.label, p: `${R.FUTURE}#${m.id}` })),
+    { l: "Protocols", p: R.FUTURE_PROTOCOL, note: "all five, one page each" },
+    // p4·06 — REAL DESTINATIONS. These five were `${R.FUTURE}#${m.id}`, and
+    // the operateCol comment below has said since p3·16 that #184 measured
+    // /future as rendering no panel any of them can scroll to: every one was
+    // hollow. They now key the `?p=` page, which is the same shape the
+    // Learn column's simulator rows already use.
+    ...FUTURE_PROTOCOL_META.map((m) => ({ l: m.label, p: `${R.FUTURE_PROTOCOL}?p=${m.id}` })),
   ],
 };
 
@@ -229,6 +244,16 @@ const operateCol: IaCol = {
     { l: "Run a node", p: R.OPERATE_NODE },
     { l: "Mine Monero", p: R.OPERATE_MINE, note: "RandomX · CPU · four platforms" },
     { l: "Superstress hub", p: R.OPERATE_SUPERSTRESS, note: "Umbrel community app store" },
+    // p4·06 — MOVED here from the About column, and appended rather than
+    // inserted for the reason the two comments above already give twice: the
+    // section header navigates to `cols[0].items[0].p`, so only a leaf placed
+    // FIRST can move where clicking "Operate" goes.
+    //
+    // It also inherits the four ecosystem rows that used to sit in the Future
+    // column as `/future#<id>` fragments. This one leaf is where all four
+    // PARTNERs are actually rendered, so it replaces four hollow anchors with
+    // one destination rather than relocating them.
+    { l: "Trusted peers", p: R.OPERATE_PEERS, note: "the collaborators we vouch for" },
   ],
 };
 
@@ -238,7 +263,9 @@ const aboutCol: IaCol = {
   items: [
     { l: "Sources & provenance", p: R.ABOUT_SOURCES },
     { l: "Release notes", p: `${R.ABOUT_SOURCES}#release-notes` },
-    { l: "Trusted peers", p: R.ABOUT_PEERS },
+    // p4·06 — "Trusted peers" left this column for Operate. A directory of
+    // projects you RUN is not a statement about this site, which is what the
+    // other three leaves here are.
     { l: "Mission & ethos", p: R.ABOUT_SITE, note: "what this is · how it is funded" },
   ],
 };

@@ -1,7 +1,7 @@
 /**
  * verify-pageshell.mjs — the responsive gate for the PageShell migration (v6.0.4).
  *
- * Runs an 18-entry × 6-width matrix against `vite preview`
+ * Runs a 19-entry × 6-width matrix against `vite preview`
  *
  * MEASURE THAT FIGURE, DO NOT READ IT OFF THIS SENTENCE — it said "15-route"
  * against a 16-entry table for the whole p3·16 → p4·03 series, and the word
@@ -106,7 +106,8 @@ const ROUTES = [
   { path: '/monero',             label: '/monero',              tier: 'standard' },
   { path: '/monero/bottomline',  label: '/monero/bottomline',   tier: 'reading' },
   { path: '/future',             label: '/future',              tier: 'wide' },
-  { path: '/about/peers',        label: '/about/peers',               tier: 'standard' },
+  { path: '/future/protocol',    label: '/future/protocol (index)',   tier: 'standard' },
+  { path: '/operate/peers',      label: '/operate/peers',             tier: 'standard' },
   { path: '/learn/sim',          label: '/learn/sim',            tier: 'fluid' },
   { path: '/operate/node',       label: '/operate/node',                tier: 'standard' },
   // p3·16 — the 14th route. Added here even though this gate is npm-wired
