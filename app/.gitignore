@@ -9,3 +9,12 @@ dist-ssr/
 # evidence for a review, not source; the repo already ignores .shots for the
 # same reason.
 shots/
+
+# p4·06 — scratch probes. `git add -A` swept three of these into a commit in
+# this very release, the hazard CLAUDE.md already records twice (p3·13,
+# p3·15). Caught by sweeping `git ls-tree` — the COMMITTED tree — rather than
+# `git status`, because a clean status says nothing about what is already
+# committed. Ignoring the prefix makes the class impossible instead of
+# repeatedly caught. `scripts/probe-*.mjs` are real committed tools and are
+# deliberately NOT matched by this pattern.
+.probe-*
