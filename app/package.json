@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "wait-preview": "node scripts/wait-preview.mjs",
     "verify:static": "node verify-hero.mjs && node verify-ia.mjs && node verify-redirects.mjs && node verify-chartkit.mjs && node verify-bands.mjs && node verify-memshell.mjs && node verify-legibility.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs && node verify-multiline.mjs && node verify-releases.mjs && node verify-origins.mjs --static && node verify-prng.mjs && node verify-gpu.mjs && node verify-feedstatus.mjs && node verify-provenance.mjs && node verify-effects.mjs && node verify-resilience.mjs && node verify-cbpending.mjs",
-    "verify:e2e": "node verify-coldboot-live.mjs && node verify-palette.mjs && node verify-charts.mjs && node verify-memviews.mjs && node verify-memdetail.mjs && node verify-glide.mjs && node verify-markets-dom.mjs && node verify-nodes-dom.mjs && node verify-degraded.mjs && node verify-nojs.mjs && node verify-origins.mjs && node verify-tor.mjs && node verify-future.mjs && node verify-peers.mjs && node verify-superstress.mjs && node verify-mine.mjs && node verify-releases-dom.mjs && node verify-legality.mjs && node verify-contrast.mjs && node verify-roles.mjs && node verify-ground.mjs && node verify-motion.mjs && node verify-nav.mjs && node verify-discrete.mjs && node verify-govern.mjs && node verify-reduce.mjs && node verify-allreal-dom.mjs && node verify-tiers-dom.mjs && node verify-cls.mjs && node verify-failure.mjs && node verify-resilience-dom.mjs && node verify-coldboot.mjs && node verify-orb.mjs && node verify-stream.mjs && node verify-vitals.mjs",
+    "verify:e2e": "node verify-coldboot-live.mjs && node verify-palette.mjs && node verify-charts.mjs && node verify-memviews.mjs && node verify-memdetail.mjs && node verify-glide.mjs && node verify-markets-dom.mjs && node verify-nodes-dom.mjs && node verify-degraded.mjs && node verify-nojs.mjs && node verify-origins.mjs && node verify-tor.mjs && node verify-future.mjs && node verify-peers.mjs && node verify-superstress.mjs && node verify-mine.mjs && node verify-site.mjs && node verify-releases-dom.mjs && node verify-legality.mjs && node verify-contrast.mjs && node verify-roles.mjs && node verify-ground.mjs && node verify-motion.mjs && node verify-nav.mjs && node verify-discrete.mjs && node verify-govern.mjs && node verify-reduce.mjs && node verify-allreal-dom.mjs && node verify-tiers-dom.mjs && node verify-cls.mjs && node verify-failure.mjs && node verify-resilience-dom.mjs && node verify-coldboot.mjs && node verify-orb.mjs && node verify-stream.mjs && node verify-vitals.mjs",
     "verify:bundle": "node verify-bundle.mjs",
     "verify:vitals": "node verify-vitals.mjs",
     "verify:report": "node scripts/bundle-report.mjs",
@@ -31,7 +31,8 @@
     "verify:pageshell": "node verify-pageshell.mjs",
     "verify:fit": "node verify-fit.mjs",
     "verify:mobile": "node verify-mobile.mjs",
-    "verify:mine": "node verify-mine.mjs"
+    "verify:mine": "node verify-mine.mjs",
+    "verify:site": "node verify-site.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

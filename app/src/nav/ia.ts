@@ -239,6 +239,7 @@ const aboutCol: IaCol = {
     { l: "Sources & provenance", p: R.ABOUT_SOURCES },
     { l: "Release notes", p: `${R.ABOUT_SOURCES}#release-notes` },
     { l: "Trusted peers", p: R.ABOUT_PEERS },
+    { l: "Mission & ethos", p: R.ABOUT_SITE, note: "what this is · how it is funded" },
   ],
 };
 

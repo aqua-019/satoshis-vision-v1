@@ -54,6 +54,7 @@ const NodePage           = React.lazy(() => import("@/pages/NodePage").then((m) 
 const MinePage           = React.lazy(() => import("@/pages/MinePage").then((m) => { markChunkResolved("mine"); return { default: m.MinePage }; }));
 const SuperstressPage    = React.lazy(() => import("@/pages/SuperstressPage").then((m) => { markChunkResolved("superstress"); return { default: m.SuperstressPage }; }));
 const SourcesPage        = React.lazy(() => import("@/pages/SourcesPage").then((m) => { markChunkResolved("sources"); return { default: m.SourcesPage }; }));
+const SitePage           = React.lazy(() => import("@/pages/SitePage").then((m) => { markChunkResolved("site"); return { default: m.SitePage }; }));
 const NotFoundPage       = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
 const SimulatePage       = React.lazy(() => import("@/pages/SimulatePage").then((m) => { markChunkResolved("simulate"); return m; }));
 
@@ -213,6 +214,7 @@ export function App({ useFeed }: AppProps = {}) {
           {/* ── About ────────────────────────────────────────────── */}
           <Route path={R.ABOUT_PEERS}                      element={<TrustedPeersPage />} />
           <Route path={R.ABOUT_SOURCES}                    element={<SourcesPage />} />
+          <Route path={R.ABOUT_SITE}                       element={<SitePage />} />
 
           {/* ── Redirects · the 12 old paths, generated from REDIRECTS ──
               (scripts/routes.mjs — vercel.json's server 301s mirrored 1:1).

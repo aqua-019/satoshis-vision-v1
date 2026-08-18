@@ -178,6 +178,7 @@ const PAGE_MODULE = {
   '/operate/superstress': 'src/pages/SuperstressPage.tsx',
   '/about/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
+  '/about/site': 'src/pages/SitePage.tsx',
 };
 
 /** Rollup leaves facadeModuleId null when a chunk is not a pure facade —
@@ -654,7 +655,7 @@ const BUDGETS = {
   // broken — 280,000 + 933,000 = 1,213,000 against this line's 1,196,000, a
   // 17,000 B window against p4·03's 18,000. Still recorded rather than
   // quietly repaired: repairing it means deciding what the backstop is FOR.
-  totalJsRaw: 1_196_000,  // p4·04: built 1,192,453 on the FINAL tree, margin 3,547.
+  totalJsRaw: 1_213_000,  // p4·05: built 1,209,929 on the FINAL tree, margin 3,071.
                           // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
                           // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
@@ -1194,7 +1195,7 @@ const BUDGETS = {
   // importer group and split it into a chunk of its own — a second mint on
   // top of this route's, against a CHUNK_COUNT already on its band ceiling.
   // MinePage.tsx's header records why linking beat deriving.
-  lazyJsRaw: 933_000,   // p4·04: built 929,402 on the FINAL tree, margin 3,598.
+  lazyJsRaw: 950_000,   // p4·05: built 946,473 on the FINAL tree, margin 3,527.
                         //   RE-DERIVED TWICE, and both times it had moved: the
                         //   first measurement read 928,203, later copy edits took
                         //   it to 929,518, and two render fixes landed it at
@@ -1572,6 +1573,17 @@ const ROUTE_BUDGET_GZ = {
   // chunk, it inlined into the entry group, because NavTop is eager and a
   // module the entry imports lands in the entry.
   '/about/sources':          98_000, //  95,027
+  /* p4·05: NEW ROW — the 16th route. Built 95,856 gzip on the FINAL tree,
+     margin 3,144. Set from measurement, never by eye.
+     A FOUR-chunk closure — entry + vendor + SitePage + canvasColor — which is
+     the floor for a lazy route here, and it took a fix to reach: the overlay
+     first read `COLDBOOT_Z` from coldboot/ColdBoot.tsx, and that ONE constant
+     pulled the splash (31,577) plus mem-stats, useNodePopulation, Skeleton and
+     useFeedEvents — 9 chunks, 108.51 KB gzip — onto a route that renders no
+     splash. Rollup chunks per MODULE, not per export. Dropping the import for a
+     local literal took it to 4 chunks / 93.61 KB; see CloverOverlay.tsx's
+     z-index note for why there is no shared authority to lose. */
+  '/about/site':             99_000, //  95,856
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
@@ -1710,7 +1722,16 @@ const ROUTE_BUDGET_GZ = {
    route, not a shared leaf. This PR deliberately mints ONE and not two: see
    lazyJsRaw's note on why the Superbrain miner line is linked rather than
    derived from pages/future/data.ts. */
-const CHUNK_COUNT = 68;
+/* p4·05: RE-CENTRED 68 -> 69, and again while GREEN. The build measures 72
+   against the old band [64, 72] — inside it and exactly ON the ceiling, the
+   third release running to arrive in that state (p4·03 at 70/[62,70], p4·04 at
+   71/[63,71]). [65, 73] restores the one rung and keeps the ±4 sensitivity.
+   The 72nd chunk is `SitePage`, minted by /about/site: a plain new lazy route,
+   not a shared leaf. ONE chunk and not two, deliberately — the clover field and
+   the overlay host live in the page's own group rather than importing
+   coldboot/field.ts, which is lazy and in a DIFFERENT group and would therefore
+   have been hoisted into a chunk of its own. See cloverField.ts's header. */
+const CHUNK_COUNT = 69;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

@@ -130,13 +130,14 @@ export async function throttle(ctx, page) {
  *  /learn/<tab>) + 7 monero tabs (markets/outlook removed) + 21 simulators
  *  + 1 404.
  *
- *  IT IS 49 NOW, and this paragraph said "stays 43" for four releases while
+ *  IT IS 50 NOW, and this paragraph said "stays 43" for four releases while
  *  the per-entry comments below correctly counted 43 → 44 → 45 → 46 → 47.
  *  Two figures in one file disagreeing, which is the defect CLAUDE.md
  *  records against ITSELF twice — each `?v=` PR updated its own comment and
- *  not the summary. p3·16 adds `/operate/superstress` (47 → 48) and p4·04
- *  adds `/operate/mine` (48 → 49); both RECOUNT the summary by running the
- *  line below rather than incrementing it:
+ *  not the summary. p3·16 adds `/operate/superstress` (47 → 48), p4·04
+ *  adds `/operate/mine` (48 → 49) and p4·05 adds `/about/site` (49 → 50);
+ *  all three RECOUNT the summary by running the line below rather than
+ *  incrementing it:
  *    node -e "import('./verify-lib.mjs').then(m=>console.log(m.ROUTES.length))"
  *  MEASURE it; do not read it off this sentence. */
 export const ROUTES = [
@@ -216,6 +217,13 @@ export const ROUTES = [
   '/operate/mine',
   '/about/sources',
   '/about/peers',
+  /* p4·05 — the THIRD top-level route added since the restructure, on the same
+     argument p3·16 and p4·04 make above: this page's layout (a full-bleed
+     foreground glyph overlay over an IA-derived overview) is rendered by no
+     other route, so leaving it out would make the site's newest page the one
+     page the ROUTES-consuming gates never walk. Total 49 -> 50 — MEASURED,
+     see the header: do not read that figure off this comment. */
+  '/about/site',
   '/future',
   '/future/outlook',
   ...['journey', 'timeline', 'quotes', 'simulators'].map((t) => `/learn/${t}`),

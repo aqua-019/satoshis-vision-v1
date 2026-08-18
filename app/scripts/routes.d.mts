@@ -30,6 +30,7 @@ export interface RouteMap {
   OPERATE_SUPERSTRESS: string;
   ABOUT_PEERS: string;
   ABOUT_SOURCES: string;
+  ABOUT_SITE: string;
 }
 
 export interface RedirectPair {

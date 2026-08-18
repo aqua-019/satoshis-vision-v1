@@ -364,7 +364,7 @@ jobs:
       # nor CI. It was run FIRST against an untouched build before any change
       # was made to it, per v2·3b's rule that you never wire a red gate: it
       # reported 26 passed · 0 failed, exit 0. Nothing needed fixing. Orphans 7 → 6.
-      - name: 'E2E gates (35) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · legality · mine · +22'
+      - name: 'E2E gates (36) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · legality · mine · site · +22'
         run: npm run verify:e2e
 
       # ── v2·3b: four gates that existed, asserted real things, and ran in

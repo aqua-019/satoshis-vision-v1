@@ -63,10 +63,20 @@ export const R = {
   OPERATE_SUPERSTRESS: "/operate/superstress",
   ABOUT_PEERS: "/about/peers",
   ABOUT_SOURCES: "/about/sources",
+  // p4·05 — the SIXTEENTH route, and the About section's third leaf. It is
+  // declared LAST in the About group deliberately: `ROUTES = Object.values(R)`
+  // below inherits this order, `nav/ia.ts`'s About column navigates to
+  // `cols[0].items[0].p`, and a new leaf placed first would silently move
+  // where clicking "About" in the nav goes.
+  //
+  // NO REDIRECT SOURCE, for the reason OPERATE_SUPERSTRESS records above:
+  // REDIRECTS protects URLs that once served content and moved, and this one
+  // has never existed.
+  ABOUT_SITE: "/about/site",
 };
 
 /**
- * The 14 routes App.tsx serves that have a fixed path, in R's declared
+ * The 16 routes App.tsx serves that have a fixed path, in R's declared
  * order. Consumed by prerender.mjs (emits dist/<route>/index.html, so the
  * site works with JS off) and gen-sitemap.mjs (emits sitemap.xml).
  *
