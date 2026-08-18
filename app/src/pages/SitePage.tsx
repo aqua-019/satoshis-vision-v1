@@ -125,6 +125,13 @@ import { CloverOverlay } from "./about/CloverOverlay";
  * whose URL could not be confirmed, and `future/EcoPopup.tsx` gives a project
  * with no link.
  *
+ * The prose beside it says the site is run INDEPENDENTLY and does not say by
+ * how many people. The repository has a single owner, which is suggestive and
+ * is not evidence, and headcount is a claim about real people that no record
+ * in this tree establishes. The argument the section needs — no commercial
+ * pressure, so the rules above can be absolute — follows from "no company, no
+ * sponsor" and needs nothing more.
+ *
  * A handle is NOT guessed here. An invented social link on the page that
  * says who runs the site is an impersonation vector, and this is the worst
  * possible place in the tree to fabricate one. Filling it is a one-line
@@ -376,7 +383,7 @@ export function SitePage() {
             The site does read outside sources — market data, repository activity, a public
             census of Monero nodes. Every one of those is fetched by the server on the site's
             behalf, so your address never reaches them. Outbound links carry no referrer either:
-            somewhere you click from here is not told where you came from.
+            a site you open from here is not told where you came from.
           </Claim>
 
           <Claim head="What is honestly still true" mech="stated, because overclaiming is the same defect">
@@ -436,9 +443,9 @@ export function SitePage() {
       {/* ── Who runs it ─────────────────────────────────────────────────── */}
       <Section kicker="the operator" title="Who runs this.">
         <P>
-          xmr.irish is run by one person, independently, with no company behind it and no
-          sponsor to answer to. That is the reason the rules above can be absolute: there is
-          nobody to sell an exception to.
+          xmr.irish is run independently, with no company behind it and no sponsor to answer
+          to. That is the reason the rules above can be absolute: there is nobody to sell an
+          exception to.
         </P>
         <div className="chip-row" style={{ marginTop: 2 }}>
           {OPERATOR_X ? (

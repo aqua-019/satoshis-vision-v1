@@ -655,7 +655,7 @@ const BUDGETS = {
   // broken — 280,000 + 933,000 = 1,213,000 against this line's 1,196,000, a
   // 17,000 B window against p4·03's 18,000. Still recorded rather than
   // quietly repaired: repairing it means deciding what the backstop is FOR.
-  totalJsRaw: 1_213_000,  // p4·05: built 1,210,449 on the FINAL tree, margin 2,551.
+  totalJsRaw: 1_213_000,  // p4·05: built 1,210,430 on the FINAL tree, margin 2,570.
                           // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
                           // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
@@ -1195,7 +1195,7 @@ const BUDGETS = {
   // importer group and split it into a chunk of its own — a second mint on
   // top of this route's, against a CHUNK_COUNT already on its band ceiling.
   // MinePage.tsx's header records why linking beat deriving.
-  lazyJsRaw: 950_000,   // p4·05: built 946,993 on the FINAL tree, margin 3,007.
+  lazyJsRaw: 950_000,   // p4·05: built 946,974 on the FINAL tree, margin 3,026.
                         //   RE-DERIVED TWICE, and both times it had moved: the
                         //   first measurement read 928,203, later copy edits took
                         //   it to 929,518, and two render fixes landed it at
@@ -1573,8 +1573,8 @@ const ROUTE_BUDGET_GZ = {
   // chunk, it inlined into the entry group, because NavTop is eager and a
   // module the entry imports lands in the entry.
   '/about/sources':          98_000, //  95,027
-  /* p4·05: NEW ROW — the 16th route. Built 96,068 gzip on the FINAL tree,
-     margin 2,932. Set from measurement, never by eye.
+  /* p4·05: NEW ROW — the 16th route. Built 96,065 gzip on the FINAL tree,
+     margin 2,935. Set from measurement, never by eye.
      A FOUR-chunk closure — entry + vendor + SitePage + canvasColor — which is
      the floor for a lazy route here, and it took a fix to reach: the overlay
      first read `COLDBOOT_Z` from coldboot/ColdBoot.tsx, and that ONE constant
@@ -1583,7 +1583,7 @@ const ROUTE_BUDGET_GZ = {
      splash. Rollup chunks per MODULE, not per export. Dropping the import for a
      local literal took it to 4 chunks / 93.61 KB; see CloverOverlay.tsx's
      z-index note for why there is no shared authority to lose. */
-  '/about/site':             99_000, //  96,068
+  '/about/site':             99_000, //  96,065
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
