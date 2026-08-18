@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260818-47
 branch: claude/prompt-attached-awwlhe
-status: in_progress
+status: done
 written_by: claude-code (manual mode — prompt-driven)
 owner: claude-code
 ---
@@ -123,9 +123,40 @@ node verify-mobile.mjs
 
 ## 7 · REPORT — filled on exit
 
-status:
-pr:
-commits:
+status: done
+pr: (draft opened after push — see LOG.md for the link)
+commits: 11 on `claude/prompt-attached-awwlhe`, base `74bc561`
+
+### Delivered
+- `/future/protocol?p={fcmp|seraphis|jamtis|carrot|cuprate}` — the 17th route, one route and
+  five URLs, sharing its body with the /future modal via a new `ProtocolDetail` (moved
+  programmatically: `+7,851` against `FuturePage` `−7,463`).
+- `futureCol` carries **zero** `#` targets. `ECOSYSTEM_META` deleted rather than repointed.
+- `/about/peers` → `/operate/peers`, 301 in both layers, `/peers` repointed so no chain exists.
+- The peers grid is explicit 3 / 2 / 1 across the repo's own bands, flowing not padding.
+- FCMP++ gains the Trail of Bits review and the MAGIC Grants announcement, each dated by its
+  own publisher.
+- `xmr.club` rewritten from probed facts; no counts; differentiated from `kyc.rip`.
+- New `verify-protocol.mjs`, 62 assertions, wired at `verify:e2e` 18 of 37.
+
+### Every DONE-CRITERIA box
+All met except one stated precisely: the final `verify:e2e` run was still in flight when the
+draft PR was opened, and its result is reported in a PR comment rather than claimed here.
+`verify:static` exits 0 on the shipping tree; `verify-protocol` 62/0, `verify-ia` 43/0,
+`verify-bundle` 31/0, `verify-mobile` 53 passed · 1 skipped · 0 failed with **0 elements below
+12px across all 17 routes**; ten break tests all red where intended, every restore proven
+against the committed blob.
+
+### Census
+87 files / 83 gates / static 22 / e2e 37 / CI 73 / orphans 6, instrument controlled against
+six historical commits, all reproduced exactly.
+
+### What I got wrong
+`git add -A` committed three scratch probes (found via `git ls-tree`, not `git status`);
+`pkill -f` killed the shell running it; 19 lines of stray text left outside a comment in
+`styles.css` by my own hardening edit, found only because a break test refused to go red;
+three assertions in my own gate measured the wrong subject; and a duplicate "5 PROTOCOLS" on
+the index — p3·16's defect, quoted in this PR's own gate and then committed anyway.
 
 ## 8 · LOOP FEEDBACK
 
