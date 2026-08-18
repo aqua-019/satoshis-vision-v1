@@ -604,7 +604,20 @@ R.group(`§9 · /operate/peers — the "our brief" control is a real ${TAP_MIN}�
    *
    * The 0.5px tolerance is subpixel rounding, and it is the error class this
    * assertion cannot see: a squeeze smaller than half a pixel. That is not a
-   * squeeze anybody can read. */
+   * squeeze anybody can read.
+   *
+   * PROVEN, AND THE PROOF TOOK THREE MUTATIONS BECAUSE THE FIRST TWO REFUSED
+   * TO GO RED. The page carries two independent defences — `flexWrap` on the
+   * row, `flexShrink: 0` + `whiteSpace: nowrap` on the control — and removing
+   * EITHER ONE leaves this assertion green, because the other still holds the
+   * box. Only removing BOTH reproduces the original defect, and then it fires:
+   * `spread 3.1px`. That is worth writing down twice over. It says the
+   * assertion is not vacuous; it says the two defences are genuinely
+   * redundant rather than jointly necessary, which is a fact about the page
+   * nobody had measured; and it is this assertion's own BLIND SPOT — it
+   * cannot tell you WHICH defence is carrying the box, so a reviewer deleting
+   * one "because the gate is still green" would be reading it correctly and
+   * still be wrong. */
   const widths = m.briefs.map((b) => b.w);
   const spread = widths.length ? Math.max(...widths) - Math.min(...widths) : 0;
   R.ok(spread <= 0.5,

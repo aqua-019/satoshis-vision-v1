@@ -182,11 +182,18 @@ export function TrustedPeersPage() {
                         fontSize: "var(--fs-label)",
                         letterSpacing: "0.06em",
                         textDecoration: "underline dotted",
-                        // The pair that makes the 44px box mean what it says:
-                        // never squeezed by a long sibling, never broken
-                        // mid-label. All six controls carry the same words, so
-                        // verify-mobile §9 asserts they measure the same width
-                        // — one that differs is one that was squeezed.
+                        /* Never squeezed by a long sibling, never broken
+                           mid-label. MEASURED, and the measurement corrected
+                           what this comment first claimed: these two and the
+                           row's `flexWrap` above are INDEPENDENTLY SUFFICIENT
+                           at 390 — removing either pair alone leaves
+                           verify-mobile §9 green, and only removing BOTH
+                           reproduces the shatter (spread 3.1px). Both are
+                           kept deliberately, because they express different
+                           intents: `flexWrap` says the two controls may take
+                           two lines, this pair says THIS control is never the
+                           thing that gives way. Redundancy that has been
+                           measured is not the same as redundancy assumed. */
                         flexShrink: 0,
                         whiteSpace: "nowrap",
                       }}
