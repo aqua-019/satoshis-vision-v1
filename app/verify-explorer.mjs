@@ -346,7 +346,20 @@ try {
   const EMBARGO = [
     ['genesis', /\bgenesis (block|hash|tx)\b/i],
     ['nettype', /\bnettype\b|\btestnet\b|\bstagenet\b/i],
-    ['a port number', /\b(?:1[0-9]{4}|[2-9][0-9]{3})\s*(?:\/\s*(?:tcp|udp))?\s*port\b|\bport\s*[:=]?\s*\d{4,5}\b/i],
+    /* PROXIMITY, not adjacency — and this pattern is WIDER than it was because
+     * a break test refused to go red. The first version required the digits to
+     * touch the word ("port: 18085", "18085 port"); the mutation that exposed
+     * it said "the beta chain's P2P port IS 18085", and three characters of
+     * English defeated the whole assertion while 81 others stayed green. It is
+     * the narrower-subject family this repo records, in my own gate.
+     *
+     * A bare 4-5 digit ban is not available: the page legitimately prints
+     * heights (#40000) and fee rates (20,000 pn/B). So the check is the WORD
+     * within 40 non-sentence-ending characters of the NUMBER, in either order,
+     * which is what "documenting a port" actually looks like in prose. The
+     * page's own copy contains no occurrence of "port" outside imports, so the
+     * false-positive surface is empty — verified, not assumed. */
+    ['a port number', /\bports?\b[^.!?]{0,40}\b\d{4,5}\b|\b\d{4,5}\b[^.!?]{0,40}\bports?\b/i],
     ['a seed node / peer address', /\b(?:\d{1,3}\.){3}\d{1,3}(?::\d+)?\b/],
     ['a Monero address', /\b[48][0-9AB][1-9A-HJ-NP-Za-km-z]{93}\b/],
     ['an onion address', /\b[a-z2-7]{16,56}\.onion\b/i],
