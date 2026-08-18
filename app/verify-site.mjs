@@ -16,6 +16,7 @@
 //   §9  the site overview is DERIVED from nav/ia.ts, both directions
 //   §10 the operator link is a real anchor or an honest null — never a guess
 //   §11 390px
+//   §12 section ORDER, and the support CTA is emphasis and not a nag
 //
 // ── NO COLD-BOOT BYPASS HERE, DELIBERATELY — do not "restore" it. ─────────
 // verify-peers, verify-superstress and verify-mine carry the identical note and
@@ -550,6 +551,93 @@ R.group('§11 · 390px');
     `11 · the page renders no SVG <text> (${m.svgText}) — so verify-mobile §6's bounded list gains no entry`);
   R.ok(m.chars > 2000, `11 · the content is all there at 390 (${m.chars} chars)`);
   await mctx.close();
+}
+
+/* ══ §12 · SECTION ORDER, and the support CTA's emphasis ════════════════
+   p4·M2 moved the support section to SECOND and the derived overview LAST.
+   That is an EDITORIAL decision and nothing structural protects it: §9 checks
+   the overview's MEMBERSHIP against nav/ia.ts and is indifferent to where the
+   section sits, §1 checks the prerendered TEXT and is indifferent to order,
+   and every other assertion on this page would stay green if a later edit
+   quietly restored the old sequence. So the order is pinned here, read out of
+   the DOM in document order via `data-site-section`.
+
+   The CTA half asserts the SHAPE of the emphasis rather than its beauty:
+   that the control is still an ANCHOR (not a button wired to script), that it
+   carries the house's primary affordance class, that it is a bigger target
+   than the secondary links beside it, and — the load-bearing one — that it is
+   NOT inside a fixed or sticky container. A donate control that follows the
+   reader down the page is the nag this page's own argument forbids, and it is
+   the one regression here that a screenshot at the top of the page would not
+   show. */
+R.group('§12 · section order, and the support CTA is emphasis rather than a nag');
+{
+  const octx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p = await gotoSite(await octx.newPage());
+
+  const EXPECTED = ['mission', 'support', 'record', 'ethos', 'operator', 'overview'];
+  const order = await p.evaluate(() =>
+    [...document.querySelectorAll('[data-site-section]')].map((e) => e.getAttribute('data-site-section')));
+
+  // NON-VACUITY FIRST — an empty NodeList would make the join comparison below
+  // read '' === '' only if EXPECTED were also empty, but a WRONG-LENGTH list
+  // still deserves its own named red rather than one confusing string diff.
+  R.ok(order.length === EXPECTED.length,
+    `12 · all six sections carry a data-site-section marker (${order.length})`,
+    `got: ${order.join(' → ')}`);
+  R.ok(order.join(',') === EXPECTED.join(','),
+    `12 · they render in the shipped order (${order.join(' → ')})`,
+    `expected: ${EXPECTED.join(' → ')}`);
+  // The two the operator actually asked for, named individually so a red says
+  // WHICH half moved rather than printing a six-item diff.
+  R.ok(order[1] === 'support',
+    `12 · support is SECOND, directly under the mission (position ${order.indexOf('support') + 1})`);
+  R.ok(order[order.length - 1] === 'overview',
+    `12 · the derived site overview is LAST (position ${order.indexOf('overview') + 1})`);
+
+  const cta = await p.evaluate(() => {
+    const el = document.querySelector('[data-support-link]');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    // walk the ancestor chain for a fixed/sticky container — a donate control
+    // that follows the reader is the nag this page argues against
+    let stuck = null;
+    for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+      const pos = getComputedStyle(n).position;
+      if (pos === 'fixed' || pos === 'sticky') { stuck = n.tagName.toLowerCase() + '/' + pos; break; }
+    }
+    const secondary = [...document.querySelectorAll('a.v6-res, [data-support-link] ~ a')]
+      .map((e) => e.getBoundingClientRect().height).filter((h) => h > 0);
+    return {
+      tag: el.tagName.toLowerCase(),
+      cls: el.className,
+      w: Math.round(r.width), h: Math.round(r.height),
+      stuck,
+      dialog: !!el.closest('dialog, [role="dialog"], [aria-modal="true"]'),
+      maxSecondaryH: secondary.length ? Math.round(Math.max(...secondary)) : 0,
+      digits: /\d/.test(el.textContent || ''),
+    };
+  });
+
+  R.ok(!!cta, '12 · the support CTA is rendered');
+  if (cta) {
+    R.ok(cta.tag === 'a', `12 · it is still an ANCHOR, not a scripted button (<${cta.tag}>)`);
+    R.ok(/\bproto-btn\b/.test(cta.cls),
+      `12 · it carries the house primary affordance ("${cta.cls}") — emphasis reuses an existing class, adding no stylesheet rule`);
+    R.ok(cta.stuck === null,
+      `12 · it sits in the flow of the page — no fixed or sticky ancestor (${cta.stuck})`,
+      'a donate control that follows the reader down the page is a nag');
+    R.ok(cta.dialog === false, '12 · and it is not inside a dialog or modal');
+    R.ok(!cta.digits, '12 · the control itself prints no digit — no total, no goal');
+    // A FLOOR, not a comparison against a hardcoded pixel size: the point is
+    // that the primary control outweighs the secondary links beside it.
+    R.ok(cta.maxSecondaryH > 0,
+      `12 · the secondary links were measured (tallest ${cta.maxSecondaryH}px)`,
+      'the weight comparison below is vacuous without them');
+    R.ok(cta.h > cta.maxSecondaryH,
+      `12 · the primary CTA is a bigger target than every secondary link (${cta.h}px vs ${cta.maxSecondaryH}px)`);
+  }
+  await octx.close();
 }
 
 await browser.close();
