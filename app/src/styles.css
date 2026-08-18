@@ -2507,7 +2507,8 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
    item's default `min-width: auto` floors it at min-content, so one long
    unbroken token (a repo path, a URL in a blurb) inflates its track and the
    `1fr`s stop being equal — the `.sync-rows` defect p4·02 fixed, one level
-   out. The items are `.v6-stagger` wrappers, which are themselves grids. */
+   out. The items are `.v6-stagger` wrappers, which are themselves grids.
+
    IT IS A CLASS AND NOT AN INLINE STYLE, AND THAT IS THE POINT rather than a
    tidy-up. The mobile layer's blanket rule at :2843 matches
    `[style*="grid-template-columns"]` — the inline ATTRIBUTE — and collapses it
