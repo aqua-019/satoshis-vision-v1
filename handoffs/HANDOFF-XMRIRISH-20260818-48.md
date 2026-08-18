@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260818-48
 branch: claude/stressnet-explorer-prompt-m8hnza
-status: in_progress
+status: done
 written_by: claude-code (manual mode — task arrived as an attached prompt, p4·07)
 owner: claude-code
 ---
@@ -100,14 +100,45 @@ node verify-bundle.mjs
 node verify-mobile.mjs
 ```
 
-## 7 · REPORT — filled on exit
+## 7 · REPORT
 
-status:
-pr:
-commits:
-deps added:
+status: done
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/195 (draft)
+commits: 93a341c model leaf + seeded chain · 0ce374d the route and page · 3ef92a0 the gate,
+  wired e2e 16/38 · 4020840 budgets · 842cc2b the port-pattern fix M5 found · plus the notes
+deps added: none
+
 deviations from spec:
-notes for ARCHITECTURE.md patch:
+- The ✓-block's §0.1 was FALSE and I built against my own measurement instead. `MemViewShell`
+  exists (`mempool-shared.tsx:372`, 12 files). The operator retracted it mid-flight; my check
+  had already passed it.
+- The reuse decision is per-component rather than wholesale, and the ledger is in the PR body:
+  the IDIOM taken, every liveness-or-NODE component left. `MemViewShell` mounts
+  `MempoolHeartbeat` unconditionally, which prints "LIVE · updated Ns ago".
+- The chain is SEEDED, not `Math.random`, though `protocols/` licenses it. Determinism is what
+  makes "reduced motion loses no information" checkable rather than asserted.
+
+notes for ARCHITECTURE.md patch: the CLAUDE.md session note carries the full account — the
+  eighth application of the lazy-leaf rule, the A/A control method, and the chunk-band
+  falsifying test.
+
 open questions:
+- `/live/mempool` vitals on THIS sandbox. The A/A control settles it for this PR: two
+  byte-identical builds of `0f00d26` read 4356 RED and 4300 GREEN across the same 4350
+  ceiling. The instrument's spread on identical trees is the same order as the observed A/B
+  delta, so the A/B result carries no information about this branch at this sample count.
+  Ledgered separately: the ceiling is CI-CALIBRATED against a recorded sandbox baseline of
+  3010, and this sandbox reads 4280-4364 unmodified — so a LOCAL vitals red on that route is
+  not evidence. CI is the calibrated environment.
+- 30fps under 6x throttle was not measured.
 
 ## 8 · LOOP FEEDBACK
+
+- A prompt block labelled "measured" is still a REPORT until reproduced — the ✓-block's own
+  correction was wrong in the slot declared to override the prose.
+- An uncontrolled A/B is the same class of error as an uncontrolled recount. Control the
+  instrument (A/A) BEFORE sampling harder; more samples cannot reveal a noise floor you never
+  measured.
+- Piping `pgrep -f` into `kill` is `pkill -f` in different clothes: the subshell carries the
+  pattern and returns its own PID. READ the PIDs. Fifth and sixth instances, same session.
+- Green suites are not the deliverable. The PR is.
