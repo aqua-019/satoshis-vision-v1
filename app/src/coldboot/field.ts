@@ -133,10 +133,21 @@ export interface MarkBox {
   readonly rows: number;
   readonly cols: number;
   readonly glyphs: number;
-  /** `rows * cols / glyphs` — the raster-resolution figure the narrow-stage
-   *  layout exists to raise. Measured 8 on the pre-p4·M4 phone composition,
-   *  63 after, against a 1440 control of 83. */
+  /** LIT cells — how many cells the raster actually inked. */
+  readonly ink: number;
+  /** `rows * cols / glyphs` — the mark's BOUNDING-BOX area per letterform. */
   readonly cellsPerGlyph: number;
+  /** `ink / glyphs` — the same idea in the unit that cannot be gamed.
+   *
+   *  ── WHY BOTH, AND WHY THIS ONE IS THE ASSERTION ──────────────────────
+   *  `cellsPerGlyph` is a BOX, and a box can be large and empty: a mark that
+   *  inked three cells inside a generous bounding box satisfies it. This is
+   *  not hypothetical carefulness — the first version of this release quoted
+   *  the box figure ("8 → 63 at 390") against an intuition about ink, which
+   *  overstates the change by 2.3x. Measured at 390: box 8 → 63, INK 4.0 →
+   *  26.9, against a 1440 control of 82.7 box / 43.8 ink. The gate asserts
+   *  the ink figure and prints both. */
+  readonly inkPerGlyph: number;
 }
 
 /** Cell geometry for a given CSS-pixel viewport. */
@@ -521,7 +532,10 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
      and an all-zero box is the honest report of that — a caller reading
      `cellsPerGlyph` must never be handed a number from a raster that did not
      happen. */
-  let mark: MarkBox = { top: 0, bottom: 0, left: 0, right: 0, rows: 0, cols: 0, glyphs: 0, cellsPerGlyph: 0 };
+  let mark: MarkBox = {
+    top: 0, bottom: 0, left: 0, right: 0, rows: 0, cols: 0, glyphs: 0, ink: 0,
+    cellsPerGlyph: 0, inkPerGlyph: 0,
+  };
   let closingLine = "";
 
   const off = document.createElement("canvas");
@@ -561,7 +575,16 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     };
     setFont();
     const measured = Math.max(...lines.map((l) => og.measureText(l).width));
-    if (measured > w * fitFrac) {
+    /* `measured > 0` FIRST. The refit divides by it, so a face that has not
+       loaded and a fallback that also measures zero yields `px = Infinity`,
+       which Canvas silently REJECTS as a font value — leaving the previous
+       font in place and the mark drawn at the wrong size, or not at all. The
+       exposure predates the stacked layout and is not introduced by it; a
+       taller mark just makes the failure louder. `if (mTop > mBot)` below is
+       the other half of the same fail-open path and must stay: it covers a
+       raster that produced no ink at all, for the two-line branch exactly as
+       it did for the one-line one. */
+    if (measured > 0 && measured > w * fitFrac) {
       px *= (w * fitFrac) / measured;
       setFont();
     }
@@ -585,6 +608,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     let mBot = 0;
     let mLeft = cols;
     let mRight = -1;
+    let inked = 0;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const x = c * cw;
@@ -603,6 +627,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
           if (r > mBot) mBot = r;
           if (c < mLeft) mLeft = c;
           if (c > mRight) mRight = c;
+          inked++;
         }
       }
     }
@@ -618,8 +643,9 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
       const glyphs = lines.reduce((n, l) => n + [...l].filter((chr) => chr !== " ").length, 0);
       mark = {
         top: mTop, bottom: mBot, left: mLeft, right: mRight,
-        rows: mr, cols: mc, glyphs,
+        rows: mr, cols: mc, glyphs, ink: inked,
         cellsPerGlyph: glyphs > 0 ? Math.round((mr * mc) / glyphs) : 0,
+        inkPerGlyph: glyphs > 0 ? Math.round((inked / glyphs) * 10) / 10 : 0,
       };
     }
 

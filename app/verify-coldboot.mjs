@@ -1120,6 +1120,10 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
      independent axis that says the letterform has vertical structure at all:
      measured 11 / 12 / 13 after, TWO before, 6 on the 1440 control. */
   const MIN_MARK_ROWS = 8;
+  /* See the ink assertion below for why the box figure is not the one asserted.
+     Measured 22.6 / 26.9 / 34.2 at 360 / 390 / 430 after the fix and 4.8 / 4.0 /
+     5.7 before it, against a 1440 control of 43.8. */
+  const MIN_INK_PER_GLYPH = 15;
 
   const PHONES = [
     ['360x800', { width: 360, height: 800 }],
@@ -1140,13 +1144,20 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
     await page.goto(BASE + '/', { waitUntil: 'load' });
     const report = await page.waitForFunction(() => window.__XMR_FIELD__ || null, null, { timeout: 25_000 })
       .then((h) => h.jsonValue()).catch(() => null);
+    /* The report is published in the decrypt effect's setup, BEFORE the first
+       rAF, so this instant is the loop's own start. `flipMs` measures the whole
+       navigation (bundle + hold + loop) and `loopMs` measures only the loop —
+       which is the quantity the wall ceiling actually bounds. */
+    const publishedAt = Date.now();
     const flipped = await page.waitForFunction(
       () => document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') === 'console',
       null, { timeout: 30_000 }).then(() => true).catch(() => false);
-    const flipMs = Date.now() - t0;
+    const now = Date.now();
+    const flipMs = now - t0;
+    const loopMs = now - publishedAt;
     const pending = await page.evaluate(() => document.documentElement.classList.contains('cb-pending'));
     await ctx.close();
-    return { report, flipped, flipMs, pending };
+    return { report, flipped, flipMs, loopMs, pending };
   };
 
   for (const [label, vp] of PHONES) {
@@ -1190,6 +1201,18 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
         'the message is drawn at a resolution the grid cannot carry, so it reads as more noise. Note that ' +
         'scaling the cells CANNOT fix it in either direction — bigger cells mean fewer columns and a worse ' +
         'raster, smaller cells break MIN_CELL_PX. See field.ts#WORDMARK.');
+
+    /* THE SAME CLAIM IN THE UNIT THAT CANNOT BE GAMED. `cellsPerGlyph` is a
+       BOUNDING BOX, and a box can be large and empty — the first version of
+       this release quoted the box figure against an intuition about ink and
+       overstated its own fix by 2.3x. Measured at 390: box 8 -> 63, INK
+       4.0 -> 26.9, against a 1440 control of 82.7 box / 43.8 ink. 15 sits in
+       the empty gap between the two populations. */
+    R.ok(mark.inkPerGlyph >= MIN_INK_PER_GLYPH,
+      `${label}: the mark inks ${mark.ink} cells — ${mark.inkPerGlyph} per glyph ` +
+      `(floor ${MIN_INK_PER_GLYPH}; box figure ${mark.cellsPerGlyph})`,
+      `${mark.inkPerGlyph} lit cells per letterform. The bounding box can be generous and the raster still ` +
+      'empty, which is why this is asserted in ink and the box figure is only printed beside it.');
 
     R.ok(mark.rows >= MIN_MARK_ROWS,
       `${label}: the mark is ${mark.rows} cell-rows tall (floor ${MIN_MARK_ROWS}, of ${layout.rows} available)`,
@@ -1239,19 +1262,52 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
 
   /* ── §10b · A SLOW PHONE GETS A SHORTER SEQUENCE, NOT A LONGER ONE ─────
    * The whole point of schedule.ts#WALL_CEIL_FACTOR. 6x is this repo's own
-   * throttle convention (verify-memperf, verify-perf-runtime). */
+   * throttle convention (verify-memperf, verify-perf-runtime).
+   *
+   * ── THIS SECTION'S FIRST VERSION COULD NOT SEE ITS OWN SUBJECT, AND ONLY
+   *    A BREAK TEST SAID SO ─────────────────────────────────────────────────
+   * It asserted the whole navigation against 7,500ms, calibrated to red on the
+   * 9,015ms this tree measured BEFORE the release. Deleting the wall ceiling
+   * left it GREEN at 167 passed · 0 failed — because the 9,015 came from the
+   * OLD 5,556ms duration, and against the new 3,333ms one the same 1.8x
+   * stretch lands near 7,000ms, under the bound. The number was calibrated
+   * against a baseline that the OTHER half of this release had already moved.
+   * A bound that only reds on a defect nobody can reintroduce is not a bound.
+   *
+   * Two changes. It measures the LOOP (from the instant the field publishes its
+   * report, which is the loop's setup) rather than the navigation, so bundle
+   * and hold time are not in the number the ceiling is supposed to govern. And
+   * the bound is DERIVED FROM THE REPORTED CEILING rather than written down:
+   * `wallCeilMs * 1.15`. That is not a tautology — `wallCeilMs` is a constant
+   * the page reports, and the assertion is that the loop's ACTUAL wall duration
+   * respected it. Remove the `Math.max` that enforces it and the loop runs to
+   * ~6,060ms against a 4,500ms ceiling, which reds. */
   {
-    const { flipped, flipMs, report } = await runStage({ width: PHONE.width, height: PHONE.height }, 6);
+    const { flipped, flipMs, loopMs, report } = await runStage({ width: PHONE.width, height: PHONE.height }, 6);
     R.ok(Boolean(report) && flipped,
-      `390 @6x CPU: precondition — the field ran and handed off under throttle`,
+      '390 @6x CPU: precondition — the field ran and handed off under throttle',
       'the sequence did not complete under 6x throttle at all — the timing below has no subject');
     if (report && flipped) {
+      const ceil = Number(report.wallCeilMs) || 0;
+      R.ok(ceil > 0,
+        `390 @6x CPU: precondition — the page reports its own wall ceiling (${ceil}ms)`,
+        'no wallCeilMs in the field report, so the bound below would be derived from zero');
+      if (ceil > 0) {
+        const bound = Math.round(ceil * 1.15);
+        R.ok(loopMs <= bound,
+          `390 @6x CPU: the decrypt LOOP ran ${loopMs}ms against its own ${ceil}ms wall ceiling ` +
+          `(bound ${bound}ms; whole navigation ${flipMs}ms)`,
+          `${loopMs}ms of loop against a ${ceil}ms ceiling. The progress ramp's per-frame delta is clamped ` +
+          'at 64ms, so a device that cannot hit 15.6fps advances it more slowly than real time and the ' +
+          'sequence gets LONGER the slower the phone — measured 9,015ms end-to-end before ' +
+          'schedule.ts#WALL_CEIL_FACTOR existed, and reported by the operator at ~11s. The unclamped wall ' +
+          'accumulator in ColdBoot.tsx is what bounds it, and this reading says it is not doing so.');
+      }
+      /* Kept as a second, coarser bound on the whole navigation: it is what a
+         visitor actually waits, and it reds on M2 (the duration reverted). */
       R.ok(flipMs <= PHONE_FLIP_6X_MAX_MS,
-        `390 @6x CPU: decrypt -> console in ${flipMs}ms (bound ${PHONE_FLIP_6X_MAX_MS}ms) — the wall ceiling holds`,
-        `${flipMs}ms under 6x throttle. The progress ramp's per-frame delta is clamped at 64ms, so a device ` +
-        'that cannot keep up advances it more slowly than real time and the sequence gets LONGER the slower ' +
-        'the phone — measured 9,015ms before schedule.ts#WALL_CEIL_FACTOR existed, and reported by the ' +
-        'operator at ~11s. The unclamped wall accumulator in ColdBoot.tsx is what bounds it.');
+        `390 @6x CPU: decrypt -> console in ${flipMs}ms end to end (bound ${PHONE_FLIP_6X_MAX_MS}ms)`,
+        `${flipMs}ms under 6x throttle — what a visitor on a mid-range phone actually waits.`);
     }
   }
 
