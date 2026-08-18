@@ -666,13 +666,13 @@ const BUDGETS = {
      is FOR, which is its own change. */
   /* p4·M3 RAISE, 1,238,000 -> 1,243,000. Moves WITH lazyJsRaw as the backstop
      it is, and the arithmetic is exact this time: this PR's whole delta is
-     +5,230, it is entirely lazy, so both ceilings move by the same 5,000 and
-     the gap between them is unchanged. Built 1,239,336, margin 3,664.
+     +5,286, it is entirely lazy, so both ceilings move by the same 5,000 and
+     the gap between them is unchanged. Built 1,239,392, margin 3,608.
      THE RECONCILIATION IS STILL NOT DONE and still is not this PR's to make:
      eagerJsRaw 280,000 + lazyJsRaw 978,000 = 1,258,000 against this line's
      1,243,000, so the "sum of the two real budgets" construction this comment
      block records has now been lapsed for eleven releases. */
-  totalJsRaw: 1_243_000,  // p4·M3: built 1,239,336 on the FINAL tree, margin 3,664.
+  totalJsRaw: 1_243_000,  // p4·M3: built 1,239,392 on the FINAL tree, margin 3,608.
   //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
   //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
   //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
@@ -1264,12 +1264,22 @@ const BUDGETS = {
      STEM against a build of e0c87ad, 74 of 77 slots SIZE-IDENTICAL:
          repoPulse           18,306 -> 22,895   +4,589
          EcoPopup             4,163 ->  4,683     +520
-         TrustedPeersPage     3,506 ->  3,627     +121
-                                              = +5,230
-     and +5,230 is this budget's whole delta AND `totalJsRaw`'s whole delta,
+         TrustedPeersPage     3,506 ->  3,683     +177
+                                              = +5,286
+     and +5,286 is this budget's whole delta AND `totalJsRaw`'s whole delta,
      which is what "eager moved by zero" means arithmetically rather than
      hopefully. `eagerJsRaw` is byte-count-identical at 264,481 and its ceiling
-     is untouched.
+     is untouched; `eagerJsGz` moves -5 (88,524 -> 88,519) from
+     COMPRESSIBILITY ALONE — the hash-cascade phenomenon p3·18 measured and
+     p4·01 reproduced stem-for-stem. SITE_PR 196 -> 198 contributes zero
+     bytes: three digits of identical length.
+
+     RE-DERIVED AFTER THE LAST src COMMIT, and the rule earned its keep for a
+     fourth release running. The first measurement read 974,855; the SITE_PR
+     bump and the footer-row repair landed after it and moved this figure by
+     56 B and the route row by 35. NOTHING FAILED — every ceiling had margin —
+     which is exactly why the rule is RE-DERIVE rather than "check the gate is
+     green". A budget comment is not gated by the budget it annotates.
 
      `repoPulse` IS WHERE data.ts LANDS, and that is not a surprise to be
      re-derived next release — p3·19 recorded it: a chunk name is a label Vite
@@ -1282,7 +1292,7 @@ const BUDGETS = {
      when a reader opens a brief. What they DO cost is page weight on that
      interaction, and no budget in this file measures it — stated here so the
      absence is deliberate rather than assumed. Largest single shot: 53,936 B. */
-  lazyJsRaw: 978_000,   // p4·M3: built 974,855 on the FINAL tree, margin 3,145.
+  lazyJsRaw: 978_000,   // p4·M3: built 974,911 on the FINAL tree, margin 3,089.
   //   RE-DERIVED after the LAST src commit, not after the last green run: the
   //   first measurement read 952,561 and three later commits (SITE_PR, a
   //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing
@@ -1563,15 +1573,15 @@ const ROUTE_BUDGET_GZ = {
                                      //           only the default sim's chunk.
   '/monero':                115_000, // 104,154 — 7 tab modules now (was 9: markets and outlook
                                      //           moved out to their own top-level routes above)
-  /* p4·M3 RAISE, 107,000 -> 112,000. Built 108,512 gzip on the FINAL tree
-     (margin 3,488), red at `❌ /future first load 108512 B gzip ≤ 107000`.
+  /* p4·M3 RAISE, 107,000 -> 112,000. Built 108,513 gzip on the FINAL tree
+     (margin 3,487), red at `❌ /future first load 108512 B gzip ≤ 107000`.
 
      THIS ROUTE RENDERS NONE OF WHAT MADE IT BIGGER, AND THAT IS THE FINDING.
      p4·M3 adds two PARTNER entries and six screenshot records to
      `pages/future/data.ts`. Every one of them renders on `/operate/peers` and
      nowhere else — this page draws the stressnet band and the protocol cards — yet `data.ts`
      lands in the `repoPulse` chunk, which THIS route also downloads, so it
-     paid **+1,791 B gzip for prose it never draws**.
+     paid **+1,792 B gzip for prose it never draws**.
 
      THE LEAF LESSON, NINTH SIGHTING, AND NOT FIXED HERE — see the ledger.
      The structural answer is the one this repo has taken eight times already
@@ -1584,7 +1594,7 @@ const ROUTE_BUDGET_GZ = {
      handoff), and splitting a file mid-flight under another author is how a
      clean merge becomes a bad one. Raised, measured, and ledgered so the split
      can be taken deliberately in a change that owns the file. */
-  '/future':                112_000, // 108,512 on the FINAL tree — see above.
+  '/future':                112_000, // 108,513 on the FINAL tree — see above.
   //   p4·06 · NOT RAISED, because not crossed — but said out loud: this row's
   //   margin is now 484 B (built 106,516). /future did not shrink when
   //   FuturePage's chunk lost 7,463 B to the extraction; it grew by 1,172,
@@ -1630,15 +1640,15 @@ const ROUTE_BUDGET_GZ = {
   //  /about/peers for +79 B of total JS. Rollup chunks per MODULE, not per
   //  export — canvasColor.ts and repoPulse.tsx already record this, and it is
   //  now the third release in which the fix was to move a file, not a ceiling.
-  /* p4·M3 RAISE, 105,000 -> 110,000. Built 106,547 gzip on the FINAL tree
-     (margin 3,453), red at `❌ /operate/superstress first load 106547 B gzip ≤ 105000`.
+  /* p4·M3 RAISE, 105,000 -> 110,000. Built 106,548 gzip on the FINAL tree
+     (margin 3,452), red at `❌ /operate/superstress first load 106547 B gzip ≤ 105000`.
 
      THIS ROUTE RENDERS NONE OF WHAT MADE IT BIGGER, AND THAT IS THE FINDING.
      p4·M3 adds two PARTNER entries and six screenshot records to
      `pages/future/data.ts`. Every one of them renders on `/operate/peers` and
      nowhere else — this page reads exactly two ECOSYSTEM entries by id, `superbrain` and `stressnet`, and neither is new — yet `data.ts`
      lands in the `repoPulse` chunk, which THIS route also downloads, so it
-     paid **+1,652 B gzip for prose it never draws**.
+     paid **+1,653 B gzip for prose it never draws**.
 
      THE LEAF LESSON, NINTH SIGHTING, AND NOT FIXED HERE — see the ledger.
      The structural answer is the one this repo has taken eight times already
@@ -1651,7 +1661,7 @@ const ROUTE_BUDGET_GZ = {
      handoff), and splitting a file mid-flight under another author is how a
      clean merge becomes a bad one. Raised, measured, and ledgered so the split
      can be taken deliberately in a change that owns the file. */
-  '/operate/superstress':   110_000, // 106,547 on the FINAL tree — see above.
+  '/operate/superstress':   110_000, // 106,548 on the FINAL tree — see above.
   /* p4·07 · the 18th route. Built 94,719 gzip on the FINAL tree (margin 3,281),
      a FOUR-chunk closure: entry + vendor + StressnetExplorerPage + the 634 B
      stressnet-model leaf. It is the LIGHTEST of the three Operate leaves
@@ -1682,8 +1692,8 @@ const ROUTE_BUDGET_GZ = {
   // ProtocolCard/MoneroNewsCard leaving, not from the readout moving somewhere
   // new. "It did not mint a chunk" and "it landed where I expected" are
   // different facts; this is the first.
-  /* p4·M3 RAISE, 103,000 -> 106,000. Built 103,305 gzip on the FINAL tree
-     (margin 2,695), red first at `❌ /operate/peers first load 103305 B gzip
+  /* p4·M3 RAISE, 103,000 -> 106,000. Built 103,340 gzip on the FINAL tree
+     (margin 2,660), red first at `❌ /operate/peers first load 103305 B gzip
      ≤ 103000` against a margin that was only 1,527 before this PR began.
 
      THE CLOSURE DID NOT CHANGE SHAPE — chunk count is 76 on both sides, no
@@ -1699,7 +1709,7 @@ const ROUTE_BUDGET_GZ = {
      target and the screenshot figure are both inline styles on pages whose
      idiom is inline styles, which was the constraint rather than the
      outcome. */
-  '/operate/peers':         106_000, // 103,305 on the FINAL tree — see above.
+  '/operate/peers':         106_000, // 103,340 on the FINAL tree — see above.
   // p3·17 RAISE, 95,000 -> 98,000. Built 95,027 on the FINAL tree (margin
   // 2,973), red first at `❌ /about/sources first load 95027 B gzip ≤ 95000`.
   //
