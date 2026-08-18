@@ -616,6 +616,7 @@
   74 / 6. `cssGz` BYTE-IDENTICAL — zero new stylesheet rules.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/195
 - XMRIRISH-20260818-M1 · done · p4·M1 cold boot on a phone (overprint fix + §9 gate) · https://github.com/aqua-019/satoshis-vision-v1/pull/196
+- XMRIRISH-20260818-M2 · done · p4·M2 README redesign + /about/site centre of gravity + theme toggle off Main Home · https://github.com/aqua-019/satoshis-vision-v1/pull/197
 - XMRIRISH-20260818-M4 · done · p4·M4 the mobile terminal sequence, and the missing orb
   **THE PHONE WORDMARK WAS A TWO-ROW SMEAR AND THE ARITHMETIC SAYS NO AMOUNT OF SCALING
   COULD HAVE FIXED IT.** The decrypt rasterises "XMR.IRISH" into the cell grid, so its

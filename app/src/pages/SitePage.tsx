@@ -139,15 +139,23 @@ import { CloverOverlay } from "./about/CloverOverlay";
 const OPERATOR_X: { handle: string; href: string } | null = null;
 
 interface SectionProps {
+  /** Stable identity, stamped as `data-site-section` on the header block.
+   *  It is what makes the page's section ORDER machine-checkable: the
+   *  reorder this page just went through (support second, the derived
+   *  overview last) is an editorial decision that nothing structural
+   *  protects, so `verify-site` §12 reads these in document order and
+   *  pins the sequence. Without it a later edit could quietly restore the
+   *  old order and every other assertion on the page would stay green. */
+  id: string;
   kicker: string;
   title: string;
   children: React.ReactNode;
 }
 
-function Section({ kicker, title, children }: SectionProps) {
+function Section({ id, kicker, title, children }: SectionProps) {
   return (
     <Card style={{ padding: 22, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div>
+      <div data-site-section={id}>
         <div className="kicker" style={{ color: "var(--tk-accent)" }}>{kicker}</div>
         <h2
           className="serif"
@@ -250,7 +258,7 @@ export function SitePage() {
       />
 
       {/* ── The mission ─────────────────────────────────────────────────── */}
-      <Section kicker="the mission" title="An argument you can check, built out of live data.">
+      <Section id="mission" kicker="the mission" title="An argument you can check, built out of live data.">
         <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
           <CloverMark size={38} />
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -270,43 +278,70 @@ export function SitePage() {
         </div>
       </Section>
 
-      {/* ── What is on it — DERIVED from nav/ia.ts ──────────────────────── */}
-      <Section kicker="the whole site" title="Six sections, and everything under them.">
+      {/* ── Support ─────────────────────────────────────────────────────── */}
+      <Section id="support" kicker="support" title="Support xmr.irish.">
         <P>
-          This list is not written down anywhere. It is read at render time from the same
-          information architecture the navigation, the ⌘K palette and the breadcrumbs use, so it
-          cannot fall behind the site it describes.
+          This site is non-profit and carries no ads, no sponsors, and no trackers. Nothing here
+          is paid for with your data, so it is paid for the old way: by people who want it to
+          exist. If that is you, the XMR IRISH Fund runs on Kuno, a Monero-ecosystem fundraising
+          platform, and takes XMR directly. Contributions go to hosting, node access, and
+          continued development.
         </P>
-        <div
-          data-ia-overview
-          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: 20, marginTop: 4 }}
-        >
-          {IA.map((section) => (
-            <div key={section.key} data-ia-section={section.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div className="kicker" style={{ color: "var(--tk-accent)" }}>{section.label}</div>
-              <div className="mono dim2" style={{ fontSize: "var(--fs-label)", lineHeight: 1.5 }}>
-                {section.blurb}
-              </div>
-              <ul style={{ listStyle: "none", margin: "2px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 5 }}>
-                {section.cols.flatMap((col) => col.items).map((item) => (
-                  <li key={item.p + item.l}>
-                    <Link
-                      to={item.p}
-                      className="mono"
-                      style={{ fontSize: "var(--fs-label)", color: "var(--ink-100)", textDecoration: "none" }}
-                    >
-                      {item.l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        {/* THE ONE PLACE ON THIS PAGE THE EYE IS MEANT TO LAND.
+            `a.proto-btn` is the house's existing primary affordance — accent
+            border, accent text, `--glow-1`, uppercase — the same control Main
+            Home gives "Open the mempool". Reusing it rather than authoring a
+            donate style is deliberate on two counts: the reader already knows
+            what it does, and it adds ZERO stylesheet rules, which matters at
+            this repo's cssGz margin. The padding bump is inline, so it costs
+            JS bytes and not CSS bytes. NO inline fontSize — `verify-legibility`
+            bans sub-14px inline literals, and the class already resolves to
+            11.5px desktop / 12px below 720px, which clears the touch floor.
+
+            THE LABEL IS SHORT ON PURPOSE. `proto-btn` is uppercase with
+            0.16em tracking, so a long label is wide out of proportion to its
+            character count, and at 390px `.main * { min-width: 0 !important }`
+            removes the min-content floor that would otherwise protect it —
+            p4·04's recorded shatter. The prose directly above already names
+            the XMR IRISH Fund, so the control only has to name the action and
+            the destination. Measured at 390, not estimated.
+
+            EMPHASIS, NOT A NAG. It is a link in the flow of the page: no
+            modal, no banner, no sticky bar, no interstitial. A site whose
+            whole argument is that it does not manipulate its readers cannot
+            beg in the section that makes the argument. */}
+        <div className="chip-row" style={{ marginTop: 6, marginBottom: 2 }}>
+          <a
+            className="proto-btn"
+            data-support-link
+            data-support-cta="primary"
+            href="https://kuno.anne.media/fundraiser/tu3b/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ padding: "12px 20px" }}
+          >
+            Donate XMR · Kuno →
+          </a>
+        </div>
+        <P>
+          No total is shown here, and that is deliberate: a live figure would need the one thing
+          this site does not do — a request to somebody else's server from your browser — and a
+          number typed in by hand becomes wrong the day after it is typed. The fundraiser page
+          holds the figures, because that is where the donations are.
+        </P>
+        <P>
+          And if a donation is not in the cards, the network itself is the thing worth
+          supporting: running a node or pointing a spare CPU at P2Pool strengthens exactly what
+          this site exists to explain.
+        </P>
+        <div className="chip-row" style={{ marginTop: 2 }}>
+          <Link className="v6-res" to={R.OPERATE_NODE}>Run a node</Link>
+          <Link className="v6-res" to={R.OPERATE_MINE}>Mine Monero</Link>
         </div>
       </Section>
 
       {/* ── Lineage ─────────────────────────────────────────────────────── */}
-      <Section kicker="the record" title="Where this came from.">
+      <Section id="record" kicker="the record" title="Where this came from.">
         <P>
           The site is on its sixth generation. The fourth was twenty-two hand-written HTML pages
           with no build step at all — a count taken from the last commit that still holds them
@@ -345,7 +380,7 @@ export function SitePage() {
       </Section>
 
       {/* ── The ethos brief ─────────────────────────────────────────────── */}
-      <Section kicker="zero bots · zero tracking · data-safe" title="Nothing here reports on you.">
+      <Section id="ethos" kicker="zero bots · zero tracking · data-safe" title="Nothing here reports on you.">
         <P>
           If you use Monero, you already know why this matters: a tool that teaches financial
           privacy while quietly measuring the people who read it is not teaching, it is
@@ -403,45 +438,8 @@ export function SitePage() {
         </div>
       </Section>
 
-      {/* ── Support ─────────────────────────────────────────────────────── */}
-      <Section kicker="support" title="Support xmr.irish.">
-        <P>
-          This site is non-profit and carries no ads, no sponsors, and no trackers. Nothing here
-          is paid for with your data, so it is paid for the old way: by people who want it to
-          exist. If that is you, the XMR IRISH Fund runs on Kuno, a Monero-ecosystem fundraising
-          platform, and takes XMR directly. Contributions go to hosting, node access, and
-          continued development.
-        </P>
-        <div className="chip-row" style={{ marginTop: 2 }}>
-          <a
-            className="v6-res"
-            data-support-link
-            href="https://kuno.anne.media/fundraiser/tu3b/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            XMR IRISH Fund · Kuno
-          </a>
-        </div>
-        <P>
-          No total is shown here, and that is deliberate: a live figure would need the one thing
-          this site does not do — a request to somebody else's server from your browser — and a
-          number typed in by hand becomes wrong the day after it is typed. The fundraiser page
-          holds the figures, because that is where the donations are.
-        </P>
-        <P>
-          And if a donation is not in the cards, the network itself is the thing worth
-          supporting: running a node or pointing a spare CPU at P2Pool strengthens exactly what
-          this site exists to explain.
-        </P>
-        <div className="chip-row" style={{ marginTop: 2 }}>
-          <Link className="v6-res" to={R.OPERATE_NODE}>Run a node</Link>
-          <Link className="v6-res" to={R.OPERATE_MINE}>Mine Monero</Link>
-        </div>
-      </Section>
-
       {/* ── Who runs it ─────────────────────────────────────────────────── */}
-      <Section kicker="the operator" title="Who runs this.">
+      <Section id="operator" kicker="the operator" title="Who runs this.">
         <P>
           xmr.irish is run independently, with no company behind it and no sponsor to answer
           to. That is the reason the rules above can be absolute: there is nobody to sell an
@@ -470,6 +468,41 @@ export function SitePage() {
           <Pill>no company · no sponsor</Pill>
         </div>
       </Section>
+      {/* ── What is on it — DERIVED from nav/ia.ts ──────────────────────── */}
+      <Section id="overview" kicker="the whole site" title="Six sections, and everything under them.">
+        <P>
+          This list is not written down anywhere. It is read at render time from the same
+          information architecture the navigation, the ⌘K palette and the breadcrumbs use, so it
+          cannot fall behind the site it describes.
+        </P>
+        <div
+          data-ia-overview
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(330px, 1fr))", gap: 20, marginTop: 4 }}
+        >
+          {IA.map((section) => (
+            <div key={section.key} data-ia-section={section.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="kicker" style={{ color: "var(--tk-accent)" }}>{section.label}</div>
+              <div className="mono dim2" style={{ fontSize: "var(--fs-label)", lineHeight: 1.5 }}>
+                {section.blurb}
+              </div>
+              <ul style={{ listStyle: "none", margin: "2px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 5 }}>
+                {section.cols.flatMap((col) => col.items).map((item) => (
+                  <li key={item.p + item.l}>
+                    <Link
+                      to={item.p}
+                      className="mono"
+                      style={{ fontSize: "var(--fs-label)", color: "var(--ink-100)", textDecoration: "none" }}
+                    >
+                      {item.l}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </Section>
+
     </PageShell>
   );
 }

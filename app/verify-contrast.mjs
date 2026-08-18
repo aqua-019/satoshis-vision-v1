@@ -167,11 +167,14 @@ for (const theme of ['indigo', 'classic', 'phosphor']) {
   // not because the test was wrong. Resist "fixing" it back to 'indigo'.
   R.ok(before.theme === 'classic', `starts on classic (got ${before.theme})`);
 
-  // Both selectors below are testid-based, not positional — HomePage.tsx now
-  // mounts its own <ThemeToggle/> beside the hero CTA row, so a page can
+  // Both selectors below are testid-based, not positional. HomePage.tsx used
+  // to mount a second <ThemeToggle/> beside its hero CTA row, so a page could
   // carry two theme controls with identical "Classic"/"Phosphor"/"Indigo"
-  // labels at once, and a positional or unscoped text match can silently
-  // bind to the wrong one.
+  // labels at once and an unscoped text match could bind to the wrong one.
+  // That mount was removed in p4·M2 and the dropdown's is now the only one —
+  // but the testid stays, because the scoping is what makes this gate immune
+  // to a second instance coming back, and this gate runs on /live/markets,
+  // where the Home instance was never in scope anyway.
   const trigger = await page.$('[data-testid="design-panel-trigger"]');
   if (!trigger) {
     R.ok(false, 'the ⌘ DESIGN trigger is reachable at 390px');
