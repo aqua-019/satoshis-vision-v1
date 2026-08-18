@@ -538,3 +538,47 @@
   The operator's X handle arrived unfilled and is NOT guessed — an honest null, one line to fill.
   **No human has seen the rendered result in a browser** — read from screenshots.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/193
+- **XMRIRISH-20260818-47** · p4·06 "THE FUTURE DROPDOWN GETS REAL PAGES, AND THE PEERS COME HOME" · shipped
+  `/future/protocol`, the SEVENTEENTH route and the first keyed by a query; `/about/peers` →
+  `/operate/peers`, the FIRST route this repo has RELOCATED rather than minted; the #184
+  hollow-anchor item CLOSED — `futureCol` carries zero `#` targets and two instruments assert
+  the absence (verify-ia §7c over the exported IA, verify-protocol §4 over the rendered nav).
+  **FOUR ✓-BLOCK PREMISES FAILED AT THE BASE.** The approved grid mockup
+  (`claude/mockups/peers-grid-3x3.html`) and the max-content finding DO NOT EXIST anywhere in
+  447 commits — the grid was built from the brief's prose and the repo's own tokens. The
+  `/about/peers` literal sweep is THIRTEEN functional files, not one; the ✓-block reported a
+  constant-only grep as if it were the union. `verify-future`'s pulse `n` IS a literal 9 (an
+  ARGUMENT to `waitForFunction`, invisible to a grep inside the callback). And `REDIRECTS` DOES
+  have a gate count literal — `verify-redirects.mjs:162`, `=== 12`, red on the thirteenth row.
+  **THE HOLLOW ANCHORS WERE LOAD-BEARING FOR A LIVE NUMBER.** `sections.ts:52` counted the
+  Future section by `i.p.includes("#")`; removing the anchors would have rendered
+  **"0 protocols & ecosystem"** on Main Home, still compiling and matching nothing. Nothing
+  reds — a derivation that has stopped matching is indistinguishable from an empty section.
+  **AND THE GATE THAT POLICED THEM WAS BUILT ON THEM**: verify-ia §7c keyed on `/future#`, so
+  the removal reddened it AND silently DECLINED the four assertions inside its guard (35
+  reached where 40 had). Re-keyed to `?p=`; ECOSYSTEM_META was DELETED rather than repointed,
+  so that drift class stopped existing rather than getting a better gate. 40 → 43.
+  `/peers` was REPOINTED, not left alone: it would otherwise be hop one of two, and verify-ia
+  §6 reds on a destination no longer in ROUTES.
+  **THE PAGE SHARES THE MODAL'S BODY** via a new `ProtocolDetail`, moved programmatically —
+  `+7,851` against `FuturePage` `−7,463` proves it a move, not a copy. V6Modal has no inline
+  mode (portal, focus trap, two-target scroll lock), so the seam is drawn where the dialog
+  stops being a dialog. The not-found title deliberately does NOT name the requested id:
+  `PageHeader` renders `title` through `dangerouslySetInnerHTML`, so that would be injection.
+  **THE AUDIT IS DATED FROM PRIMARY SOURCE AND THE OBVIOUS DATE IS A MONTH WRONG** — Trail of
+  Bits' own index says Jul 2026 for the review; the MAGIC Grants post is Aug 2026. Two rows,
+  each dated by its own publisher. The "fix review report" glyph is verified and deliberately
+  NOT rendered: that is a completion claim this page did not make.
+  **xmr.club was described as a social hub and is a manually audited no-KYC directory.**
+  Rewritten from the site's own headings, with NO counts and re-differentiated against kyc.rip.
+  Not re-probeable from CI (gateway 403s CONNECT), so no gate pretends to check it.
+  **THREE ASSERTIONS IN THE NEW GATE MEASURED THE WRONG SUBJECT** and each was caught by its
+  own paired control: a nav sweep over a closed dropdown, then a hover race (108 anchors where
+  six sections hold 67), then a card checked for copy that lives in the modal.
+  **THE CHAIN DIED AT POSITION 2 ON A CONSTANT THE COMPILER CANNOT SEE** — verify-palette read
+  `R.ABOUT_PEERS` and navigated to `localhost:4173undefined`. A gate is `.mjs` and outside
+  tsconfig, so the route-list gate that protects every rename does not cover the gates.
+  **AND `git add -A` COMMITTED THREE SCRATCH PROBES**, found by sweeping `git ls-tree` rather
+  than `git status`; `.probe-*` is now ignored. `pkill -f` killed the shell running it, exit
+  144 — the fourth recorded instance of that trap in this repo.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/194
