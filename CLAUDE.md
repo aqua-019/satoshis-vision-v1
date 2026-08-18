@@ -828,6 +828,26 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   are now explained, and the assertion's **BLIND SPOT is stated**: it cannot say which
   defence is holding the box, so a reviewer deleting one "because the gate is still green"
   would be reading it correctly and still be wrong.
+  **AND `verify-protocol` §6 WAS GREEN BY LUCK AT FOUR CARDS — A CONTENT CHANGE IS WHAT
+  REVEALED IT.** The peer cards animate in on `stagger-rise` (`--d-3` 300ms, per-card
+  `animation-delay: calc(var(--stagger-i) * 45ms)`, fill `backwards`), and §6 reads
+  `getBoundingClientRect().top` at `networkidle` — so a card still mid-transform
+  contributes its own distinct `top` to the row Set. At FOUR partners the last card
+  settled at **435ms**; at six it settles at **525ms**, and that 90ms is the whole story.
+  Nothing about the grid regressed. **The INSTRUMENT was the thing at fault, which is
+  p4·07's M5 lesson arriving a second time** — there a break test that refused to fire
+  turned out to be the gate's defect and not the page's.
+  **AND THE HONEST VERSION IS THAT THIS MACHINE WINS THE RACE**: the unfixed gate read
+  `2 rows of 3, 6 cards` standalone 3/3 AND in-chain, while the reporting machine read
+  4-5 rows varying run to run. What a direct geometry probe DID catch is the mechanism —
+  at `networkidle` the sixth card was still running at `matrix(1, 0, 0, 1, 0, 0.0418408)`,
+  `opacity 0.995816`, `top` 607.542 against a settled 607.5. **CPU THROTTLING DOES NOT
+  REPRODUCE IT AND THAT IS WORTH KNOWING**: 4×, 6× and 10× all read 2 rows, because
+  throttling delays `networkidle` by as much as it delays hydration and so makes the race
+  EASIER to win. A gate that passes only sometimes is defective wherever it is run; the
+  fix waits on the ANIMATIONS themselves (`getAnimations().finished`), which is exact, has
+  no magic number to re-tune when a seventh partner arrives, and is a no-op under reduced
+  motion where `getAnimations()` returns `[]`.
   **`verify-origins` WAS MEASURING THE WRONG SUBJECT ON THIS ROUTE, AND HAD BEEN SINCE
   p4·06.** `/operate/peers` was already in its phase-2 sweep — but the screenshots live in
   the `our brief` DIALOG, and `V6Modal` unmounts when closed, so on a page nobody clicked
