@@ -104,12 +104,64 @@ export function TrustedPeersPage() {
                     </div>
                   ) : null}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--rule)", paddingTop: 13 }}>
+                    {/* p4·M3 — A REAL TAP TARGET, AND THE BUG IT FIXES IS NOT
+                        "small text". Measured on the shipped build at 390x844
+                        before this change: this control's box was 52.8 x 16.
+                        The failure is what sits UNDERNEATH a near-miss — the
+                        whole Card carries `onClick={visit}`, so a thumb that
+                        lands a few pixels off does not miss, it hits the card
+                        and `window.open`s the partner's site. The reader asked
+                        to stay and read our brief and was sent off-site
+                        instead, which is why this reads as "kyc.rip has no
+                        popup" rather than as a sizing complaint. It was never
+                        one card's defect: all six measured identically.
+
+                        44 IS THE FLOOR, both axes (WCAG 2.2 AA 2.5.5 Target
+                        Size (Minimum)). The height comes from `minHeight`
+                        rather than vertical padding so the box is the stated
+                        44 whatever the label wraps to, and `minWidth` covers a
+                        future shorter label. `alignItems: center` on the row
+                        means the taller control does not push the sibling
+                        anchor around.
+
+                        VISIBLY A CONTROL, not merely a bigger invisible one. A
+                        44px hit area on text that still looks like text
+                        teaches nothing — the reader who was missing it goes on
+                        aiming at the words. The border is `--ink-10`, the same
+                        weight `.v6-res` uses for the resource chips inside the
+                        brief this button opens, so it reads as the same family
+                        of thing; the dotted underline survives because it is
+                        what said "this opens something" before.
+
+                        THE SIBLING `visit ...` ANCHOR IS DELIBERATELY LEFT AT
+                        ITS NATURAL SIZE, and the asymmetry is the argument: a
+                        near-miss there lands on the card, whose click does the
+                        SAME THING the anchor does — open the partner's site.
+                        Missing it costs nothing. Only this button's near-miss
+                        is destructive, so only this button is enlarged.
+
+                        NO NEW CSS RULE: `cssGz` runs a 416 B margin and this
+                        page's idiom is inline style throughout. */}
                     <button
                       type="button"
                       className="mono dim2"
                       onClick={(ev) => { ev.stopPropagation(); setEco(e.id); }}
                       aria-label={`Read our brief on ${e.name}`}
-                      style={{ background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit", fontSize: "var(--fs-label)", letterSpacing: "0.06em", textDecoration: "underline dotted" }}
+                      data-peer-brief={e.id}
+                      style={{
+                        background: "none",
+                        border: "1px solid var(--ink-10)",
+                        minHeight: 44,
+                        minWidth: 44,
+                        padding: "0 14px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        font: "inherit",
+                        fontSize: "var(--fs-label)",
+                        letterSpacing: "0.06em",
+                        textDecoration: "underline dotted",
+                      }}
                     >
                       our brief
                     </button>
