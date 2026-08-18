@@ -35,6 +35,7 @@
  *   §6  SVG text in RENDERED space — bounded, not exempted
  *   §7  the mempool canvas pans where it should and reflows where it should
  *   §8  320×568 — the narrowest phone still in service
+ *   §9  the peers page's `our brief` control is a real 44px target
  */
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -46,6 +47,13 @@ const BASE = 'http://localhost:4173';
 const FLOOR = 12;          // px. The whole point of the file.
 const EPS = 0.01;          // computed sizes are floats; 11.999 is 12.
 const TAB_MIN = 40;        // px. Minimum comfortable touch target.
+/* 44, not 40, and the two are different claims. TAB_MIN is this file's own
+ * comfort floor for the six tab-bar items, chosen before there was a standard
+ * to point at. TAP_MIN is WCAG 2.2 AA 2.5.5 Target Size (Minimum), which is
+ * 24 CSS px as a bare conformance floor and 44 under the AAA 2.5.5 that every
+ * platform HIG has independently converged on. §9 asserts the higher one
+ * because the control it guards has a DESTRUCTIVE near-miss — see there. */
+const TAP_MIN = 44;
 const PHONE = { width: 390, height: 844 };
 const NARROW = { width: 320, height: 568 };
 
@@ -512,6 +520,111 @@ R.group(`§8 · ${NARROW.width}×${NARROW.height} — the narrowest phone`);
     `${KNOWN_320_ROUTE}'s pre-existing .keep-cols overflow has not grown at ${NARROW.width}px `
     + `(${known ? known.n : 0} ≤ ${KNOWN_320_MAX})`,
     'a bound on a diagnosed, ledgered defect measured identical on the base commit — not an exemption.');
+  await ctx.close();
+}
+
+// ═══ §9 · the peers page's `our brief` control ═════════════════════════════
+/* p4·M3, and this is the one section in the file whose subject is a SINGLE
+ * CONTROL rather than every route. It earns that because the defect it guards
+ * is not "text too small to read" — which §1 already covers site-wide — but a
+ * near-miss that does the WRONG THING.
+ *
+ * MEASURED ON THE SHIPPED BUILD AT 390×844 BEFORE THE FIX: 52.8 × 16, on all
+ * six partner cards. The button sits inside a `<Card onClick={visit}>`, and
+ * `visit` calls `window.open(partner.url)`. So a thumb landing a few pixels
+ * off the 16px-tall label does not miss — it hits the card and sends the
+ * reader OFF-SITE, which is why this was reported as "kyc.rip has no popup, it
+ * just links to the site". A tap target whose surroundings are inert can be
+ * argued about; one whose surroundings navigate away cannot.
+ *
+ * THE CLIP CHECK IS PAIRED WITH THE SIZE CHECK AND IS NOT DECORATION. p3·18
+ * recorded the exact failure this catches from the other side: below 768px
+ * `styles.css`'s `.main * { min-width: 0 !important }` beats an inline
+ * declaration, so a control can satisfy a 44px MINIMUM while its label is
+ * squeezed and clipped. Size alone would call that a pass. (It also caught a
+ * real asymmetry here: the widest sibling label — `visit privacygateway.io ↗`
+ * — flex-shrinks its neighbour to 79.7px. Still over 44, and reported so the
+ * next longer partner domain is a measurement rather than a surprise.)
+ *
+ * THE SIBLING ANCHOR IS DELIBERATELY NOT ASSERTED, and the asymmetry is the
+ * argument rather than an oversight: a near-miss on `visit … ↗` lands on the
+ * card, whose click does the SAME THING that anchor does. Missing it costs
+ * nothing. Only the brief button's near-miss is destructive, so only the brief
+ * button carries the floor. Its measured box is PRINTED below so a reader can
+ * see the decision instead of inferring it. */
+R.group(`§9 · /operate/peers — the "our brief" control is a real ${TAP_MIN}×${TAP_MIN} target`);
+{
+  const { ctx, page: pp } = await phone(PHONE);
+  await pp.goto(BASE + '/operate/peers', { waitUntil: 'networkidle' });
+  await pp.waitForTimeout(200);
+
+  const m = await pp.evaluate(() => {
+    const box = (el) => { const r = el.getBoundingClientRect(); return { w: +r.width.toFixed(1), h: +r.height.toFixed(1) }; };
+    const briefs = [...document.querySelectorAll('[data-peer-brief]')].map((el) => ({
+      id: el.getAttribute('data-peer-brief'),
+      ...box(el),
+      clipped: el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1,
+    }));
+    // The sibling, measured and REPORTED only — see the block above.
+    const visits = [...document.querySelectorAll('.v6-peer-grid a[target="_blank"]')].map(box);
+    return { briefs, visits, cards: document.querySelectorAll('.v6-peer-grid > .v6-stagger').length };
+  });
+
+  /* NON-VACUITY FIRST. Every assertion below is over a collection, and a
+   * selector that matched nothing satisfies "all of them are ≥44" perfectly. */
+  R.ok(m.briefs.length > 0 && m.briefs.length === m.cards,
+    `one brief control per partner card (${m.briefs.length} controls, ${m.cards} cards) — floor: an empty match would pass every check below`);
+
+  const small = m.briefs.filter((b) => b.w < TAP_MIN || b.h < TAP_MIN);
+  R.ok(small.length === 0,
+    `every "our brief" control is at least ${TAP_MIN}×${TAP_MIN} at ${PHONE.width}px `
+    + `(smallest side ${m.briefs.length ? Math.min(...m.briefs.flatMap((b) => [b.w, b.h])) : 'n/a'}px; `
+    + `sibling "visit" links measure ${m.visits.map((v) => `${v.w}×${v.h}`).join(', ') || 'n/a'} and are deliberately unasserted)`,
+    small.map((b) => `${b.id} ${b.w}×${b.h}`).join(', '));
+
+  const clipped = m.briefs.filter((b) => b.clipped);
+  R.ok(clipped.length === 0,
+    `and none of them clips its own label (${m.briefs.length - clipped.length} of ${m.briefs.length}) — a 44px box that hides its text is not a fixed target`,
+    clipped.map((b) => b.id).join(', '));
+
+  /* THE ASSERTION THAT WOULD HAVE CAUGHT WHAT THE TWO ABOVE MISSED, and it is
+   * here because they did miss it. On the first build carrying six partners,
+   * `visit privacygateway.io ↗` — the longest partner domain on the page —
+   * squeezed its `space-between` sibling to 79.7px and the label SHATTERED to
+   * "our / brief" over two lines. Both checks above stayed correctly green:
+   * 79.7 clears 44, and the label wrapped INSIDE the 44px box rather than
+   * overflowing it, so `scrollHeight === clientHeight` and nothing clipped.
+   * It was found by looking at a screenshot.
+   *
+   * SAME LABEL, SAME BOX. All six controls render the identical two words, so
+   * their widths are a pure function of the font — any difference between them
+   * is layout pressure from a neighbour, which is exactly the failure mode.
+   * This is strictly stronger than a floor: it fires on a squeeze that is
+   * still above 44, and it needs no magic number of its own.
+   *
+   * The 0.5px tolerance is subpixel rounding, and it is the error class this
+   * assertion cannot see: a squeeze smaller than half a pixel. That is not a
+   * squeeze anybody can read.
+   *
+   * PROVEN, AND THE PROOF TOOK THREE MUTATIONS BECAUSE THE FIRST TWO REFUSED
+   * TO GO RED. The page carries two independent defences — `flexWrap` on the
+   * row, `flexShrink: 0` + `whiteSpace: nowrap` on the control — and removing
+   * EITHER ONE leaves this assertion green, because the other still holds the
+   * box. Only removing BOTH reproduces the original defect, and then it fires:
+   * `spread 3.1px`. That is worth writing down twice over. It says the
+   * assertion is not vacuous; it says the two defences are genuinely
+   * redundant rather than jointly necessary, which is a fact about the page
+   * nobody had measured; and it is this assertion's own BLIND SPOT — it
+   * cannot tell you WHICH defence is carrying the box, so a reviewer deleting
+   * one "because the gate is still green" would be reading it correctly and
+   * still be wrong. */
+  const widths = m.briefs.map((b) => b.w);
+  const spread = widths.length ? Math.max(...widths) - Math.min(...widths) : 0;
+  R.ok(spread <= 0.5,
+    `all ${m.briefs.length} controls measure the SAME width (${widths.length ? widths[0] : 'n/a'}px, spread ${spread.toFixed(1)}px) — they carry the same label, so a differing width is one squeezed by its neighbour`,
+    m.briefs.map((b) => `${b.id} ${b.w}`).join(', ')
+    + '  — flexShrink:0 + whiteSpace:nowrap on the control, flexWrap on the row.');
+
   await ctx.close();
 }
 

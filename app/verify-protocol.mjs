@@ -233,6 +233,43 @@ try {
     const c = await browser.newContext({ viewport: { width: w, height: h } });
     const pp = await c.newPage();
     await pp.goto(`${BASE}${ROUTE.OPERATE_PEERS}`, { waitUntil: 'networkidle' });
+    /* p4·M3 FIX — WAIT FOR THE STAGGER, BECAUSE `networkidle` DOES NOT.
+       The cards animate in on `stagger-rise` (styles.css: `var(--d-3)` = 300ms,
+       per-card `animation-delay: calc(var(--stagger-i) * 45ms)`, fill
+       `backwards`), so reading getBoundingClientRect().top at networkidle can
+       read a TRANSFORM IN FLIGHT rather than the settled row, and each in-flight
+       card contributes its own distinct `top` to the Set.
+
+       AT FOUR PARTNERS THE LAST DELAY LANDED INSIDE networkidle's SLACK AND
+       THIS ASSERTION WAS GREEN BY LUCK: the last card settled at 135 + 300 =
+       435ms. At six it settles at 225 + 300 = 525ms — 90ms later — and the row
+       count was measured varying 4-5 run to run on a slower machine. Nothing
+       about the grid regressed; a legitimate content change exposed a latent
+       defect in the INSTRUMENT. Same shape as p4·07's M5, where a break test
+       that refused to fire turned out to be the gate's defect and not the
+       page's.
+
+       MEASURED HERE RATHER THAN ASSUMED, and the honest version is that this
+       machine WINS the race: standalone 3/3 and in-chain, the unfixed gate read
+       `2 rows of 3, 6 cards`. What a direct geometry probe DID catch is the
+       mechanism itself — at networkidle the sixth card was still running, at
+       `transform: matrix(1, 0, 0, 1, 0, 0.0418408)`, `opacity: 0.995816`, with
+       `top` 607.542 against a settled 607.5. Sub-pixel here, 0.64px on the
+       reporting machine, and enough to split the Set on a slower one. A gate
+       that passes only sometimes is defective wherever it happens to be run.
+       (CPU throttling does NOT reproduce it, and that is worth knowing: 4x, 6x
+       and 10x all read 2 rows, because throttling delays networkidle by as much
+       as it delays hydration and so makes the race EASIER to win.)
+
+       WAITING ON THE ANIMATIONS THEMSELVES rather than on a sleep: exact, with
+       no magic number to re-tune when a seventh partner arrives, and a no-op
+       under reduced motion where getAnimations() returns []. All four viewports
+       in this section share cols(), so one insertion covers all four. */
+    await pp.evaluate(() => Promise.all(
+      [...document.querySelectorAll('.v6-peer-grid > *')]
+        .flatMap((el) => el.getAnimations())
+        .map((a) => a.finished),
+    ));
     const out = await pp.evaluate(() => {
       const g = document.querySelector('.v6-peer-grid');
       if (!g) return null;
@@ -253,7 +290,17 @@ try {
 
   const d = await cols(1440, 900);
   R.ok(d && d.tracks === 3, `1440 (desktop band): ${d ? d.tracks : 'no grid'} columns`);
-  R.ok(d && d.rows === 2, `and the fourth card WRAPS to a second row rather than padding the first (${d ? d.rows : '?'} rows, ${d ? d.items : '?'} cards)`);
+  /* p4·M3 — THE ASSERTION IS UNCHANGED AND ITS MESSAGE IS NOT, because the
+   * message had stopped describing what it measures. At four partners this
+   * read "the fourth card WRAPS to a second row rather than padding the
+   * first"; six partners in three columns is TWO FULL ROWS, so the sentence
+   * named a card that is no longer the wrapping one while the number it
+   * asserts (2) happened to stay correct. A step name must name what it runs —
+   * and a stale one is worse here than elsewhere, because a reader checking
+   * this gate would have gone looking for a half-empty second row that no
+   * longer exists. The property is still `rows === 2`: the grid FLOWS into as
+   * many rows as it needs and never pads a short one. */
+  R.ok(d && d.rows === 2, `and the grid FLOWS into full rows rather than padding one (${d ? d.rows : '?'} rows of 3, ${d ? d.items : '?'} cards)`);
 
   const t = await cols(1000, 900);
   R.ok(t && t.tracks === 2, `1000 (the 769-1199 tablet band): ${t ? t.tracks : 'no grid'} columns`);

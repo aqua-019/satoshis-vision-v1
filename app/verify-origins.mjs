@@ -193,7 +193,9 @@ await coldBootOffBrowser(b);
      five off-origin resource anchors including the two new audit links, so it
      is now the page in this sweep where an anchor most plausibly becomes a
      request by accident — which is the sentence directly above. /operate/peers
-     renders four partner cards whose hrefs all point off-origin. */
+     renders six partner cards whose hrefs all point off-origin — and, since
+     p4·M3, six self-hosted partner screenshots that only exist once a brief is
+     opened. See the block inside the loop below. */
   /* p4·07 adds '/operate/superstress/explorer' on the same precedent. It is
      the only page on the site that renders a whole simulated blockchain, and
      the failure it would hide is specific: an explorer is exactly the shape
@@ -209,6 +211,43 @@ await coldBootOffBrowser(b);
     // splash's zero, not the route's.
     if (route === '/') await assertColdBootBypassed(p, { ok }, route);
     await p.waitForTimeout(300);
+
+    /* p4·M3 — /operate/peers IS THE ONE ROUTE WHERE VISITING IT IS NOT ENOUGH,
+     * and until this release the sweep above was measuring the wrong subject
+     * on it.
+     *
+     * That page's six partner screenshots live in the `our brief` DIALOG, and
+     * `V6Modal` unmounts when closed — so on a page nobody has clicked, the
+     * <img> tags do not exist, no image request is issued, and "zero
+     * off-origin requests" was a true statement about a page that had not yet
+     * loaded the assets most likely to be off-origin. A hotlinked partner
+     * screenshot would have sailed through this gate untouched.
+     *
+     * So the briefs are OPENED, all six, and the requests they issue are
+     * counted by the same listener as everything else. THE FLOOR MATTERS AS
+     * MUCH AS THE COUNT: if the clicks silently did nothing, this would go
+     * back to measuring an unopened page while looking like it had improved,
+     * which is the same defect one layer up. `shotsSeen` is therefore asserted
+     * POSITIVE — six same-origin image requests must actually have happened. */
+    if (route === '/operate/peers') {
+      const ids = await p.evaluate(() =>
+        [...document.querySelectorAll('[data-peer-brief]')].map((b) => b.getAttribute('data-peer-brief')));
+      ok(ids.length >= 6,
+         `2 · /operate/peers exposes ${ids.length} brief controls to open (floor: an unopened page issues no image request, so a zero here would make the sweep below vacuous)`);
+      let shotsSeen = 0;
+      for (const id of ids) {
+        await p.click(`[data-peer-brief="${id}"]`).catch(() => {});
+        await p.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
+        await p.waitForFunction((i) => {
+          const im = document.querySelector(`img[data-peer-shot="${i}"]`);
+          return im && im.complete && im.naturalWidth > 0;
+        }, id, { timeout: 8000 }).then(() => { shotsSeen++; }).catch(() => {});
+        await p.keyboard.press('Escape').catch(() => {});
+        await p.waitForTimeout(220);
+      }
+      ok(shotsSeen === ids.length,
+         `2 · and all ${ids.length} partner screenshots loaded and decoded while this listener was counting (${shotsSeen})`);
+    }
   }
   ok(offOrigin.length === 0,
      `2 · the app requests exactly one origin${offOrigin.length ? ': ' + [...new Set(offOrigin)].join(', ') : ''}`);
