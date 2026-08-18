@@ -152,8 +152,9 @@ const routes = await p.evaluate(() =>
 // the same shape as the `/` gap v6.1.8 recorded a few lines above.
 for (const r of ['/', '/live/mempool', '/live/markets', '/live/markets/thesis', '/live/network',
                   '/monero', '/learn', '/learn/sim', '/future', '/future/outlook',
-                  '/operate/node', '/operate/mine', '/operate/superstress',
-                  '/about/peers', '/about/sources', '/about/site']) {
+                  '/future/protocol',
+                  '/operate/node', '/operate/mine', '/operate/superstress', '/operate/peers',
+                  '/about/sources', '/about/site']) {
   ok(routes.includes(r), `no-JS: ${r} is a real anchor in the prerendered nav`);
 }
 

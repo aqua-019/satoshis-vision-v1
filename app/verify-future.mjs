@@ -462,7 +462,7 @@ console.log('engine:', engine, '\n');
   const ctx = await b.newContext();
   await mockFeeds(ctx);
   const page = await ctx.newPage();
-  await page.goto(base + '/about/peers', { waitUntil: 'domcontentloaded' });
+  await page.goto(base + '/operate/peers', { waitUntil: 'domcontentloaded' });
 
   const cards = page.locator('.panel').filter({ has: page.locator('h3') });
   // The partner cards ARE the assertion — wait on them, not on the network.
@@ -478,14 +478,14 @@ console.log('engine:', engine, '\n');
     ]);
     ok(popup.url().includes(host), `8 · "${name}" card opens ${host} in a new tab (got ${popup.url()})`);
     await popup.close();
-    ok(new URL(page.url()).pathname === '/about/peers', `8 · "${name}" card click did not navigate the app away`);
+    ok(new URL(page.url()).pathname === '/operate/peers', `8 · "${name}" card click did not navigate the app away`);
   }
 
   // 9 — "our brief" opens the modal without navigating
   await page.locator('button', { hasText: 'our brief' }).first().click();
   const dialog = page.locator('[role="dialog"]');
   ok(await dialog.isVisible(), '9 · "our brief" opens the in-site modal');
-  ok(new URL(page.url()).pathname === '/about/peers', '9 · "our brief" did not navigate');
+  ok(new URL(page.url()).pathname === '/operate/peers', '9 · "our brief" did not navigate');
 
   // 10 — VISIT button present, safe, and actually styled
   const visit = dialog.locator('a.proto-btn');

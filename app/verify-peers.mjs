@@ -125,7 +125,7 @@ try {
     }
   });
 
-  await page.goto(BASE + '/about/peers', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/operate/peers', { waitUntil: 'networkidle' });
 
   // §1: Rendered card count matches parsed source count
   const cards = page.locator('.v6-stagger');
@@ -389,7 +389,7 @@ try {
     }
   });
 
-  await reducedMotionPage.goto(BASE + '/about/peers', { waitUntil: 'networkidle' });
+  await reducedMotionPage.goto(BASE + '/operate/peers', { waitUntil: 'networkidle' });
 
   const cardsReduced = await reducedMotionPage.locator('.v6-stagger').count();
   R.ok(cardsReduced === expectedPartnerCount,

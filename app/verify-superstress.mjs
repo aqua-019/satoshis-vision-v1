@@ -331,7 +331,7 @@ try {
      have caught the drift it exists to prevent. */
   const peers = await browser.newPage();
   await peers.route('**/api/feeds*', (r) => r.fulfill({ status: 500, body: '{}' }));
-  await peers.goto(BASE + '/about/peers', { waitUntil: 'networkidle' });
+  await peers.goto(BASE + '/operate/peers', { waitUntil: 'networkidle' });
   /* The Superbrain card is found BY NAME, not by index. `text=our brief`
      matches FIVE elements on that page (the button and an ancestor), so a
      bare `nth=3` targets whichever of those happens to land third — an

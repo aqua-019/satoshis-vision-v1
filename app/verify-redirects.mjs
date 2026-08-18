@@ -159,7 +159,15 @@ if (comparable) {
   const matched = canon.filter((k) => json.includes(k)).length;
   const drift = (canon.length - matched) + json.filter((k) => !canon.includes(k)).length;
   R.info(`canonical ${canon.length} · vercel.json ${json.length} · matched ${matched} · drift ${drift}`);
-  R.ok(canon.length === 12, `the canonical map has 12 rows (9 map-derived + 3 completeness), got ${canon.length}`,
+  /* p4·06 · 12 -> 13. THE THIRTEENTH IS NEITHER OF THE TWO EXISTING KINDS,
+   * so the breakdown gains a term rather than incrementing one: 9 rows fall
+   * out of the v6.1.6 old->new path map, 3 more were added for completeness
+   * (`/education/:tab`, `/mempool/tx/:txid`, `/monero/future`), and
+   * `/about/peers -> /operate/peers` is a route THIS repo minted in v6.1.6 and
+   * then moved. Same rule produces it — a path that once served content never
+   * 404s — but folding it into "the map's 9" would be false, and this file
+   * already records that "12 of 9" is the wrong way to say it. */
+  R.ok(canon.length === 13, `the canonical map has 13 rows (9 map-derived + 3 completeness + 1 relocation), got ${canon.length}`,
     '/pro is deliberately NOT among them — it never existed as a live route');
   R.ok(drift === 0 && matched === canon.length && matched === json.length,
     `${matched} matched / ${drift} drift`,

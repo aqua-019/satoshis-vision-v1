@@ -216,7 +216,7 @@ export const ROUTES = [
      see the header: do not read that figure off this comment. */
   '/operate/mine',
   '/about/sources',
-  '/about/peers',
+  '/operate/peers',
   /* p4·05 — the THIRD top-level route added since the restructure, on the same
      argument p3·16 and p4·04 make above: this page's layout (a full-bleed
      foreground glyph overlay over an IA-derived overview) is rendered by no

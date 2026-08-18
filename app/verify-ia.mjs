@@ -2,7 +2,7 @@
  * verify-ia.mjs — Information Architecture Agreement Gate
  *
  * Offline assertion that four source artifacts agree on navigation restructure.
- * Verifies: routes.mjs (canonical), vercel.json (12 server 301s), App.tsx (12 client mirrors, derived),
+ * Verifies: routes.mjs (canonical), vercel.json (13 server 301s), App.tsx (13 client mirrors, derived),
  * nav/ia.ts (6-section IA), and MoneroPage.tsx (hash-based nav for 2 client-only transitions).
  *
  * Cannot verify: HTTP 301 status codes (marked R.fixture), runtime routing, URL fragment delivery.
@@ -102,7 +102,7 @@ function stripStrings(src) {
 // ============================================================================
 // §1 · routes.mjs canonical list
 // ============================================================================
-R.group('§1 · routes.mjs exports exactly 16 ROUTES in specified order');
+R.group('§1 · routes.mjs exports exactly 17 ROUTES in specified order');
 
 try {
   const routesModule = await import(join(__dirname, 'scripts', 'routes.mjs'));
@@ -129,13 +129,15 @@ try {
     // ORDER as literals, so `/operate/superstress` reddened two assertions here
     // before §7 was ever reached. A count literal one hop from the thing that
     // changed is exactly the p2·10 CHUNK_COUNT lesson in a different file.
-    R.ok(routes.length === 16, `ROUTES length: ${routes.length} (expected 16)`);
+    // p4·06 · 16 -> 17, and the THIRD literal (the group title above) moves
+    // with them, exactly as the p4·04 note below says to count.
+    R.ok(routes.length === 17, `ROUTES length: ${routes.length} (expected 17)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
       '/live/network', '/learn', '/learn/sim', '/monero', '/future',
-      '/future/outlook', '/operate/node', '/operate/mine', '/operate/superstress',
-      '/about/peers', '/about/sources', '/about/site',
+      '/future/outlook', '/future/protocol', '/operate/node', '/operate/mine',
+      '/operate/superstress', '/operate/peers', '/about/sources', '/about/site',
     ];
 
     const ordered = routes.length === expected.length &&
@@ -147,20 +149,20 @@ try {
 }
 
 // ============================================================================
-// §2 · vercel.json structure: 12 redirects + SPA catch-all in rewrites
+// §2 · vercel.json structure: 13 redirects + SPA catch-all in rewrites
 // ============================================================================
-R.group('§2 · vercel.json: 12 redirects (statusCode 301, no /api/ sources) + SPA catch-all in rewrites');
+R.group('§2 · vercel.json: 13 redirects (statusCode 301, no /api/ sources) + SPA catch-all in rewrites');
 
 let vercelJsonContent;
 try {
   const vercelPath = join(__dirname, '..', 'vercel.json');
   vercelJsonContent = JSON.parse(readFileSync(vercelPath, 'utf8'));
 
-  // Check redirects array (destination-based nav redirects, 12 entries expected)
+  // Check redirects array (destination-based nav redirects, 13 entries expected)
   if (!Array.isArray(vercelJsonContent.redirects)) {
-    R.ok(false, `redirects is ${typeof vercelJsonContent.redirects} (expected array of 12)`);
+    R.ok(false, `redirects is ${typeof vercelJsonContent.redirects} (expected array of 13)`);
   } else {
-    R.ok(vercelJsonContent.redirects.length === 12, `redirects.length: ${vercelJsonContent.redirects.length} (expected 12)`);
+    R.ok(vercelJsonContent.redirects.length === 13, `redirects.length: ${vercelJsonContent.redirects.length} (expected 13)`);
 
     if (vercelJsonContent.redirects.length > 0) {
       const all301 = vercelJsonContent.redirects.every(r => r.statusCode === 301);
@@ -566,52 +568,47 @@ try {
 }
 
 // ============================================================================
-// §7c · ia.ts future protocol & ecosystem ids ↔ data.ts (UNION, both directions)
+// §7c · ia.ts future protocol ids ↔ data.ts, and the ecosystem ids are ABSENT
 // ============================================================================
-/* WHY THIS SECTION EXISTS, AND WHAT IT GUARDS.
+/* WHY THIS SECTION CHANGED SHAPE IN p4·06, AND WHY THE OLD ONE COULD NOT SURVIVE.
  *
- * §7 checks IA leaves against ROUTES after stripping query and hash. Every
- * future leaf is `/future#<id>`, so all of them strip to the single route
- * `/future`. The protocol cards (fcmp, seraphis, jamtis, carrot, cuprate) and
- * the ecosystem panels (stressnet, xmrhub, kycrip, xmrclub, soon superbrain)
- * are indistinguishable by path shape. §7 is structurally blind to membership
- * in the same way §7b was — a renamed id could hide as a drop plus an add, or
- * be absent entirely, and the gate would never notice.
+ * This section used to locate its subject column by `i.p.includes('/future#')`
+ * and parse ids out with `/#([a-z]+)$/`. Both halves were built ON the hollow
+ * anchors — so the release that REMOVED them turned this gate red at
+ * "expected exactly 1 IA column with /future# links, found 0", and the four
+ * assertions inside its guard silently DECLINED rather than failing. A gate
+ * keyed on a URL shape dies with that URL shape.
  *
- * ia.ts hand-copies both lists from pages/future/data.ts (lines 118 and 125)
- * in two SEPARATE arrays — FUTURE_PROTOCOL_META and ECOSYSTEM_META — so the
- * two can be maintained independently. Both are spread into the same future IA
- * column (ia.ts:204-205), making the runtime view: a union of 9 ids (or 10
- * with superbrain), all sharing one path shape.
+ * The defect class it was built for is #174 — an IA leaf naming an id that
+ * does not exist in data.ts, which is invisible to §7 because §7 strips query
+ * and hash and every future leaf then collapses to one route. That class is
+ * still real for the five PROTOCOL leaves, which are now `?p=<id>`, so the
+ * both-directions membership check is kept and simply re-keyed.
  *
- * The honest comparison subject is therefore the UNION — every id declared in
- * data.ts must appear in ia.ts, and every id in ia.ts must be declared in
- * data.ts. That covers both renames (drop + add) and absences. A name collision
- * between the two arrays (one id in both FUTURE_PROTOCOLS and ECOSYSTEM) would
- * be absorbed by the union check and stay green while the app rendered two
- * different panels for the same anchor — so a disjointness assertion closes that
- * gap.
+ * THE ECOSYSTEM HALF IS NOT RE-KEYED, BECAUSE ITS SUBJECT NO LONGER EXISTS.
+ * p4·06 deleted `ECOSYSTEM_META` from ia.ts outright rather than repointing
+ * it: its five rows were hollow, and the four PARTNERs are now reached через
+ * one working "Trusted peers" leaf. A hand-copied list ia.ts does not hold
+ * cannot drift from data.ts — the class stopped existing rather than getting
+ * a better gate. What replaces it is the ABSENCE assertion below, so a
+ * half-restored copy reds instead of arriving unchecked.
  *
- * ── NOT-MATCHED (cases this section cannot see) ──────────────────────────
- * (1) **Reordering within data.ts arrays** — both FUTURE_PROTOCOLS and ECOSYSTEM
- *     are membership checks, so order is not asserted. A reordered id stays green.
- * (4) **A data.ts id that never renders a panel** — this section verifies that
- *     every id in data.ts appears in ia.ts, not that clicking it produces
- *     anything other than an anchor scroll. Wireframe completeness is measured;
- *     panel rendering is not.
+ * TWO WIDENINGS while the file was open, both measured to change nothing today:
+ *   · the id regex is `[a-z0-9-]+` on BOTH sides, not `[a-z]+`. The old one
+ *     was silently blind to any id carrying a digit or a hyphen (`fcmp2`,
+ *     `full-chain`) — it would have parsed nothing and the set checks would
+ *     have agreed on nothing. Both sides move together so they cannot disagree.
+ *   · the counts are asserted, so a widening that changed what is found would
+ *     itself red.
  */
-R.group('§7c · ia.ts future & ecosystem ids ↔ pages/future/data.ts (UNION, both directions)');
+R.group('§7c · ia.ts protocol ids ↔ pages/future/data.ts (both directions) + no hollow anchors');
 
 try {
   const dataSrc = stripComments(
     readFileSync(join(__dirname, 'src', 'pages', 'future', 'data.ts'), 'utf8'),
   );
 
-  // Helper: extract the source text of an export const ARRAY, from [ to matching ].
-  // Looks for 'export const NAME' pattern and captures everything to the closing ];
   function extractArrayBody(src, constName) {
-    // Match: export const NAME: ... = [ ... ];
-    // Use a regex to find and extract the array content between [ and ]
     const pattern = new RegExp(
       `export\\s+const\\s+${constName}\\s*:[^=]*=\\s*\\[([\\s\\S]*?)\\];`,
       'i'
@@ -620,13 +617,11 @@ try {
     return match ? match[1] : '';
   }
 
-  // Extract both array bodies
+  const ID_RX = /\{\s*id:\s*"([a-z0-9-]+)"/g;
   const futureSrc = extractArrayBody(dataSrc, 'FUTURE_PROTOCOLS');
   const ecosysSrc = extractArrayBody(dataSrc, 'ECOSYSTEM');
-
-  // Parse ids from each array using the standard regex
-  const futureIds = [...futureSrc.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
-  const ecosysIds = [...ecosysSrc.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
+  const futureIds = [...futureSrc.matchAll(ID_RX)].map((m) => m[1]);
+  const ecosysIds = [...ecosysSrc.matchAll(ID_RX)].map((m) => m[1]);
 
   /* NON-VACUITY FLOOR — first, load-bearing. Every comparison below depends on
    * having non-empty arrays. At length 0, set-difference checks are vacuously
@@ -649,61 +644,85 @@ try {
       ? `ECOSYSTEM parses ${ecosysIds.length} ids: ${ecosysIds.join(', ')}`
       : 'parsed NO ids from ECOSYSTEM — instrument is pointed at the wrong file or the literals changed shape');
 
-  // Check disjointness: no id should appear in both arrays
   const intersection = futureIds.filter((id) => ecosysIds.includes(id));
   R.ok(intersection.length === 0,
     intersection.length === 0
       ? 'FUTURE_PROTOCOLS and ECOSYSTEM are disjoint (no id in both)'
       : `${intersection.length} id(s) appear in BOTH arrays (each should appear in exactly one): ${intersection.join(', ')}`);
 
-  // Import ia.ts runtime
   const iaModule = await import(join(__dirname, 'src', 'nav', 'ia.ts'));
   const IA = Array.isArray(iaModule.IA) ? iaModule.IA : [];
+  const allLeaves = IA.flatMap((s) => s.cols || []).flatMap((c) => c.items || []);
 
-  // Find the column that carries /future# links (shape-based, not index-based)
-  const futureCols = IA.flatMap((s) => s.cols || [])
-    .filter((c) => (c.items || []).some((i) => i.p && i.p.includes('/future#')));
+  /* NON-VACUITY FLOOR for the two ABSENCE assertions below. Both are satisfied
+   * by an empty IA, which is exactly the state a broken import produces. */
+  R.ok(allLeaves.length > 0,
+    allLeaves.length > 0
+      ? `IA exposes ${allLeaves.length} leaves to search`
+      : 'IA exposes NO leaves — the absence assertions below would pass vacuously');
 
-  R.ok(futureCols.length === 1,
-    futureCols.length === 1
-      ? `exactly one IA column carries /future# links (header: "${futureCols[0].h}")`
-      : `expected exactly 1 IA column with /future# links, found ${futureCols.length}`);
+  /* THE HOLLOW-ANCHOR ABSENCE. #184 measured that /future renders no panel any
+   * `/future#<id>` can scroll to; p4·06 removed all ten. This is the assertion
+   * that stops one coming back. Scoped to `/future#` and NOT to "#" in general,
+   * because `/about/sources#release-notes` is a REAL anchor that resolves. */
+  const hollow = allLeaves.filter((i) => typeof i.p === 'string' && i.p.includes('/future#'));
+  R.ok(hollow.length === 0,
+    hollow.length === 0
+      ? 'no IA leaf is a /future# fragment (the #184 hollow anchors are gone)'
+      : `${hollow.length} hollow /future# leaf/leaves are back: ${hollow.map((i) => i.p).join(', ')}`);
 
-  if (futureCols.length === 1 && futureIds.length > 0 && ecosysIds.length > 0) {
-    const col = futureCols[0];
+  /* THE ECOSYSTEM ABSENCE — what replaces the deleted hand-copy. If anyone
+   * re-adds an ECOSYSTEM_META-shaped list, this reds naming the ids.
+   *
+   * SCOPED TO THE FUTURE SECTION, and the first run of this assertion is why.
+   * Written unscoped it matched `/learn/sim?p=stressnet` and went red against
+   * a correct tree: `stressnet` is BOTH an ECOSYSTEM id and a registered
+   * simulator id, and `?p=` is two different namespaces (`/learn/sim?p=` for
+   * simulators, `/future/protocol?p=` for protocols). The claim being made
+   * here is "no FUTURE destination points at an ecosystem panel", so the
+   * filter says that rather than something wider that happens to include it.
+   * A simulator that shares a name with a partner project is not a defect. */
+  const ecoInIa = allLeaves.filter((i) =>
+    typeof i.p === 'string' && i.p.startsWith('/future')
+    && ecosysIds.some((id) => i.p.endsWith(`#${id}`) || i.p.endsWith(`?p=${id}`)));
+  R.ok(ecoInIa.length === 0,
+    ecoInIa.length === 0
+      ? `no IA leaf names any of the ${ecosysIds.length} ECOSYSTEM ids (they are reached via the peers leaf)`
+      : `${ecoInIa.length} IA leaf/leaves name an ECOSYSTEM id: ${ecoInIa.map((i) => i.p).join(', ')}`);
 
-    // Extract ids from ia.ts IA leaves: /future#<id> → id
+  // Find the column carrying the protocol links by SHAPE, not by index.
+  const protoCols = IA.flatMap((s) => s.cols || [])
+    .filter((c) => (c.items || []).some((i) => i.p && i.p.includes('/future/protocol?p=')));
+
+  R.ok(protoCols.length === 1,
+    protoCols.length === 1
+      ? `exactly one IA column carries /future/protocol?p= links (header: "${protoCols[0].h}")`
+      : `expected exactly 1 IA column with /future/protocol?p= links, found ${protoCols.length}`);
+
+  if (protoCols.length === 1 && futureIds.length > 0) {
+    const col = protoCols[0];
     const iaIds = (col.items || [])
-      .map((i) => (i.p.match(/#([a-z]+)$/) || [])[1])
+      .map((i) => (i.p.match(/\?p=([a-z0-9-]+)$/) || [])[1])
       .filter(Boolean);
 
-    // Combine both data.ts arrays (the runtime union)
-    const allDataIds = [...futureIds, ...ecosysIds];
-
-    // → direction: every id in data.ts appears in ia.ts
-    const missingFromIa = allDataIds.filter((id) => !iaIds.includes(id));
+    const missingFromIa = futureIds.filter((id) => !iaIds.includes(id));
     R.ok(missingFromIa.length === 0,
       missingFromIa.length === 0
-        ? `all ${futureIds.length} FUTURE + ${ecosysIds.length} ECOSYSTEM ids appear in IA column`
+        ? `all ${futureIds.length} FUTURE_PROTOCOLS ids appear in the IA column`
         : `${missingFromIa.length} id(s) missing from IA column: ${missingFromIa.join(', ')}`);
 
-    // ← direction: every id in ia.ts appears in data.ts (the #174 defect)
-    const unknownInIa = iaIds.filter((id) => !allDataIds.includes(id));
+    const unknownInIa = iaIds.filter((id) => !futureIds.includes(id));
     R.ok(unknownInIa.length === 0,
       unknownInIa.length === 0
-        ? `all ${iaIds.length} IA links name an id in data.ts`
+        ? `all ${iaIds.length} IA protocol links name an id in data.ts`
         : `${unknownInIa.length} IA id(s) not in data.ts: ${unknownInIa.join(', ')} — this is the #174 defect`);
 
-    // Exactly once: a duplicated link would satisfy both set checks above
     const dupes = iaIds.filter((id) => iaIds.filter((x) => x === id).length !== 1);
     R.ok(dupes.length === 0,
       dupes.length === 0
-        ? 'each data.ts id appears exactly once in the IA column (no duplicate links)'
+        ? 'each protocol id appears exactly once in the IA column (no duplicate links)'
         : `not-exactly-once in IA: ${dupes.join(', ')}`);
 
-    // Assert all labels in the future IA column are non-empty (the `l` field the
-    // palette reads when rendering the column items). Checks runtime IA, not the
-    // source-side META arrays.
     const futureColItems = col.items || [];
     const emptyLabels = futureColItems
       .filter((item) => !item.l || typeof item.l !== 'string' || item.l.trim() === '')
@@ -794,8 +813,13 @@ R.fixture('Vercel 301 responses', 'Cannot be checked without an HTTP client. Sta
 // ============================================================================
 R.info('');
 R.info('═══════════════════════════════════════════════════════════════════');
-R.info('Tally: 12 server redirects · 12 client mirrors · 2 hash rows · 3 identity rows');
-R.info('  (12 vercel 301s <-> REDIRECTS drift is owned by verify-redirects.mjs, not this gate)');
+/* p4·06 — DERIVED, not bumped. This line read "12 server redirects · 12 client
+ * mirrors" and would have needed a human every time REDIRECTS grew; it is one
+ * hop from the thing that changes, which is the p2·10 CHUNK_COUNT lesson. Both
+ * figures now come from the arrays the section already parsed, so the tally
+ * cannot disagree with the assertions above it. */
+R.info(`Tally: ${vecelRedirects.length} server redirects · ${vecelRedirects.length} client mirrors · 2 hash rows · 3 identity rows`);
+R.info(`  (${vecelRedirects.length} vercel 301s <-> REDIRECTS drift is owned by verify-redirects.mjs, not this gate)`);
 R.info('  (2 hash: #markets-thesis, #outlook — client-only, no server redirect needed)');
 R.info('  (3 identity: /, /monero, /future — unchanged, no redirect needed)');
 R.info('═══════════════════════════════════════════════════════════════════');
