@@ -253,7 +253,17 @@ try {
 
   const d = await cols(1440, 900);
   R.ok(d && d.tracks === 3, `1440 (desktop band): ${d ? d.tracks : 'no grid'} columns`);
-  R.ok(d && d.rows === 2, `and the fourth card WRAPS to a second row rather than padding the first (${d ? d.rows : '?'} rows, ${d ? d.items : '?'} cards)`);
+  /* p4·M3 — THE ASSERTION IS UNCHANGED AND ITS MESSAGE IS NOT, because the
+   * message had stopped describing what it measures. At four partners this
+   * read "the fourth card WRAPS to a second row rather than padding the
+   * first"; six partners in three columns is TWO FULL ROWS, so the sentence
+   * named a card that is no longer the wrapping one while the number it
+   * asserts (2) happened to stay correct. A step name must name what it runs —
+   * and a stale one is worse here than elsewhere, because a reader checking
+   * this gate would have gone looking for a half-empty second row that no
+   * longer exists. The property is still `rows === 2`: the grid FLOWS into as
+   * many rows as it needs and never pads a short one. */
+  R.ok(d && d.rows === 2, `and the grid FLOWS into full rows rather than padding one (${d ? d.rows : '?'} rows of 3, ${d ? d.items : '?'} cards)`);
 
   const t = await cols(1000, 900);
   R.ok(t && t.tracks === 2, `1000 (the 769-1199 tablet band): ${t ? t.tracks : 'no grid'} columns`);

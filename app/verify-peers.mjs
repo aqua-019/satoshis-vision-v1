@@ -1,10 +1,10 @@
 // verify-peers.mjs — DOM gate for /operate/peers Monero Superbrain partner card.
-// (p4·06 moved this page from /about/peers; §7's four PARTNER cards are now a
+// (p4·06 moved this page from /about/peers; §7's PARTNER cards are now a
 //  3-column grid whose geometry verify-protocol.mjs §6 owns — this file makes
 //  no column assertion and never did.)
 //
-// Verifies the fourth (fifth overall) ecosystem entry lands correctly, rendering:
-//   1. Four PARTNER cards (exact count from source parse)
+// Verifies the ecosystem entries land correctly, rendering:
+//   1. Six PARTNER cards (exact count from source parse)
 //   2. Superbrain's GitHub repo URL in exact casing (case-sensitive)
 //   3. Install block with 4 ordered steps in <ol>
 //   4. Five app names rendered (Superbrain, SuperPay, MoneroSpace, Superstress, SuperAtomic)
@@ -12,6 +12,7 @@
 //   6. Pulse live-data handling: accepts valid payload, degrades on 500
 //   7. Mobile (390px): no h-scroll, no HTML text under 12px
 //   8. Reduced motion: cards render, zero running animations
+//   9. The partner screenshots: same-origin, resolvable, decoded, dated
 //
 // CROSS-GATE DEPENDENCY: verify-future.mjs asserts the Superbrain pulse does NOT
 // appear on /future (counts exactly 9 data-pulse="live" on that page). This gate
@@ -48,8 +49,16 @@ const expectedPartnerCount = partnerMatches.length;
 
 R.ok(expectedPartnerCount > 0,
   '§1 · data.ts contains at least one PARTNER (instrument check)');
-R.ok(expectedPartnerCount === 4,
-  `§1 · data.ts declares exactly 4 PARTNER entries (parsed: ${expectedPartnerCount})`);
+/* p4·M3: 4 -> 6 (Monerica, Privacy Gateway). RECOUNTED, never incremented —
+   `expectedPartnerCount` is parsed from data.ts above and every downstream
+   assertion in this file compares against THAT, so this literal is the only
+   place a human number appears. It is deliberately not derived: a gate whose
+   expectation is computed from its own subject cannot notice the subject
+   changing, which is the whole reason a second, hand-written figure exists
+   here at all. If you moved this number without meaning to move it, that is
+   the assertion doing its job. */
+R.ok(expectedPartnerCount === 6,
+  `§1 · data.ts declares exactly 6 PARTNER entries (parsed: ${expectedPartnerCount})`);
 
 // §5: Check RepoPulseReadout does not render any typed numbers as text content.
 // RepoPulseReadout was extracted into app/src/pages/future/repoPulse.tsx.
@@ -90,7 +99,7 @@ console.log(`  engine: ${engine}`);
  *
  * The splash is HOME-ONLY. Measured in a genuinely cold context with no
  * bypass installed anywhere: `/` has [data-coldboot]=1, `/operate/peers` has
- * 0 and renders all four partner cards. This gate never visits `/`, so it
+ * 0 and renders every partner card. This gate never visits `/`, so it
  * has nothing to bypass.
  *
  * Installing it anyway is not harmless. verify-coldboot-live's §0 audits
@@ -105,7 +114,7 @@ console.log(`  engine: ${engine}`);
  */
 
 try {
-  /* ── COLD LOAD: 4 partner cards render ──────────────────────────────── */
+  /* ── COLD LOAD: the partner cards render ────────────────────────────── */
   const page = await browser.newPage();
 
   // Intercept /api/feeds requests to mock live repo pulse.
@@ -135,7 +144,7 @@ try {
   const renderedCount = await cards.count();
 
   R.ok(renderedCount === expectedPartnerCount,
-    `§1 · Four partner cards render (rendered: ${renderedCount}, expected: ${expectedPartnerCount})`);
+    `§1 · every partner card renders (rendered: ${renderedCount}, expected: ${expectedPartnerCount})`);
 
   // §2: Exact-case GitHub URL exists in Superbrain card
   const superbrainUrl = 'https://github.com/brainchainz/Monero-Superbrain';
@@ -406,6 +415,114 @@ try {
 
   R.ok(animations === 0,
     `§8 · Zero running animations under reduced motion (active: ${animations})`);
+
+  /* ══ §9 · THE PARTNER SCREENSHOTS ══════════════════════════════════════
+   * p4·M3. Before this release every brief rendered ZERO <img> — measured, on
+   * all four — and the "SCREENSHOT ·…" boxes a reader saw were `slots`, dashed
+   * reservations. This section exists so that cannot silently become true
+   * again, and so the way it is most likely to fail — an off-origin src that
+   * happens to load in a dev browser and is refused by the CSP in production —
+   * fails HERE rather than for a reader on Tor.
+   *
+   * FIVE ASSERTIONS, THREE OF THEM ABSENCES, SO EACH CARRIES A FLOOR. An
+   * absence check over an empty selector is the single most-recorded gate
+   * defect in this repo; every count below is compared against the number of
+   * shots PARSED FROM SOURCE, not against zero.
+   *
+   * `naturalWidth > 0` IS THE LOAD-BEARING ONE, and the reason is that every
+   * cheaper check passes on a broken image: the <img> exists, its src is
+   * same-origin, its alt is set, and the file 404s. Only a decode says the
+   * bytes arrived. This is also why EcoPopup ships NO onError fallback — a
+   * shot that degrades gracefully to a placeholder is a shot this assertion
+   * can never catch. */
+  const SHOT_RX = /shot:\s*\{\s*src:\s*"([^"]+)",\s*alt:\s*"((?:[^"\\]|\\.)*)",\s*captured:\s*"([^"]+)",/g;
+  const shots = [...dataContent.matchAll(SHOT_RX)].map(([, src, alt, captured]) => ({ src, alt, captured }));
+
+  R.ok(shots.length >= 6,
+    `§9 · data.ts declares ${shots.length} screenshots (floor: a parse that found none would make every check below vacuous)`);
+
+  const badSrc = shots.filter((h) => !/^\/peers\/peer-[a-z0-9]+\.webp$/.test(h.src));
+  R.ok(badSrc.length === 0,
+    `§9 · every shot src is a same-origin /peers/ path (${shots.length - badSrc.length} of ${shots.length})`,
+    badSrc.map((h) => h.src).join(', ')
+    + '  — an absolute URL here is not a slow image, it is one vercel.json\'s img-src refuses.');
+
+  const missing = shots.filter((h) => !existsSync(join(__dirname, 'public', h.src.replace(/^\//, ''))));
+  R.ok(missing.length === 0,
+    `§9 · every shot src resolves to a real file under public/ (${shots.length - missing.length} of ${shots.length})`,
+    missing.map((h) => h.src).join(', '));
+
+  const badDate = shots.filter((h) => !/^\d{4}-\d{2}-\d{2}$/.test(h.captured));
+  R.ok(badDate.length === 0,
+    `§9 · every shot carries an ISO capture date (${shots.length - badDate.length} of ${shots.length})`,
+    badDate.map((h) => `${h.src}: "${h.captured}"`).join(', ')
+    + '  — undated, a screenshot of someone else\'s site silently claims to be current.');
+
+  const alts = shots.map((h) => h.alt.trim());
+  R.ok(alts.every((a) => a.length > 30) && new Set(alts).size === alts.length,
+    `§9 · every shot has its own substantive alt text (${new Set(alts).size} distinct, shortest ${Math.min(...alts.map((a) => a.length))} chars)`,
+    'a duplicated alt means one entry is describing another entry\'s capture.');
+
+  /* THE RENDERED HALF. Back to desktop: §7 left the page at 390, and while the
+   * figure renders at both widths, a 1440 read is the one a reviewer checks. */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(BASE + '/operate/peers', { waitUntil: 'networkidle' });
+
+  const briefIds = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-peer-brief]')].map((b) => b.getAttribute('data-peer-brief')));
+  R.ok(briefIds.length === expectedPartnerCount,
+    `§9 · every partner card exposes a brief control (${briefIds.length} of ${expectedPartnerCount})`);
+
+  const shown = [];
+  const onCard = await page.evaluate(() =>
+    document.querySelectorAll('.v6-peer-grid img').length);
+  R.ok(onCard === 0,
+    `§9 · no card FACE renders a screenshot (${onCard}) — the shot belongs to the brief, so the grid stays cheap and six captures are not six requests on arrival`);
+
+  for (const id of briefIds) {
+    await page.locator(`[data-peer-brief="${id}"]`).click();
+    await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+    await page.waitForFunction((i) => {
+      const im = document.querySelector(`img[data-peer-shot="${i}"]`);
+      return im && im.complete;
+    }, id, { timeout: 8000 }).catch(() => {});
+    shown.push(await page.evaluate((i) => {
+      const d = document.querySelector('[role="dialog"]');
+      const im = d ? d.querySelector(`img[data-peer-shot="${i}"]`) : null;
+      const cap = d ? [...d.querySelectorAll('figcaption')].map((f) => f.textContent.trim()) : [];
+      return {
+        id: i,
+        n: d ? d.querySelectorAll('img').length : -1,
+        decoded: !!im && im.naturalWidth > 0,
+        nat: im ? `${im.naturalWidth}x${im.naturalHeight}` : null,
+        src: im ? im.getAttribute('src') : null,
+        lazy: im ? im.getAttribute('loading') : null,
+        cap: cap[0] || null,
+      };
+    }, id));
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(260);
+  }
+
+  R.ok(shown.length === expectedPartnerCount && shown.every((o) => o.n === 1),
+    `§9 · every brief renders exactly one screenshot (${shown.filter((o) => o.n === 1).length} of ${shown.length})`,
+    shown.filter((o) => o.n !== 1).map((o) => `${o.id}: ${o.n} img`).join(', '));
+
+  const undecoded = shown.filter((o) => !o.decoded);
+  R.ok(undecoded.length === 0,
+    `§9 · every screenshot actually DECODED, at its intrinsic size (${shown.filter((o) => o.decoded).length} of ${shown.length}; sizes: ${[...new Set(shown.map((o) => o.nat))].join(', ')})`,
+    undecoded.map((o) => o.id).join(', ')
+    + '  — a 404 leaves the tag, the src and the alt all correct. Only a decode says the bytes arrived.');
+
+  const offOriginSrc = shown.filter((o) => !(o.src || '').startsWith('/peers/'));
+  R.ok(offOriginSrc.length === 0,
+    `§9 · every RENDERED src is same-origin too, not just the source literal (${shown.length - offOriginSrc.length} of ${shown.length})`,
+    offOriginSrc.map((o) => `${o.id}: ${o.src}`).join(', '));
+
+  const undated = shown.filter((o) => !/^captured \d{4}-\d{2}-\d{2}$/i.test(o.cap || ''));
+  R.ok(undated.length === 0,
+    `§9 · every screenshot renders its capture date beneath it (${shown.length - undated.length} of ${shown.length}; e.g. "${shown[0] ? shown[0].cap : 'n/a'}")`,
+    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', '));
 
   await page.close();
   await reducedMotionPage.close();

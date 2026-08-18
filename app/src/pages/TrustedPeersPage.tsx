@@ -103,7 +103,28 @@ export function TrustedPeersPage() {
                       <RepoPulseReadout repo={e.repo} />
                     </div>
                   ) : null}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--rule)", paddingTop: 13 }}>
+                  {/* p4·M3 — `flexWrap` + `gap`, AND THE REASON IS A DEFECT ONLY
+                      LOOKING FOUND. This row is `space-between` with two
+                      children, and at 390 the card's inner width is ~254px.
+                      `visit privacygateway.io ↗` — the longest partner domain
+                      on the page, arriving with this release — measures 176px,
+                      so the two children could not both fit: the button was
+                      flex-shrunk to 79.7px and its label SHATTERED to "our /
+                      brief" over two lines, while the anchor wrapped and left
+                      its ↗ orphaned on a line of its own.
+
+                      Nothing caught it. §9's clip check cannot: the button
+                      wrapped INSIDE a 44px box rather than overflowing one, so
+                      `scrollHeight === clientHeight` and the assertion was
+                      correctly green. p4·04 recorded the identical shape on
+                      `/operate/mine`'s copy button (27×60 where 58×24 was
+                      intended) and the identical fix.
+
+                      Wrapping is the honest answer rather than shrinking: on a
+                      narrow card the two controls belong on two lines, whole,
+                      not on one line in pieces. Above 390 the row still fits
+                      and never wraps, so desktop is unchanged. */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10, borderTop: "1px solid var(--rule)", paddingTop: 13 }}>
                     {/* p4·M3 — A REAL TAP TARGET, AND THE BUG IT FIXES IS NOT
                         "small text". Measured on the shipped build at 390x844
                         before this change: this control's box was 52.8 x 16.
@@ -161,6 +182,13 @@ export function TrustedPeersPage() {
                         fontSize: "var(--fs-label)",
                         letterSpacing: "0.06em",
                         textDecoration: "underline dotted",
+                        // The pair that makes the 44px box mean what it says:
+                        // never squeezed by a long sibling, never broken
+                        // mid-label. All six controls carry the same words, so
+                        // verify-mobile §9 asserts they measure the same width
+                        // — one that differs is one that was squeezed.
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       our brief
