@@ -133,6 +133,53 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
             ) : null}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* p4·M3 — THE REAL SCREENSHOT, above whatever is still reserved.
+                Four things here are load-bearing and none is styling:
+
+                `width`/`height` ARE THE INTRINSIC PIXELS (every capture is
+                1000x625), so the browser reserves the aspect-ratio box before
+                a byte of image arrives and the paragraph beside it never
+                jumps. Without them a lazy image is a layout shift by
+                construction, which this repo caps at 0.005.
+
+                `loading="lazy"` IS NOT WHAT KEEPS IT OFF FIRST PAINT.
+                `V6Modal` unmounts when closed (see its header — verify-future
+                asserts zero [role="dialog"] on an untouched page), so the
+                <img> does not exist in the DOM until a reader opens the brief,
+                and no request is issued before that. The attribute is the
+                second line of defence for the case where a shot sits below the
+                fold of an already-open dialog.
+
+                THE CAPTION IS THE HONESTY, NOT A LABEL. A screenshot of
+                somebody else's site is a reading that starts aging on
+                capture; undated it silently claims to be current. Rendered as
+                a real <figure>/<figcaption> pair so the association survives
+                for a screen reader, where a sibling <div> would not.
+
+                NO onError FALLBACK, DELIBERATELY. A missing asset must look
+                broken: a shot that silently degrades to a placeholder is a
+                gate that can never go red, and verify-peers §9 asserts every
+                src resolves precisely so this branch is never reached. */}
+            {e.shot ? (
+              <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                <img
+                  src={e.shot.src}
+                  alt={e.shot.alt}
+                  width={1000}
+                  height={625}
+                  loading="lazy"
+                  decoding="async"
+                  data-peer-shot={e.id}
+                  style={{ display: "block", width: "100%", height: "auto", border: "1px solid var(--rule)", background: "var(--bg-2)" }}
+                />
+                <figcaption
+                  className="mono"
+                  style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}
+                >
+                  captured {e.shot.captured}
+                </figcaption>
+              </figure>
+            ) : null}
             {e.slots.map((s, i) => (
               <div
                 key={i}

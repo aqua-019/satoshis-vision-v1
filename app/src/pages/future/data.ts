@@ -48,6 +48,39 @@ export interface EcoSlot {
   h?: number;
 }
 
+/**
+ * A partner screenshot — a real capture, self-hosted, dated.
+ *
+ * WHY THIS IS NOT AN `EcoSlot` WITH A PICTURE IN IT. A slot is a RESERVATION:
+ * a dashed box saying "this artifact has not arrived". A shot is the opposite
+ * claim — the artifact arrived, here it is, and here is when it was taken. The
+ * two cannot share a type, because the honest failure modes differ: an empty
+ * slot is fine forever, an empty shot is a broken image.
+ *
+ * `captured` IS NOT DECORATION. A screenshot is a point-in-time reading of
+ * somebody else's site, and it starts going stale the moment it is taken —
+ * exactly the property every live figure on this site carries a provenance
+ * badge for. Undated, it silently claims to be current; dated, a reader can
+ * weigh it. Same doctrine as `LEGALITY_MATRIX`'s `reviewed` field: the date
+ * says when the capture was made, and asserts nothing about whether the site
+ * still looks like this.
+ *
+ * `src` MUST be a same-origin path under `/peers/`. `vercel.json` ships
+ * `img-src 'self' data:`, so an off-origin screenshot is not a slow image, it
+ * is a BLOCKED one — and the site is read over Tor, where a third-party image
+ * request is a deanonymisation surface rather than a performance note.
+ * verify-peers §9 asserts the path shape; verify-origins phase 2 opens a brief
+ * and counts the requests, which is the half that catches an off-origin src
+ * that happens to load.
+ */
+export interface EcoShot {
+  /** Same-origin, under /peers/. Never an absolute URL — see above. */
+  src: string;
+  alt: string;
+  /** ISO day, YYYY-MM-DD. Rendered verbatim as "captured <date>". */
+  captured: string;
+}
+
 export interface EcoBlock {
   label: string;
   /** true → <ol>, false/absent → <ul>. Ordered means the steps must be
@@ -80,6 +113,9 @@ export interface EcoEntry {
   blocks?: readonly EcoBlock[];
   simLink?: string;
   simLabel?: string;
+  /** One real, dated screenshot. Optional: an entry with none simply shows
+   *  its `slots`, which is the pre-p4·M3 behaviour unchanged. */
+  shot?: EcoShot;
   slots: readonly EcoSlot[];
   links: readonly EcoLink[];
 }
@@ -511,13 +547,33 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     blurb: "A curated directory of Monero ecosystem resources with a highly-functional XMR swap front-end.",
     body: [
       "XMRHUB collects the working ecosystem — wallets, nodes, explorers, merchants, swap rails — into one navigable directory, with a swap interface that actually works in a hurry.",
-      "xmr.irish and XMRHUB cross-link as sister surfaces: we render the protocol, they route you to the tools. Deep-link targets and the swap embed land here once finalized.",
+      // p4·M3 — THE SWAP-EMBED PROMISE IS GONE FROM THIS SENTENCE, and deleting
+      // the slot without deleting the clause would have been the worse half of
+      // the change: a page promising an embed with no box reserved for it reads
+      // as an oversight, where the box at least said what was missing. The
+      // reason the embed is not coming is structural rather than editorial —
+      // `vercel.json` ships no `frame-src` at all under a `connect-src 'self'`
+      // policy, so a third-party swap iframe is refused by the browser before
+      // it is refused by anyone here. Deep-link targets survive: those are
+      // ordinary anchors and cost nothing.
+      "xmr.irish and XMRHUB cross-link as sister surfaces: we render the protocol, they route you to the tools. Deep-link targets land here once finalized.",
     ],
-    slots: [
-      { label: "screenshot · xmrhub directory", h: 130 },
-      { label: "embed · swap widget (iframe target pending)", h: 96 },
-    ],
-    links: [["xmrhub.org", "https://xmrhub.org/index.html"]],
+    shot: {
+      src: "/peers/peer-xmrhub.webp",
+      alt: "The XMRHUB home page: a Monero portal with Buy, Swap, Directory, Learn, Social, Shop and Forum sections above a live XMR/USD chart.",
+      captured: "2026-08-18",
+    },
+    // BOTH slots retired, for two DIFFERENT reasons, and the difference is the
+    // rule this release applies uniformly across the four partners:
+    //   · "screenshot · xmrhub directory" — SATISFIED. The capture above is it.
+    //   · "embed · swap widget (iframe target pending)" — NEVER COMING, per the
+    //     CSP note on body[1]. A reservation is honest right up until the thing
+    //     it reserves is known not to exist; past that it is a promise, which
+    //     is the one thing this page must not make.
+    // A screenshot reservation that has NOT been satisfied still stands — see
+    // Superbrain below, which keeps both of its.
+    slots: [],
+    links: [["xmrhub.org", "https://xmrhub.org/index.html"], ["@XMRHub_org on X", "https://x.com/XMRHub_org"]],
   },
   {
     id: "kycrip", name: "kyc.rip", head: "exit the panopticon.",
@@ -527,9 +583,37 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     body: [
       "kyc.rip documents the no-KYC path: where to acquire XMR peer-to-peer, which services respect users, and what surveillance the mainstream on-ramps actually perform.",
       "It pairs naturally with the Education tab's privacy-stack material — the protocol protects you on-chain; kyc.rip helps you arrive on-chain unprofiled.",
+      // p4·M3 — ADDED, and the reason is that the screenshot below contradicted
+      // the two paragraphs above it. Both of those describe a site that
+      // DOCUMENTS; the capture shows a site that also OPERATES — an exchange
+      // widget above the fold, a live XMR price, and two operator-built tools
+      // of its own. Shipping the image under copy that names only the
+      // documentation half would have put a contradiction in one screenful,
+      // which is the defect p3·16 recorded on the Superstress hub.
+      //
+      // ADDITIVE, NOT A REWRITE. "Documents the route" stays true and stays on
+      // the page — xmr.club's own entry differentiates against that exact
+      // phrase and is deliberately untouched by this release. What was missing
+      // is that the route is one it also runs.
+      //
+      // SOURCED FROM THE CAPTURE ALONE. This session could not reach kyc.rip
+      // (the gateway answers 403 to CONNECT), so every clause here is something
+      // legible in `/peers/peer-kycrip.webp` and nothing else: the swap panel,
+      // the no-accounts claim printed under it, and the two tools it labels
+      // "operator-built". NO COUNTS — the shot advertises a provider tally, and
+      // a number like that is wrong the day the aggregator adds one.
+      "It is not only a reading surface. The site fronts its own no-KYC swap desk — pick a pair, no account, no signup — and publishes operator-built tools beside it, so the same people documenting the route also run part of it.",
     ],
-    slots: [{ label: "panel embed · kyc.rip featured guides", h: 150 }],
-    links: [["kyc.rip", "https://kyc.rip/"]],
+    shot: {
+      src: "/peers/peer-kycrip.webp",
+      alt: "The kyc.rip home page: a FINANCIAL PRIVACY banner beside a no-KYC exchange panel, above two operator-built tools.",
+      captured: "2026-08-18",
+    },
+    // "panel embed · kyc.rip featured guides" retired on XMRHUB's second
+    // ground: an EMBED of a third-party panel is a `frame-src` this site's CSP
+    // does not grant and will not.
+    slots: [],
+    links: [["kyc.rip", "https://kyc.rip/"], ["@kyc_rip on X", "https://x.com/kyc_rip"]],
   },
   {
     // p4·06 — REWRITTEN. Every string in this entry described a different
@@ -566,8 +650,16 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       // mainstream on-ramps record); this one grades the DESTINATIONS.
       "It sits beside kyc.rip rather than on top of it. kyc.rip documents the route — how to arrive on-chain unprofiled, and what the mainstream on-ramps actually record. xmr.club grades the places that route ends at, and publishes a curator's stack naming what the curator actually uses.",
     ],
-    slots: [{ label: "screenshot · xmr.club directory index", h: 150 }],
-    links: [["xmr.club", "https://xmr.club/"]],
+    // p4·M3 — THE COPY ABOVE IS BYTE-UNTOUCHED. p4·06 rewrote it from the
+    // site's own headings and it is done; this release adds the capture the
+    // slot was reserving and nothing else in this entry moves.
+    shot: {
+      src: "/peers/peer-xmrclub.webp",
+      alt: "The xmr.club front page: \u201cNo-KYC services for the Monero economy\u201d beside a directory index, over a row of headline sponsors marked as paid placement.",
+      captured: "2026-08-18",
+    },
+    slots: [],
+    links: [["xmr.club", "https://xmr.club/"], ["@xmr_club on X", "https://x.com/xmr_club"]],
   },
   {
     id: "superbrain", name: "Monero Superbrain", head: "run the whole stack yourself.",
@@ -611,6 +703,23 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
         lines: ["xmrig -o umbrel.local:8888 -u \"Rig Name\" -p x"],
       },
     ],
+    // p4·M3 — THE CAPTURE IS OF NEITHER RESERVED SHOT, AND THE CAPTION SAYS SO.
+    // What arrived is the Superstress app itself, running: its monitor tab,
+    // reporting a testnet at height zero. That is not the store listing and it
+    // is not the mining dashboard, so NEITHER slot is retired — a reservation
+    // is satisfied by the artifact it names or it is not satisfied at all, and
+    // "close enough" is how a placeholder quietly becomes a lie. This is the
+    // one partner of the six where a real screenshot and an open reservation
+    // sit in the same column, which is simply the true state of the world.
+    //
+    // The alt text names the app and the nettype rather than calling this
+    // "Superbrain": a reader who cannot see the image should learn what the
+    // capture shows, not what the entry is about.
+    shot: {
+      src: "/peers/peer-superbrain.webp",
+      alt: "The Superstress app from the Superbrain store, running on a Tor-only testnet node: a monitor tab with network, difficulty, transaction-count and chain-info panels.",
+      captured: "2026-08-18",
+    },
     slots: [
       { label: "screenshot · umbrel community store listing", h: 130 },
       { label: "screenshot · superbrain mining dashboard", h: 130 },
@@ -630,6 +739,109 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       ["Umbrel app store listing", null],
       ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS],
     ],
+  },
+  {
+    /* p4·M3 — MONERICA. The fifth PARTNER, and the one with the longest
+       standing: the oldest directory on this page, and the first peer in the
+       ecosystem to link back to xmr.irish. Both of those are the OPERATOR'S
+       claims rather than this session's findings — "oldest" is a superlative
+       about the world that nothing reachable from here can settle — and the PR
+       flags them as such. The relationship half is ours to know; the
+       superlative half is theirs to confirm.
+
+       EVERY OTHER CLAUSE IS FROM THE SITE'S OWN WORDS, read at monerica.com on
+       2026-08-18: the title "Monerica - Monero Directory"; the tagline "A
+       directory for a Monero circular economy"; the mission paragraph naming
+       "the freedom ideals of the United States of America in the age of
+       cryptocurrency by using Monero"; and the footer line "Links are not
+       endorsements. Some may be affiliate links. No JavaScript. Cookies not
+       required."
+
+       NO COUNTS, on this page's standing rule. The site prints a listing
+       tally, a sponsor-slot tally and a category sidebar; every one of those
+       is true the day it ships and wrong the day the directory grows. What is
+       written here is what the thing IS.
+
+       THE DIFFERENTIATION IS THE LOAD-BEARING PART, and there are now FOUR
+       directories on this page rather than the two p4·06 had to tell apart.
+       Stated once, here, because this is the entry that arrives last into a
+       crowded field: kyc.rip and xmr.club both grade where you ACQUIRE Monero
+       privately — the route and the destinations. Monerica indexes where you
+       SPEND and EARN it: businesses, merchant services, jobs, freelancers,
+       non-profits. A circular economy is the other half of the transaction,
+       which is why a fourth directory is not a fourth of the same thing. */
+    id: "monerica", name: "Monerica", head: "the original directory.",
+    kind: "Collaborator · circular-economy directory", status: "PARTNER",
+    // Distinct hue, measured rather than picked by eye: every colour already
+    // carrying meaning in this file or in the semantic palette sits at hue
+    // 25 / 50 / 142 / 188 / 193 / 268 / 306 / 349. #8ba3ff is hue 228 — 35°
+    // from its nearest neighbour (--c-50 cyan) and the only blue on the page —
+    // and it clears 6.86:1 against all three theme grounds and their bg-2s.
+    c: "#8ba3ff",
+    url: "https://monerica.com/",
+    blurb: "A directory for a Monero circular economy \u2014 where to spend it and who accepts it, indexed by hand and openly disclosing its own affiliate links.",
+    body: [
+      "Monerica is the oldest directory in this list and the first peer in the ecosystem to link back to xmr.irish, which is why it leads. Its own framing is explicitly American: the site says its goal is to reflect the freedom ideals of the United States of America in the age of cryptocurrency by using Monero, and that there are no borders to Monerica \u2014 the ability to transact freely and privately without a bank account, without anyone's permission, and without being watched.",
+      "Where the other directories here grade how you ACQUIRE Monero, this one indexes where it already circulates: businesses, merchant services, jobs, freelancers, non-profits, hosting, VPNs. That is the other half of a currency, and it is the half that decides whether the first half was worth doing.",
+      "It also discloses what most directories do not. The site states in its own footer that links are not endorsements, that some may be affiliate links, and that it runs with no JavaScript and requires no cookies \u2014 and it carries a visible status legend against every listing rather than a silent one. A directory that tells you how it is paid is a directory you can read critically.",
+    ],
+    shot: {
+      src: "/peers/peer-monerica.webp",
+      alt: "The Monerica home page: a category sidebar beside sponsor listings, a mission statement about transacting freely and privately, and a legend of per-listing statuses.",
+      captured: "2026-08-18",
+    },
+    slots: [],
+    links: [["monerica.com", "https://monerica.com/"], ["@MonericaProject on X", "https://x.com/MonericaProject"]],
+  },
+  {
+    /* p4·M3 — PRIVACY GATEWAY. THE ONE ENTRY ON THIS PAGE WHOSE COPY HAS NO
+       CONFIRMED TEXT SOURCE, and that is said here rather than discovered by
+       the next person to touch it.
+
+       privacygateway.io ANSWERED 403 to this session's fetch. So unlike every
+       other entry in this array, no clause below was read off the live site.
+       There are exactly two sources and they are both named:
+         1. the operator, who supplied the site's function \u2014 swap, mining
+            pool, cards;
+         2. `/peers/peer-privacygateway.webp`, the capture below, which is
+            legible and adds a fourth surface the operator did not name (an RPC
+            node) plus the pool's payout scheme.
+       Nothing else is asserted. THE OPERATOR REVIEWS THIS ENTRY IN THE PR.
+
+       NO NUMBERS, and the shot is full of them: a pool hashrate, an active
+       miner count, a current effort percentage, a fee, a minimum payout, a
+       "first block bonus" promotion. Every one of those is a point-in-time
+       reading of somebody else's box, and this file's rule is that a live
+       number is real or it is absent \u2014 there is no third state where it is
+       true-as-of-a-Tuesday. The capture carries them, dated; the prose does
+       not repeat them.
+
+       PPLNS IS A SCHEME NAME, NOT A READING, which is why it survives the rule
+       above: it says how the pool splits a reward, and it is printed on the
+       page in the shot. The hostname is the same category \u2014 an address, not
+       a measurement \u2014 and it is the one fact that makes a mining-pool entry
+       useful at all. Ports are deliberately omitted: four of them, none
+       load-bearing to a brief, all of them rot. */
+    id: "privacygateway", name: "Privacy Gateway", head: "swap, mine, spend.",
+    kind: "Collaborator · swap \u00b7 pool \u00b7 cards", status: "PARTNER",
+    // Hue 83, the lime gap: 33° from --y-50 (warning) and 59° from --g-50
+    // (confirm), so it borrows neither meaning, and 10.89:1 against every
+    // theme ground. Measured on the same sweep as Monerica's.
+    c: "#a3e635",
+    url: "https://privacygateway.io/",
+    blurb: "One operator running several rails at once \u2014 a no-KYC swap desk, an XMR mining pool, prepaid cards and a public RPC node, on surfaces that ask for no account.",
+    body: [
+      "Privacy Gateway is a set of rails rather than a single service. Its own navigation carries four: cards, swap, an RPC node, and a Monero mining pool \u2014 the acquire, hold, spend and support ends of using Monero, run by one operator instead of assembled from four.",
+      "The pool is the surface captured below. It answers at pool.xmr.privacygateway.io, pays on a PPLNS scheme, and starts by asking for nothing except the address you want paid \u2014 no account, no registration step between reading the page and pointing a miner at it. Our own mining guide argues that a pool's honesty is visible in what it discloses before you connect; this one puts its scheme, its fee and its payout floor on the same screen as the address field.",
+      "This entry is the one on the page written without a confirmed text source. The site declined this build's requests, so what is above comes from the operator and from the capture, and the numbers the capture carries are deliberately not repeated here \u2014 read them off the shot, with its date, or off the site itself.",
+    ],
+    shot: {
+      src: "/peers/peer-privacygateway.webp",
+      alt: "Privacy Gateway's mining pool page: a Cards / Swap / RPC node / Mining pool tab row above the pool address, a wallet-address field, a strip of pool statistics and a 24-hour hashrate chart.",
+      captured: "2026-08-18",
+    },
+    slots: [],
+    links: [["privacygateway.io", "https://privacygateway.io/"], ["@Privacygateway_ on X", "https://x.com/Privacygateway_"]],
   },
 ];
 
