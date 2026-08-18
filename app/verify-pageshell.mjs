@@ -116,6 +116,11 @@ const ROUTES = [
   // page is already inside the width sweep rather than being the one route
   // the sweep was never taught about.
   { path: '/operate/superstress', label: '/operate/superstress',        tier: 'standard' },
+  // p4·07 — the 18th route, on the same precedent p3·16, p4·04 and p4·05
+  // record: this gate is still npm-wired only, and a route absent from the
+  // table is one the sweep is never taught about on the day the /future red
+  // is fixed.
+  { path: '/operate/superstress/explorer', label: '/operate/superstress/explorer', tier: 'standard' },
   // p4·04 — the 15th route, added on p3·16's stated precedent above: this
   // gate is still npm-wired only, and a route absent from the table is one
   // the sweep is never taught about on the day the /future red is fixed.

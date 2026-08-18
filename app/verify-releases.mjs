@@ -311,7 +311,7 @@ ok(CURATED.every((c) => typeof c.v === 'string' && c.v.length > 0 && typeof c.no
   // see one injected by a Vite plugin from vite.config.ts.
   const pre = readFileSync(new URL('./scripts/prerender.mjs', import.meta.url), 'utf8');
   ok(!/<title/i.test(pre),
-    'scripts/prerender.mjs emits no <title> — the shell is the single authority for all 17 routes');
+    'scripts/prerender.mjs emits no <title> — the shell is the single authority for all 18 routes');
 }
 
 console.log(fail ? '\n❌ verify-releases FAILED' : '\n✅ verify-releases: all assertions passed');

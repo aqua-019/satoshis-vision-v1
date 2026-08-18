@@ -176,6 +176,7 @@ const PAGE_MODULE = {
   '/operate/node': 'src/pages/NodePage.tsx',
   '/operate/mine': 'src/pages/MinePage.tsx',
   '/operate/superstress': 'src/pages/SuperstressPage.tsx',
+  '/operate/superstress/explorer': 'src/pages/operate/StressnetExplorerPage.tsx',
   '/future/protocol': 'src/pages/future/ProtocolPage.tsx',
   '/operate/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
@@ -1499,7 +1500,7 @@ const ROUTE_BUDGET_GZ = {
   //   ProtocolDetail. It is the cheapest new route in the Phase 4 series
   //   because it mints almost no markup of its own — the body is a component
   //   that already existed and the data is FUTURE_PROTOCOLS unchanged.
-  '/future/protocol':       106_000, // 102,584
+  '/future/protocol':       106_000, // 102,561
   '/operate/node':           92_000, //  83,305
   // p4·04: NEW ROW — the 15th route. Built 97,918 on the FINAL tree, margin
   //  3,082. Set from measurement, never by eye, for the reason the row below
@@ -1534,6 +1535,7 @@ const ROUTE_BUDGET_GZ = {
   //  export — canvasColor.ts and repoPulse.tsx already record this, and it is
   //  now the third release in which the fix was to move a file, not a ceiling.
   '/operate/superstress':   105_000, // 101,893
+  '/operate/superstress/explorer': 0, // placeholder — measured after the build
   // p3·15: 100,100 measured, margin 2,900. The comment previously read 91,082
   // and was stale by 6,437 — the table-wide staleness the /live/mempool note
   // above already records; only this row is re-baselined here, because
@@ -1556,7 +1558,7 @@ const ROUTE_BUDGET_GZ = {
   // ProtocolCard/MoneroNewsCard leaving, not from the readout moving somewhere
   // new. "It did not mint a chunk" and "it landed where I expected" are
   // different facts; this is the first.
-  '/operate/peers':         103_000, // 100,100 — RENAMED from /about/peers
+  '/operate/peers':         103_000, // 101,253 — RENAMED from /about/peers
   //   in p4.06. The row moved; the ceiling did not, because the closure did not:
   //   same component, same imports, same chunk. Re-measured on the final tree.
   // p3·17 RAISE, 95,000 -> 98,000. Built 95,027 on the FINAL tree (margin
@@ -1612,7 +1614,7 @@ const ROUTE_BUDGET_GZ = {
      splash. Rollup chunks per MODULE, not per export. Dropping the import for a
      local literal took it to 4 chunks / 93.61 KB; see CloverOverlay.tsx's
      z-index note for why there is no shared authority to lose. */
-  '/about/site':             99_000, //  96,154
+  '/about/site':             99_000, //  96,252
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
