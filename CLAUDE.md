@@ -28,11 +28,16 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **85** `verify-*.mjs` files (`app/` ×76, `app/scripts/` ×1, `api/_tests/` ×8) — **81 gates**
+- Verification: **86** `verify-*.mjs` files (`app/` ×77, `app/scripts/` ×1, `api/_tests/` ×8) — **82 gates**
   (p4·04 added `verify-mine.mjs` for the fifteenth route and wired it MID-CHAIN at `verify:e2e`
   position 16, beside the other page gates — never the tail, which carries `verify-vitals`.
   Recounted, never incremented, with the script CONTROLLED against the same three commits, all
-  reproduced EXACTLY. Measured: **85 / 81 / 22 / 35 / 71 / 6**, i.e. 77 invocations − 6 duplicates.
+  reproduced EXACTLY. Measured at p4·04: **85 / 81 / 22 / 35 / 71 / 6** (77 invocations − 6 duplicates).
+  p4·05 added `verify-site.mjs` for the sixteenth route and wired it MID-CHAIN at `verify:e2e`
+  position 17. Recounted, never incremented, with the script CONTROLLED against FIVE commits —
+  `e5eae16`, `bda0491`, `543a8d8`, `fdb105e` and `768ba13` — all reproduced EXACTLY, including
+  p3·19's invocation arithmetic. Measured: **86 / 82 / 22 / 36 / 72 / 6**, i.e. 78 invocations
+  − 6 duplicates.
   This release adds a gate FILE, so it moves five figures where p3·18's orphan-wiring moved two.
   **AND THE COUNTING SCRIPT'S FIRST RUN WAS WRONG IN A WAY ONLY THE CONTROLS COULD SHOW**: it
   reported `static=0 e2e=0 ci=7` because its filename regex anchored on `^` or `/` while the npm
@@ -187,14 +192,15 @@ chain and market data.
 
 ## Site Routes
 
-The 15 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
+The 16 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
 both `scripts/prerender.mjs` (emits `dist/<route>/index.html` so the site works with JS
 off) and `scripts/gen-sitemap.mjs` (emits `dist/sitemap.xml` + `dist/robots.txt`).
 Add or remove a route there and both follow.
 
 `/` · `/live/mempool` · `/live/markets` · `/live/markets/thesis` · `/live/network` ·
 `/learn` · `/learn/sim` · `/monero` · `/future` · `/future/outlook` ·
-`/operate/node` · `/operate/mine` · `/operate/superstress` · `/about/peers` · `/about/sources`
+`/operate/node` · `/operate/mine` · `/operate/superstress` · `/about/peers` · `/about/sources` ·
+`/about/site`
 
 Not in that list, by design: `/live/mempool/tx/:txid` (unbounded param, falls through to
 the SPA shell), the `:tab` paths (`/monero/:tab`, `/learn/:tab`), the `?v=` / `?p=` /
@@ -426,7 +432,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 
 <!-- Update this section as work progresses -->
 - The React SPA in `app/` is the only front-end. The v4 static site was deleted in v6.1.0.
-- 15 static routes, all prerendered to real HTML so the site works with JavaScript off.
+- 16 static routes, all prerendered to real HTML so the site works with JavaScript off.
   p3·16 minted the first new one since the v6.1.6 restructure (`/operate/superstress`) and the
   registration sweep is the durable finding: **TEN surfaces**, four more than the brief
   enumerated, and TypeScript caught the tenth (`scripts/routes.d.mts`) as a compile error.
@@ -439,7 +445,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **71 of the 81** gates on every PR to `main` and on every push to `main`
+- CI runs **72 of the 82** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **6**
   are wired to nothing (p3·18 wired `verify-legality`, an orphan since v6.0.10). This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -698,6 +704,158 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-18**: p4·05 "ABOUT XMR.IRISH" (app/ + .github/) — `/about/site`, the SIXTEENTH
+  route and the About section's third leaf: the site's page about itself, opened by a glyph
+  field that coalesces into a four-leaf clover. **THE REGISTRATION SWEEP IS THIRTEEN SURFACES,
+  NOT TWELVE, AND A COMMIT PROVES IT.** `git show --stat 4a3cab0` — the p4·04 commit whose own
+  title says "registered across twelve surfaces" — also touched `verify-releases.mjs`, a route
+  count inside a LIVE ASSERTION MESSAGE at `:314`. The settled list does not name it. Reading
+  the commit that added the last route is a strictly better instrument than reading the list.
+  **AND THE SIBLING-LITERAL GREP REACHES ONLY SEVEN OF THEM.** CLAUDE.md's own method
+  (`grep -rn '/operate/mine'`) finds routes.mjs · index.html · verify-{nojs,ia,pageshell,bundle,lib}.
+  FIVE surfaces carry NO path literal at all — App.tsx, ia.ts, RootBoundary,
+  useViewTransitionNavigate (TWO lists) and routes.d.mts (which holds the KEY and no path). The
+  instrument that reaches those is a grep on the sibling ROUTE CONSTANT (`ABOUT_PEERS`), and the
+  answer is the UNION of the two greps. The ≥8-`R.*`-keys census is a third check and it
+  correctly closes at four list-carriers.
+  **THREE COUNT LITERALS WERE ALREADY STALE AT THE BASE COMMIT, before this route existed.**
+  `routes.mjs:69` said "The 14 routes" against a measured 15; `verify-nojs.mjs:139` said
+  "The 14-route IA" one line above a comment correctly reading `14 -> 15`; and
+  `verify-pageshell.mjs` said "15 routes × 6 widths" TWICE against a table its own header's
+  recipe measures at 17 — inside a file whose header is a written warning about that exact
+  defect having gone unnoticed for a whole release series. **MY OWN FIRST COUNT OF THAT TABLE
+  SAID 16**, because my grep anchored on `{ path: '` and one row uses a TEMPLATE LITERAL with
+  backticks — the quote-anchored blindness this file records in its stale-literals entry,
+  committed by someone who had just read it. The file's own recipe said 17. Run the recipe.
+  **THE OVERLAY IS A SIXTH SIBLING CANVAS LOOP AND NOT AN IMPORT, and the repo says so in its
+  own words.** `protocols/use-proto-canvas.tsx`'s header: the loop "is deliberately duplicated
+  on this side of the code-split seam", because importing across it "would drag one chunk into
+  the other". Five such siblings already exist (ParticleField · useMiniCanvas · useMemCanvas ·
+  use-proto-canvas · the cold-boot field). Measured rather than assumed: `ColdBoot` is
+  `React.lazy` (App.tsx:65), so `coldboot/field.ts` is in a LAZY group; importing it from this
+  lazy page would have hoisted it and taken CHUNK_COUNT to 73, onto its own ceiling. The three
+  leaves this page DOES import are free, and that was measured by grepping the built entry
+  chunk: `h3`'s constant `374761393` → entry ×1 (eager), `useReducedMotion` and `deviceTier`
+  likewise, and `canvasColor` already has its own 343 B chunk.
+  **THE ONE-CONSTANT IMPORT THAT COST 40 KB — the "Rollup chunks per MODULE, not per export"
+  lesson, sixth application.** The overlay first read `COLDBOOT_Z` from `ColdBoot.tsx` so there
+  would be one authority for the top of the z-stack. Measured closure: **9 chunks, 108.51 KB
+  gzip**, carrying the splash (31,577) plus mem-stats, useNodePopulation, Skeleton and
+  useFeedEvents — because `ColdBootConsole` reads `useMoneroLive()`. On a route that renders no
+  splash. A local literal took it to **4 chunks / 93.61 KB**, and there was no authority to
+  lose: `coldboot/gate.ts`'s predicate ends `return pathname === R.HOME`, so the splash and this
+  overlay can never coexist. What must stay ABOVE the overlay is `.skip-link` at 9999, and that
+  is deliberate — a keyboard user reaches the skip link, not a decorative canvas.
+  **THE OVERLAY WAS BEING EMITTED INTO ALL SIXTEEN PRERENDERED FILES, and the gate caught it on
+  its first run.** `prerender.mjs` calls `renderToString`, where no effect runs — so a
+  `position:fixed; inset:0` element and an unpainted canvas shipped to exactly the JS-off reader
+  the prerendering exists to serve. Client-gated on a `mounted` flag, the pattern
+  `useGovernorScale` already documents. **That defect CAUSED a second one**: §3's
+  `waitForSelector('[data-clover-canvas]')` matched the PRERENDERED canvas and read the draw
+  hook before hydration installed it — a true wait for the wrong subject. Both fixed by one
+  change; §3 now waits for the HOOK.
+  **THE STENCIL WAS VALIDATED BEFORE INTEGRATION AND THE INTEGRATION BROKE IT ANYWAY.** The
+  four-leaf silhouette was rasterised at 34/52/76 columns in headless Chromium and READ as ASCII
+  before a line went into the repo — 34 is what a 390px phone yields. It read at all three.
+  Then it rendered as a **tall narrow blob**, because the prototype used SQUARE pixels and a
+  monospace CELL is ~0.62w × 1.16h: laying the clover out in a square of CELLS is a 1:1.9
+  rectangle in PIXELS (measured cw 16.1 against ch 30.2 at 1440×900). The fix is a non-uniform
+  scale that cancels the cell aspect, with `translate().scale().rotate()` composing as T·S·R so
+  each leaf is rotated in unit space and the whole assembly is squashed once — scaling before
+  rotating shears each leaf independently.
+  **AND EVEN CORRECTLY SHAPED IT DID NOT READ, which only looking could find.** The first render
+  was ~9,000 lit cells with the clover drawn brighter on top of an equally busy field: the shape
+  was measurably present and visually absent. The animation now CONSUMES the stream — ambient
+  thins across the whole field as the clover gathers and stops entirely inside a dilated halo of
+  the silhouette, so the gaps BETWEEN the four lobes (measured 2-4 cells across) are genuinely
+  empty. Three render-and-look rounds; no assertion in the gate would have caught any of them.
+  **A CLAIM IN A NEIGHBOURING FILE IS HALF WRONG AND THE TREE SAYS SO.** `coldboot/field.ts`'s
+  header states none of its four tints "is redeclared per `:root[data-theme=...]`" and adds that
+  if that changes "the atlas cache below would need a theme key added to it". Measured:
+  `--ink-100` IS rebound — `styles.css:148` #a8a094 · `styles-theme.css:116` (indigo) #ECEAF6 ·
+  `:262` (phosphor) #C8F0C8. `--g-50` really is base-only. This module's atlas cache is
+  therefore theme-keyed; the cold-boot field's staleness is pre-existing, in a file this change
+  does not touch, and is NAMED not fixed.
+  **TWO OVERCLAIMS IN THE ETHOS BRIEF — in the section whose entire subject is not
+  overclaiming, and both found by checking the mechanism instead of quoting the brief.**
+  (1) "a build gate fails if any page contacts one": `verify-origins` phase 2 drove SEVEN routes
+  and `/about/site` was not among them. Corrected to what the gate does — a tree-wide static
+  sweep plus a browser run — AND the route was ADDED to that gate, which is where the
+  "zero requests to the fundraiser host" proof belongs, because that is the gate that counts
+  requests. (2) "byte-for-byte as they shipped" of the curated release notes: `verify-releases`
+  pins their COUNT and SHAPE, not their text. Corrected to "in the words they shipped in".
+  **THE HISTORY IS SOURCED FROM THE PRE-DELETION TREE, NOT FROM PROSE.** `0a49c1d` is the last
+  commit on main still carrying the static site and it stays reachable even though the clone is
+  SHALLOW (443 commits — `git rev-parse --is-shallow-repository` first, p3·18's rule):
+  `git ls-tree --name-only 0a49c1d | grep '\.html$' | wc -l` → **22**, with no root
+  package.json, which is what "no build step" means literally rather than impressionistically.
+  The page says twenty-two.
+  **THE PHRASING EMBARGO HELD, and the corpus includes everything written about it.**
+  `verify-future` §15 walks the whole repo over `.md` too, so this note and the handoff are
+  in-corpus — p3·15's recorded trap, where a handoff spelled a banned string in order to
+  prohibit it. Every alternate was tested empirically in a scratchpad OUTSIDE the repo before a
+  word was written; the in-tree carve-out survives only because of one interposed word; and one
+  alternate carries no regex escapes and therefore matches its own source text, which is why
+  that file exempts itself and why this gate does NOT restate the pattern (p3·16's lesson).
+  `node verify-future.mjs` → **exit 0, §15 "found 0"**.
+  **BUDGETS: RESIDUAL ZERO ON BOTH HALVES, and 69 of 71 slots size-identical.** Paired per stem
+  against the base build: `SitePage` 0 → **17,071** (a minted chunk) and the `index` stem's
+  EAGER member **+405** — identified by `dist/index.html`'s own `<script src>`, not by basename,
+  since that stem holds two chunks. 17,071 + 405 = **17,476 = the total delta exactly**.
+  `lazyJsRaw` 933,000 → **950,000** (built 946,993, margin 3,007) · `totalJsRaw` 1,196,000 →
+  **1,213,000** (built 1,210,449, margin 2,551) · NEW row `/about/site` **99,000** (built 96,068,
+  margin 2,932) · `cssGz` **BYTE-IDENTICAL at 18,150**, because the page adds no stylesheet rule
+  at all. `CHUNK_COUNT` **RE-CENTRED 68 → 69 while GREEN** — the build measures 72 against the
+  old band [64, 72], exactly ON the ceiling for the THIRD release running.
+  **THE RE-MEASURE RULE FIRED AND EVERY CEILING WAS GREEN WHILE THE PROSE WENT STALE.** The read
+  hook, the SSR gate and the `SITE_PR` bump landed after the first measurement and moved lazy
+  and total by +520 B and the route row by +212. Nothing failed; the comments were simply wrong.
+  Re-derive after the LAST src commit, not after the last green run.
+  New `verify-site.mjs` — **68 assertions in twelve sections**, wired MID-CHAIN at `verify:e2e`
+  **17 of 36**, never the tail, which still carries `verify-vitals` at 36. It drives the field's
+  `T` DIRECTLY through a read hook (`__XMR_CLOVER__`, the `__XMR_GOV__` idiom) rather than racing
+  a wall clock, and runs both polarities on ONE instrument: the census that must show the shape
+  at the formed phase must NOT show it in the stream phase, with a lit-pixel guard proving the
+  canvas is painting either way. It installs NO cold-boot bypass, and that is structural rather
+  than asserted.
+  **TEN BREAK TESTS, and the two that did not behave taught the most.**
+  M1 the clover never forms → 3 · M2 input no longer dismisses → 2 · M3 reduced motion ignored →
+  3 · M5 a guessed social handle → 1 · M6 a hardcoded fundraiser figure → 1 · M7 the overlay
+  prerendered again → 1 · M8 a seventeenth route → 3 reds in verify-ia (count, order, IA
+  membership) plus verify-bundle · M9 the overview stops deriving → 1 · M10 a citation naming a
+  file that does not exist → 1.
+  **M4 REFUSED TO GO RED, AND IT WAS THE GATE'S DEFECT.** It edited the rendered fonts citation
+  to say "40 files" and left all 64 assertions green: §7 was asserting
+  `readdirSync(public/fonts).length === 12` against the TREE and never reading the PAGE — a true
+  fact about the wrong subject, in the section whose only job is that the page's citations are
+  true. The number is now parsed out of the claim itself, and every path-shaped token in every
+  citation must resolve on disk. M4b → 1 red, M10 → 1 red.
+  **M9's FIRST RUN WAS VOID AND LOOKED LIKE A PASS** — the mutator died on a Python SyntaxError
+  before its own assert ran, so the harness measured an UNMUTATED tree and printed
+  "68 passed · 0 failed", which reads exactly like "the gate cannot catch this". v2·0's recorded
+  defect verbatim: applied ≠ effective. The harness now ABORTS unless `git diff` shows the
+  mutation landed, and that guard was proven by firing it.
+  Census RECOUNTED with the script **CONTROLLED against FIVE commits first**, all reproduced
+  EXACTLY including p3·19's invocation arithmetic (`e5eae16` 81/77/22/31/66 · `bda0491`
+  82/78/22/32/67 · `543a8d8` 83/79/22/34/69/6 · `fdb105e` 84/80/22/34/70 · `768ba13`
+  85/81/22/35/71): **86 files / 82 gates / static 22 / e2e 36 / CI 72 / orphans 6** (78
+  invocations − 6 duplicates). Five figures move, which is correct for a release that adds a
+  gate FILE.
+  **THE OPERATOR'S X HANDLE ARRIVED UNFILLED AND IS NOT GUESSED.** The brief's bracket was not
+  filled in, so the slot ships as an HONEST NULL in the house's own unlinked idiom (`.v6-res`,
+  dashed, `--ink-40` — `JurisdictionRow`'s treatment for a citation whose URL could not be
+  confirmed). The brief mentions a handle as the contact named on the fundraiser page; that is
+  not the operator confirming it, and an invented social link on the page that says who runs the
+  site is an impersonation vector. `OPERATOR_X` is one line when it arrives, and §10 asserts the
+  slot is a real anchor or a non-anchor with no href — never anything in between.
+  **NOT FIXED, and named**: `HomePage.tsx:240` renders a hardcoded "The site · 6 sections" that
+  nothing derives or gates; `NodePage`'s copy button still reports a success it has not achieved
+  (a rejected clipboard promise lands after "✓ COPIED"); the two pre-existing "no third-party
+  pool API" sentences; the cold-boot atlas's theme staleness; the ten hollow `/future#<id>`
+  anchors; `verify-shots.mjs`'s stale header and its own `fullPage` usage.
+  **No human has seen the rendered result in a browser** — read from screenshots at 1440 and
+  390, mid-formation, formed, after the dissolve, and under reduced motion.
 
 - **2026-08-17**: p4·04 "HOW TO MINE" (app/ + .github/) — `/operate/mine`, the FIFTEENTH route and
   the OPERATE section's third leaf. **THE REGISTRATION SWEEP IS TWELVE SURFACES, NOT TEN, AND THE
