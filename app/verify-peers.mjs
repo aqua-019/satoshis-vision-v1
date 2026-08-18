@@ -435,8 +435,26 @@ try {
    * bytes arrived. This is also why EcoPopup ships NO onError fallback — a
    * shot that degrades gracefully to a placeholder is a shot this assertion
    * can never catch. */
-  const SHOT_RX = /shot:\s*\{\s*src:\s*"([^"]+)",\s*alt:\s*"((?:[^"\\]|\\.)*)",\s*captured:\s*"([^"]+)",/g;
-  const shots = [...dataContent.matchAll(SHOT_RX)].map(([, src, alt, captured]) => ({ src, alt, captured }));
+  /* PARSE THE BLOCK, THEN THE FIELDS — not one regex over all three at once.
+   * The first version of this was a single pattern demanding
+   * `src: "…", alt: "…", captured: "…",` in that order with nothing between,
+   * and a break test exposed it: inserting a comment after `src:` made the
+   * whole shot VANISH from the parse, so a gate about six screenshots
+   * quietly measured five. The `>= 6` floor below caught it — which is what
+   * floors are for — but a red saying "declares 5 screenshots" points at the
+   * wrong thing when the defect is an off-origin src. Field order and
+   * interleaved comments are now irrelevant. */
+  const shots = [];
+  for (const m of dataContent.matchAll(/\bshot:\s*\{/g)) {
+    let i = m.index + m[0].length - 1, depth = 0;
+    for (; i < dataContent.length; i++) {
+      if (dataContent[i] === '{') depth++;
+      else if (dataContent[i] === '}') { depth--; if (depth === 0) break; }
+    }
+    const body = dataContent.slice(m.index, i + 1);
+    const f = (k) => (body.match(new RegExp(k + ':\\s*"((?:[^"\\\\]|\\\\.)*)"')) || [, null])[1];
+    shots.push({ src: f('src'), alt: f('alt') || '', captured: f('captured') });
+  }
 
   R.ok(shots.length >= 6,
     `§9 · data.ts declares ${shots.length} screenshots (floor: a parse that found none would make every check below vacuous)`);
