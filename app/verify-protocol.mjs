@@ -142,10 +142,43 @@ try {
    * nav that renders a link the IA does not contain is invisible to §7c. */
   R.group('§4 · no rendered nav link is a /future# fragment');
 
+  /* THE DROPDOWN MUST BE OPENED, AND EVERY SECTION'S, and the first run of
+   * this section is why. Read off a freshly-loaded page the sweep found 55
+   * anchors and ZERO protocol links — the panel only renders the section
+   * currently open, so the absence assertion below was passing against a page
+   * that contained no nav leaves at all. The paired positive control is what
+   * caught it, which is the entire reason it is here.
+   *
+   * Sweeping only the Future column would be the same mistake one level in: a
+   * hollow anchor that reappeared in any OTHER column would go unseen. So all
+   * six open in turn and the hrefs accumulate. Hover, never click — the
+   * section button's onClick NAVIGATES. */
   await page.goto(`${BASE}/future`, { waitUntil: 'networkidle' });
-  const navHrefs = await page.evaluate(() =>
-    [...document.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')));
-  R.ok(navHrefs.length > 0, `${navHrefs.length} rendered anchors to search (floor: an empty page would pass vacuously)`);
+  const sectionKeys = await page.evaluate(() =>
+    [...document.querySelectorAll('button.navitem')].map((b) => b.textContent.trim()));
+  R.ok(sectionKeys.length >= 5, `${sectionKeys.length} nav sections to open: ${sectionKeys.join(', ')}`);
+
+  const navHrefs = [];
+  for (let i = 0; i < sectionKeys.length; i++) {
+    await page.locator('button.navitem').nth(i).hover();
+    /* WAIT ON *THIS* BUTTON, not on "some panel is open". The first version
+       waited for `[aria-expanded="true"].length === 1` plus a non-empty panel
+       — both already true of the PREVIOUS section, so the read raced the
+       switch: 108 anchors accumulated where six sections hold 67, the Future
+       column was missed entirely, and the positive control below read 0. The
+       p4·03 click-and-read race, in a hover. */
+    await page.waitForFunction(
+      (idx) => {
+        const btns = [...document.querySelectorAll('button.navitem')];
+        return btns[idx]?.getAttribute('aria-expanded') === 'true' &&
+               document.querySelectorAll('#nav-dd-panel a[href]').length > 0;
+      },
+      i, { timeout: 5000 },
+    ).catch(() => {});
+    navHrefs.push(...await page.evaluate(() =>
+      [...document.querySelectorAll('#nav-dd-panel a[href]')].map((a) => a.getAttribute('href'))));
+  }
+  R.ok(navHrefs.length > 0, `${navHrefs.length} rendered dropdown anchors across ${sectionKeys.length} sections (floor: a closed nav would pass vacuously)`);
   const hollow = navHrefs.filter((h) => h && h.includes('/future#'));
   R.ok(hollow.length === 0,
     hollow.length === 0
@@ -317,9 +350,35 @@ try {
   /* DIFFERENTIATION. Two partners now occupy no-KYC territory; the page must
    * say how they differ or it is describing one project twice. */
   const peersText = await page.innerText('body');
-  R.ok(/kyc\.rip/i.test(clubCard || ''),
-    'the xmr.club copy names kyc.rip, so the two no-KYC partners are told apart rather than described twice');
-  R.ok(/kyc\.rip/i.test(peersText), 'and kyc.rip is itself still on the page');
+  /* THE DIFFERENTIATION LIVES IN `body[]`, WHICH THE CARD DOES NOT RENDER —
+   * the card shows `blurb`, and `body` is the "our brief" modal. Asserted
+   * against the card, this went red against correct copy on its first run: a
+   * true fact about the wrong element. Open the brief. */
+  R.ok(/kyc\.rip/i.test(peersText), 'kyc.rip is itself still on the page');
+
+  const clubIdx = await page.evaluate(() =>
+    [...document.querySelectorAll('.v6-peer-grid > .v6-stagger')].findIndex((el) => /xmr\.club/i.test(el.innerText)));
+  R.ok(clubIdx >= 0, `located the xmr.club card (index ${clubIdx})`);
+  /* The exact aria-label, NOT a role+name regex. The Card itself carries
+     role="button" (the whole card is clickable), so `getByRole('button',
+     { name: /our brief/i })` resolves to TWO elements and Playwright's strict
+     mode throws — which CRASHED this section on its first run and took the
+     four assertions below with it. p3·16 recorded the same shape from the
+     other side: one unresolvable locator masking every later assertion. */
+  await page.locator(`button[aria-label="Read our brief on xmr.club"]`).click();
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+  const brief = (await page.locator('[role="dialog"]').innerText()).replace(/\s+/g, ' ');
+  R.ok(brief.length > 200, `the brief opens and carries ${brief.length} chars (floor)`);
+  R.ok(/xmr\.club/i.test(brief), 'and it is xmr.club\'s brief');
+  R.ok(/kyc\.rip/i.test(brief),
+    'the brief names kyc.rip, so the two no-KYC partners are told apart rather than described twice');
+  R.ok(/rubric|methodology/i.test(brief) && /curator/i.test(brief),
+    'and it describes the published rubric and the curator\'s stack — the site\'s own headings');
+  const staleBrief = STALE.filter((s) => brief.toLowerCase().includes(s.toLowerCase()));
+  R.ok(staleBrief.length === 0,
+    staleBrief.length === 0
+      ? 'no superseded description survives in the brief either'
+      : `superseded copy in the brief: ${staleBrief.join(' | ')}`);
 
 } catch (err) {
   R.ok(false, `Test crashed: ${err.message}`);

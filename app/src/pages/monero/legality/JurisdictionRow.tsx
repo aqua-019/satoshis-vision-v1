@@ -27,7 +27,7 @@ function firstSentence(note: string): string {
  * unlinked source reads as a deliberate state rather than a missing one.
  *
  * `.v6-res` and `.chip-row` are reused verbatim from the resource chips on
- * /future, /operate/superstress and /about/peers — the fourth consumer of a class
+ * /future, /operate/superstress and /operate/peers — the fourth consumer of a class
  * that is already cross-route. That reuse is not incidental: cssGz sits at 17,900
  * of 18,200, a margin of 300 B, and this PR adds no stylesheet rule at all.
  *

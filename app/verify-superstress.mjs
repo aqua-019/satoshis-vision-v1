@@ -325,7 +325,7 @@ try {
      itself through the DOM. It proves the hub does not hardcode a summary,
      which is worth proving, and it is NOT the single-source claim.
      The single-source claim is about TWO SURFACES, so it has to read the
-     other one: /about/peers renders `${name} — ${fn}` from the same array
+     other one: /operate/peers renders `${name} — ${fn}` from the same array
      inside the Superbrain brief. Comparing the hub's rendered summaries to
      THAT rendered list is the only version of this assertion that could ever
      have caught the drift it exists to prevent. */
@@ -341,7 +341,7 @@ try {
   const cardNames = await peers.evaluate(() =>
     [...document.querySelectorAll('.v6-stagger h3')].map((h) => h.textContent.trim()));
   const sbIdx = cardNames.findIndex((n) => /Superbrain/i.test(n));
-  R.ok(sbIdx >= 0, `located the Superbrain card on /about/peers (index ${sbIdx} of ${cardNames.length})`,
+  R.ok(sbIdx >= 0, `located the Superbrain card on /operate/peers (index ${sbIdx} of ${cardNames.length})`,
     `cards rendered: ${cardNames.join(', ')}`);
   await peers.locator('button', { hasText: 'our brief' }).nth(sbIdx).click();
   await peers.waitForSelector('.v6-modal-body');
@@ -355,7 +355,7 @@ try {
     return list ? [...list.querySelectorAll('li')].map((li) => li.textContent.trim()) : [];
   });
   R.ok(partnerLines.length === APP_FNS.length,
-    `the partner brief on /about/peers renders ${APP_FNS.length} app lines (found ${partnerLines.length})`,
+    `the partner brief on /operate/peers renders ${APP_FNS.length} app lines (found ${partnerLines.length})`,
     'a zero here makes the comparison below vacuous — it is the floor, not the finding');
   if (partnerLines.length > 0) {
     const drift = summaries.filter((sum) => !partnerLines.some((line) => line.endsWith(sum)));

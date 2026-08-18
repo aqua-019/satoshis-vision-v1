@@ -5,7 +5,7 @@
  * ── THE FILE NAME CARRIES NO SECTION PREFIX ──────────────────────────────
  * `SitePage`, not `AboutSitePage`. Measured, not preferred: NO page in this
  * directory carries its section prefix — `/operate/node` → NodePage,
- * `/operate/mine` → MinePage, `/about/peers` → TrustedPeersPage,
+ * `/operate/mine` → MinePage, `/operate/peers` → TrustedPeersPage,
  * `/about/sources` → SourcesPage, `/live/network` → NetworkPage. MinePage's
  * own header states the convention: `<Thing>Page.tsx`, with the section in
  * the ROUTE and not the filename.

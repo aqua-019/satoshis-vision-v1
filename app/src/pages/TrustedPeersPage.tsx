@@ -1,5 +1,5 @@
 /**
- * pages/TrustedPeersPage.tsx — the collaborator directory (/peers).
+ * pages/TrustedPeersPage.tsx — the collaborator directory (/operate/peers).
  *
  * v6.0.1 behaviour change: a card's body now opens the partner's OWN site in
  * a new tab (noopener,noreferrer) rather than our in-site brief. The brief is

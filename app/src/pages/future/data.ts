@@ -353,7 +353,7 @@ export function roadmapStatus(stop: RoadmapStop): string {
  *
  * ── WHY THIS EXISTS ──────────────────────────────────────────────────────
  * Two surfaces describe these apps: the Superbrain partner brief on
- * /about/peers (rendered by EcoPopup from the `blocks[]` below) and the
+ * /operate/peers (rendered by EcoPopup from the `blocks[]` below) and the
  * Superstress hub on /operate/superstress, which gives each app a row of its
  * own. The one-line function is the line BOTH carry, so it is written here
  * exactly once and the partner entry's "The five apps" block is DERIVED from

@@ -407,7 +407,7 @@ export function NavTop() {
             dropdown that holds the real links is only in the DOM while it is
             open. With scripting disabled that left 6 of 13 routes with NO
             anchor anywhere on the page — /live/markets, /live/network,
-            /about/peers, /live/markets/thesis, /future/outlook and /learn/sim
+            /operate/peers, /live/markets/thesis, /future/outlook and /learn/sim
             were simply unreachable. Every one of them is prerendered to real
             HTML, so the pages existed and nothing could get to them.
 

@@ -5,7 +5,7 @@
  * ── THE FILE NAME IS `MinePage`, NOT `OperateMinePage` ────────────────────
  * Measured rather than assumed: NO page in this directory carries its section
  * prefix. `/operate/node` → NodePage, `/operate/superstress` → SuperstressPage,
- * `/about/peers` → TrustedPeersPage, `/about/sources` → SourcesPage,
+ * `/operate/peers` → TrustedPeersPage, `/about/sources` → SourcesPage,
  * `/live/network` → NetworkPage. The convention is `<Thing>Page.tsx` and the
  * section lives in the ROUTE, not the filename.
  *

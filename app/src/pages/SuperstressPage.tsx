@@ -12,7 +12,7 @@
  * entry's "The five apps" block also derives from, so the two surfaces cannot
  * disagree. The install steps are the same entry's `blocks[]`. This page adds
  * detail — what each app is, why running it yourself changes anything, its
- * prerequisites — and reads everything it shares with /about/peers.
+ * prerequisites — and reads everything it shares with /operate/peers.
  *
  * ── TWO EMBARGOES, BOTH LIVE ─────────────────────────────────────────────
  * (1) MoneroSpace's provenance is an open question with its maintainer. It is
