@@ -183,7 +183,13 @@ await coldBootOffBrowser(b);
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
 
-  for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn']) {
+  // p4·05 adds '/about/site'. It carries more OUTBOUND ANCHORS than any other
+  // route — a fundraiser on kuno.anne.media and an operator link — so it is the
+  // page where an anchor could most plausibly become a request by accident (an
+  // embedded widget, a progress badge, a favicon). Phase 1 above deliberately
+  // does not flag <a href>; this is the run that proves the distinction held.
+  for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn',
+                       '/about/site']) {
     await p.goto(base + route, { waitUntil: 'load' }).catch(() => {});
     // v6.1.8 PRECONDITION — Home only. This gate counts OFF-ORIGIN REQUESTS;
     // if the splash covered Home and issued none, the zero would be the

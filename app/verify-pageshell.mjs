@@ -1,7 +1,7 @@
 /**
  * verify-pageshell.mjs — the responsive gate for the PageShell migration (v6.0.4).
  *
- * Runs a 17-entry × 6-width matrix against `vite preview`
+ * Runs an 18-entry × 6-width matrix against `vite preview`
  *
  * MEASURE THAT FIGURE, DO NOT READ IT OFF THIS SENTENCE — it said "15-route"
  * against a 16-entry table for the whole p3·16 → p4·03 series, and the word
@@ -120,6 +120,10 @@ const ROUTES = [
   // the sweep is never taught about on the day the /future red is fixed.
   { path: '/operate/mine',       label: '/operate/mine',               tier: 'standard' },
   { path: '/about/sources',      label: '/about/sources',             tier: 'standard' },
+  // p4·05 — the 16th route, on the same precedent p3·16 and p4·04 record: this
+  // gate is still npm-wired only, and a route absent from the table is one the
+  // sweep is never taught about on the day the /future red is fixed.
+  { path: '/about/site',         label: '/about/site',                tier: 'standard' },
   { path: '/__nope__',           label: '/__nope__',            tier: 'standard' },
 ];
 const WIDTHS = [1920, 1600, 1280, 1024, 768, 390];
@@ -143,7 +147,7 @@ p.setDefaultTimeout(25000);
  * failure message would have named a URL that no longer exists.
  *
  * `strays` is the standing check: one aggregate assertion at the end, rather
- * than 90 near-identical lines across 15 routes × 6 widths. */
+ * than 108 near-identical lines across 18 entries × 6 widths. */
 const strays = new Set();
 
 /** Boot a route to its (skeleton) layout state. Never networkidle — see header. */
@@ -184,7 +188,7 @@ function probe() {
 const tracks = (gtc) => (gtc && gtc !== 'none' ? gtc.trim().split(/\s+/) : []);
 
 // ════════════════════════════════════════════════════════════════════════
-// THE MATRIX — 15 routes × 6 widths
+// THE MATRIX — 18 entries × 6 widths
 // ════════════════════════════════════════════════════════════════════════
 for (const w of WIDTHS) {
   console.log(`\n──────── viewport ${w}px ────────`);

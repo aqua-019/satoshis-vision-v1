@@ -102,7 +102,7 @@ function stripStrings(src) {
 // ============================================================================
 // §1 · routes.mjs canonical list
 // ============================================================================
-R.group('§1 · routes.mjs exports exactly 15 ROUTES in specified order');
+R.group('§1 · routes.mjs exports exactly 16 ROUTES in specified order');
 
 try {
   const routesModule = await import(join(__dirname, 'scripts', 'routes.mjs'));
@@ -129,13 +129,13 @@ try {
     // ORDER as literals, so `/operate/superstress` reddened two assertions here
     // before §7 was ever reached. A count literal one hop from the thing that
     // changed is exactly the p2·10 CHUNK_COUNT lesson in a different file.
-    R.ok(routes.length === 15, `ROUTES length: ${routes.length} (expected 15)`);
+    R.ok(routes.length === 16, `ROUTES length: ${routes.length} (expected 16)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
       '/live/network', '/learn', '/learn/sim', '/monero', '/future',
       '/future/outlook', '/operate/node', '/operate/mine', '/operate/superstress',
-      '/about/peers', '/about/sources',
+      '/about/peers', '/about/sources', '/about/site',
     ];
 
     const ordered = routes.length === expected.length &&

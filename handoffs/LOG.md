@@ -504,3 +504,37 @@
   Nine break tests, every one red where intended, restores proven against the committed blob.
   **No human has seen the rendered result in a browser** — read from screenshots.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/192
+
+- **XMRIRISH-20260818-46** · p4·05 "ABOUT XMR.IRISH" · shipped
+  `/about/site`, the SIXTEENTH route: the site's page about itself, opened by a glyph field that
+  coalesces into a four-leaf clover, over the mission, an IA-derived overview, the lineage, the
+  ethos brief and the XMR IRISH Fund link.
+  **THE SWEEP IS THIRTEEN SURFACES AND A COMMIT PROVES IT** — `git show --stat 4a3cab0`, whose own
+  title says twelve, also touched `verify-releases.mjs`. **The sibling-literal grep reaches only
+  SEVEN**; five surfaces carry no path literal, and the instrument for those is a grep on the
+  sibling route CONSTANT. **Three count literals were already stale at the base commit.**
+  The overlay is a SIXTH sibling canvas loop, not an import: `coldboot/field.ts` is lazy and in a
+  different chunk group, so importing it would have taken CHUNK_COUNT to 73, onto its own ceiling.
+  **Two defects the work found in itself**: `COLDBOOT_Z` imported for one number pulled the whole
+  splash (9 chunks / 108.51 KB → 4 / 93.61), and the overlay was being emitted into all sixteen
+  prerendered files, over exactly the JS-off reader prerendering serves.
+  **THE FULL CHAIN FOUND WHAT THE NEW GATE COULD NOT** — `verify-govern` §5 named the overlay as
+  the one rAF driver of ten running unpaused in a hidden tab. A page can satisfy its own gate
+  completely and still break a site-wide source invariant. Fixed with the better behaviour: the
+  clock is ANIMATION time, so backgrounding the tab resumes where it left off.
+  **AND THAT RED REACHED ME AS "EXIT 0"** — the wrapper ended in a grep. The `&&` chain also
+  aborted at 26, so ten gates went unreported and "25 green" was never a pass.
+  Budgets: **residual ZERO on both halves**, 69 of 71 slots size-identical — SitePage 17,686 IS the
+  lazy delta, eager +405, sum = the total delta. `lazyJsRaw` → 950,000 · `totalJsRaw` → 1,213,000 ·
+  NEW `/about/site` 99,000 · `cssGz` **BYTE-IDENTICAL at 18,150** · `CHUNK_COUNT` re-centred
+  68 → 69 **while GREEN** (72 sat exactly on the old ceiling, third release running).
+  New `verify-site.mjs`, **69 assertions**, wired mid-chain at `verify:e2e` **17 of 36** (never the
+  tail — vitals). It drives the field's `T` through a read hook rather than racing a wall clock.
+  **Break test M4 REFUSED to go red and that was the gate's defect** — §7 checked the tree against a
+  literal typed into the gate and never read the page. **M9's first run was VOID and looked like a
+  pass**: the mutator died before its own assert, so the harness measured an unmutated tree.
+  Census RECOUNTED with the script CONTROLLED against FIVE commits (all reproduced exactly,
+  including the invocation arithmetic): **86 / 82 / 22 / 36 / 72 / 6**. Orphans checked BY NAME.
+  The operator's X handle arrived unfilled and is NOT guessed — an honest null, one line to fill.
+  **No human has seen the rendered result in a browser** — read from screenshots.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/193

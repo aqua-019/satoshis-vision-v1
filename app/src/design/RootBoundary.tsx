@@ -97,6 +97,7 @@ const ROUTES: ReadonlyArray<readonly [string, string]> = [
   [R.OPERATE_SUPERSTRESS, "Superstress hub"],
   [R.ABOUT_PEERS, "Peers"],
   [R.ABOUT_SOURCES, "Sources"],
+  [R.ABOUT_SITE, "Mission"],
 ];
 
 export interface RootBoundaryProps {
