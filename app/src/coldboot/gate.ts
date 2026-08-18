@@ -111,6 +111,18 @@ export const CB_T0_GLOBAL = "__xmriCbT0";
  *  in every scenario that touches the splash. */
 export const CB_HOLD_GLOBAL = "__xmriCbHoldMs";
 
+/** Where `ColdBoot.tsx` publishes what the decrypt field resolved to — the
+ *  cell layout, the wordmark's cell box, and the timings in play.
+ *
+ *  READ-ONLY DIAGNOSTICS, never a control. Nothing in `app/src` reads it; it
+ *  exists because the decrypt is a canvas and a canvas is invisible to every
+ *  DOM-based gate in this repo, so "the phone wordmark is a 2-row smear"
+ *  shipped past 84 gates with nothing able to say so. Same idiom as
+ *  `__XMR_CLOVER__` (p4·05) and `__XMR_GOV__`. Declared HERE rather than in
+ *  `field.ts` so the one file that must stay evaluable under `prerender.mjs`'s
+ *  bare Node never names a browser global. */
+export const FIELD_REPORT_GLOBAL = "__XMR_FIELD__";
+
 /**
  * Will this load render the cold-boot splash?
  *

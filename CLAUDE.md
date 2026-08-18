@@ -740,6 +740,128 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-18**: p4·M4 "THE LAST TWO BEFORE v6 LAUNCH" (app/) — the mobile terminal
+  sequence, and the missing orb. Launch-blocking; #196 fixed the CONSOLE and never touched
+  the DECRYPT PHASE that runs before it.
+  **THE WORDMARK IS A RASTER, SO ITS LEGIBILITY IS CELLS PER LETTERFORM AND NOT FONT SIZE —
+  AND THAT SINGLE RESTATEMENT REFUTES THE PROMPT'S FIRST OPTION IN BOTH DIRECTIONS.**
+  `composeTarget` samples a drawn bitmap into the cell grid. Measured by rasterising the real
+  grid and READING IT AS ASCII before a line went into the repo (p4·05's stencil method):
+  390 gave **38 cols × 2 rows = 4.0 INK cells per glyph** against a 1440 control of **43.8**.
+  "Scale the field" cannot fix that: BIGGER cells mean FEWER columns and a WORSE raster (2.2
+  cols/glyph at 2× cell size), and SMALLER cells break `MIN_CELL_PX`, the 12px floor the
+  `w < 560` branch exists to hold. **The layout is the only free variable.** So the mark
+  stacks onto two lines below 560 — 4.0 → **26.3** ink per glyph at 390 (23.4 at 360, 33.8 at
+  430), and the block grows from 2 rows to 12 of the phone's 51. A phone is TALL and NARROW:
+  the columns are scarce and the rows are plentiful, and a single 9-glyph line spends the
+  scarce axis to buy nothing.
+  **A SLOWER PHONE GOT A LONGER SEQUENCE — THE DEFECT INVERTS, WHICH IS WHY NOBODY LOOKED FOR
+  IT.** `ColdBoot`'s loop advances progress by `Math.min(64, now - last)`, so a device that
+  cannot hit 15.6fps advances the ramp more slowly than real time. The clamp is KEPT (it is
+  right about the stall it was written for) and a SECOND, UNCLAMPED accumulator of active
+  wall time bounds the run at 1.35× its effective duration. `t = max(T(elapsed), wall/ceil)`
+  is provably INERT whenever no frame exceeds 64ms — at 1× `wall === elapsed`, so
+  `wall/(1.35·eff) < elapsed/eff` strictly — which is what makes "desktop untouched" an
+  arithmetic claim rather than a measurement. Corroborated: 1440 reads 5,745 → 5,787 (three
+  runs spanning 9ms).
+  **THE ORB WAS PAINTED, SIZED AND POSITIONED CORRECTLY, 753px BELOW THE FOLD.** #196 made the
+  stacked grid a scroll container; a scroll moves a box without resizing it, so neither the
+  ResizeObserver nor `window.resize` fired and the fixed orb stayed at the rect published at
+  mount. `verify-orb` §7 could only report it as a reasoned SKIP, because `elementFromPoint`
+  is viewport-relative and cannot speak about an off-screen element. Fixed with a
+  capture-phase (ancestor scrolls do not bubble), passive, rAF-coalesced listener, with the
+  VALUE comparison in `handleConsoleOrbRect` so an unchanged rect never reaches the store.
+  The ENTER handoff is protected STRUCTURALLY rather than by a flag: `startRect` is captured
+  once at effect entry and the store is written only while `phase === "splash"`.
+  **AND THAT FIX COST CLS 0.242 UNTIL SOMEONE MEASURED IT — 48× the repo ceiling, and NOTHING
+  IN THE SUITE COULD HAVE SAID SO.** `Orb.tsx` re-anchors its layout box every render at
+  rest, so a rect changing once per scroll frame became a `left`/`top` write per frame on a
+  `position:fixed` element: 64 frames at ~0.0168 each, the orb the sole source, IDENTICAL at
+  1× and 6× (so structural, not contention). `verify-cls` and `verify-vitals` BOTH call
+  `coldBootOffBrowser`, so `/`'s recorded 0.0000 is taken with the splash bypassed — it could
+  not have moved, and the regression would have shipped green. **"Cannot move the baseline"
+  and "is safe" are different claims and only the first was true.** The pin now also covers a
+  console-phase MOVE (same size ⇒ keep the base, translate), exactly as the ENTER travel
+  already does; a size CHANGE still re-anchors, so the non-uniform-scale defect that argument
+  was written for cannot return through this door. 0.242 → **0.000**, asserted beside the
+  tracking that pays for it, because that is the only place in the suite that can see it.
+  **THREE BREAK-TEST REFUSALS, AND EVERY ONE POINTED AT THE GATE RATHER THAN THE CODE.** The
+  wall-ceiling assertion stayed GREEN through two revisions. (a) It bounded the WHOLE
+  NAVIGATION at 7,500ms, calibrated to red on the 9,015ms this tree measured before the
+  release — but that 9,015 came from the OLD 5,556ms duration, and against the new 3,333ms
+  one the same stretch lands near 7,000ms. **The number was calibrated against a baseline the
+  OTHER HALF OF THE SAME RELEASE had already moved.** (b) Re-aimed at the LOOP, it still
+  passed, because **6× — this repo's customary throttle — is not slow enough to make the clamp
+  lie**: the median frame is still under 64ms and only the tail clamps. Measured loop ms with
+  the ceiling against without: **1× 3,315/3,315 · 6× 4,187/4,486 · 10× 3,922/7,348 · 16×
+  3,930/11,977 · 20× 3,636/15,138.** The operator's "still showing at 11s" sits around 14-16×,
+  so the customary rate understates the phone this release is for. The 1× row is the
+  empirical form of the inertness proof. And the end-to-end figure is now REPORTED, never
+  bounded: under throttle it is parse-dominated and not even monotonic in the rate (18,539ms
+  at 16× against 11,978ms at 20×), so a bound on it is a bound on the runner.
+  **THE HEADLINE FIGURE WAS THE WRONG UNIT, AND AN ADVERSARIAL PANEL CAUGHT IT, NOT REVIEW.**
+  "8 → 63 cells per glyph" is BOUNDING-BOX AREA, and a box can be large and empty — the ink
+  figure for the same recipe is 4.0 → 26.9, so the box number overstates the fix by **2.3×**
+  against an intuition about ink. `MarkBox` now carries both; the gate asserts INK and prints
+  the box beside it. A gate written against a box metric passes on a box full of nothing.
+  **THE DECRYPT IS A CANVAS AND EVERY LEGIBILITY GATE HERE IS DOM-BASED**, which is how a
+  4-ink-cell smear shipped past 84 gates: `verify-legibility` reads inline `fontSize` and SVG
+  attributes, `verify-mobile` walks rendered elements, and a `drawImage` call is neither.
+  `window.__XMR_FIELD__` (p4·05's `__XMR_CLOVER__` idiom) publishes what the field RESOLVED
+  to, read from the same memoised geometry `drawField` drew, so it cannot disagree with the
+  frame on screen. The global name lives in `gate.ts`, never `field.ts`, because that file
+  must stay evaluable under `prerender.mjs`'s bare Node. `MIN_CELL_PX`'s own docblock said
+  "no gate enforces this constant; it is asserted by construction only" — it is enforced now.
+  **THE CLOSING LINE IS A LADDER, NOT A LINE, AND THE NAIVE ARITHMETIC IS OFF BY ONE COLUMN.**
+  `putLine` drops any cell outside `[0, cols)` silently, and `layoutField` returns
+  `ceil(w/cw) + 1` — one column PAST the viewport, deliberately, so the ambient field has no
+  gap at the edge. That is right for scramble and wrong for a sentence: "51 characters fit in
+  51 columns" was true and 360px still rendered "…NOT ENCODED IN THE PROTOCO". Three rungs,
+  widest first — the padding yields, then the line break yields, and the WORDS never do.
+  320px (iPhone SE, this repo's own narrowest gated width) now places it intact too.
+  **BUDGETS: RESIDUAL ZERO, EAGER AND cssGz BYTE-IDENTICAL, NOTHING MINTED.** Paired per stem
+  against an ISOLATED `git worktree` build of `e0c87ad`: `ColdBoot` **+2,008** · `Orb` **+71**
+  = **+2,079 = the measured total delta exactly**. `eagerJsRaw` **264,481 → 264,481** and the
+  entry chunk is byte-identical in SIZE while its hash rotates (`__vite__mapDeps` embeds the
+  lazy hashes — p4·01's phenomenon, and it moves `eagerJsGz` by **−4 B** from compressibility
+  alone). `cssGz` **18,184 → 18,184**: the release adds no stylesheet rule at all. `chunk
+  count 76 = 76`. **AND THE SAME +2,079 WAS MEASURED AGAINST THREE DIFFERENT BASES** —
+  `e0c87ad`, then `5c66929` (#197 p4·M2), then `cecfda9` (#198 p4·M3), both of which merged
+  while this was in flight — so this release's weight is independent of theirs rather than
+  assumed to be. p4·M3 raised `lazyJsRaw` to 978,000 and `totalJsRaw` to 1,243,000; on top of
+  its build this lands at **977,169** and **1,241,617**. **NOT RAISED because not crossed,
+  said out loud: the lazy margin is 831 B**, the tightest this file has recorded (p3·17's 894
+  is the previous), and it is where the next touch reds.
+  Census RECOUNTED, never incremented, with the script CONTROLLED against THREE commits —
+  `768ba13`, `74bc561` and `0f00d26` — all reproduced EXACTLY: **88 / 84 / 22 / 38 / 74 / 6,
+  UNCHANGED.** That is the correct outcome for a release that EXTENDS an e2e member rather
+  than adding a gate file, and it is proved rather than asserted. `verify-coldboot` 103 → 177.
+  **EIGHT BREAK TESTS, all red where intended once the three refusals were fixed**: M1 the
+  split reverted → 6 reds naming 3 rows and 15-18 box cells/glyph · M2 the narrow duration
+  reverted → 4 · M3 the wall ceiling removed → `7,470ms of loop against a 4,500ms ceiling` ·
+  M4 the narrow duration leaked onto the wide stage → 1, which is the whole reason that
+  control is bounded BELOW as well as above · M5 the scroll listener removed → 6, `0% of the
+  slot covered (slot top 243, orb top 1597)` · M6 the type floor to 9px → 3 · M7 the
+  closing-line fit reverted → 1, `"…NOT ENCODED IN THE PRO"` · M8 the orb painting nothing →
+  4, which is what stops "the orb covers the slot" passing over an empty framed box.
+  **RECON AGENTS MEASURED A TREE THAT WAS MOVING UNDER THEM — p3·19's defect, and this time
+  BOTH detected it themselves and said so unprompted**, one refusing to take any browser
+  measurement at all and working from `git show e0c87ad:` blobs instead. The rule works from
+  the other end when the worker states its subject.
+  **NOT FIXED, and named**: below ~500px of height at a narrow width (measured at 390×480 and
+  360×420) the taller mark pushes its top above row 3 and the decorative "COLD BOOT" kicker is
+  dropped by `putLine`'s own row guard — the mark, sub-line and whole cipher still place; the
+  ENTER handoff's own `Math.min(64, …)` accumulator is UNBOUNDED and stretches the same way
+  the decrypt used to (a second sequence, and the travel is the #163 CLS-critical path);
+  `CLAUDE.md`'s "Four gates appear in both the named list and `verify:static`" is FIVE;
+  tracking the slot costs one Orb render and one globe redraw per scroll frame, bounded to
+  the gesture and measured at 64 frames for a full-height scroll. **DEFERRED BY OPERATOR
+  DECISION, post-launch**: the mempool `?v=` crash loop on iOS WebKit (unreproduced — WebKit
+  is not installed here); phone-scale mempool layout; `verify-mobile` exercising one view of
+  ten. **No human has seen the rendered result in a browser** — read from screenshots at
+  360/390/430 mid-decrypt, at handoff, the console with the orb, reduced motion, and 1440
+  before and after.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/199
 - **2026-08-18**: p4·M3 "THE PEERS PAGE, MADE REAL" (app/) — every partner brief gets a
   real dated screenshot, the tap target that was sending phones to the wrong site gets
   fixed, two peers join, and the X links land. Content release: no new route, no new

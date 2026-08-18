@@ -1,13 +1,21 @@
 #!/usr/bin/env node
 /**
- * verify-coldboot.mjs — cold-boot FEATURE assertions (§2-§6) + Main Home legibility (§L).
+ * verify-coldboot.mjs — cold-boot FEATURE assertions (§2-§11) + Main Home legibility (§L).
  *
  * ── THIS GATE HOLDS THE FEATURE ASSERTIONS, AND RUNS LAST ────────────────
  *
  * §2-§6 (decrypt determinism, session gating, Enter handoff, reduced motion,
- * 390px) plus §L (Main Home legibility). These drive a canvas decrypt on a
- * timeline behind a click gate, so this is the likeliest flake in the suite —
- * last position is where that costs no other gate its result.
+ * 390px), §7-§8 (the console is reachable, the panes conform), §9 (the phone
+ * band: p4·M1's stacked console), §10-§11 (p4·M4: the phone DECRYPT, and the
+ * orb reaching the phone's Network slot) plus §L (Main Home legibility). These
+ * drive a canvas decrypt on a timeline behind a click gate, so this is the
+ * likeliest flake in the suite — last position is where that costs no other
+ * gate its result.
+ *
+ * The range in the first line has been stale before — it read "§2-§6" while
+ * §7, §8 and §9 were in the file. A header that names a subset of what runs is
+ * the same narrower-subject defect this file records against its own
+ * assertions, so it is corrected here rather than left.
  *
  * ── THE POSITIVE CONTROL IS NOT HERE ANY MORE ────────────────────────────
  *
@@ -1035,6 +1043,546 @@ R.group('── 9 · the phone band: panes do not overprint (360/390/430) ──
           : `a frozen version literal "${frozen ? frozen[0] : ''}" still renders in the splash — it will rot the next release`);
       await ctx.close();
     }
+  }
+}
+
+/* ══ §10 · THE PHONE DECRYPT — the mark is a MESSAGE, not a WALL ═════════
+ *
+ * ── WHAT §9 COVERS AND WHAT IT DOES NOT ──────────────────────────────────
+ * §9 (p4·M1) gates the CONSOLE on a phone: three stacked panes that do not
+ * overprint. It never renders the DECRYPT PHASE that runs for several seconds
+ * BEFORE the console, and nothing else does either — so the phase the operator
+ * called "severely broken" was outside every one of this file's nine sections.
+ *
+ * ── THE DEFECT IS RASTER RESOLUTION, AND NAMING IT PRECISELY IS THE WHOLE
+ *    REASON THIS SECTION ASSERTS WHAT IT ASSERTS ──────────────────────────
+ * "Overprinted glyphs" is what it LOOKS like and is not what it IS: the field
+ * is a cell grid and each cell holds exactly one glyph, so two glyphs cannot
+ * occupy one cell by construction. What actually happened is that the wordmark
+ * is a RASTER — `composeTarget` samples a drawn bitmap into cells — and on a
+ * phone each letterform got EIGHT CELLS. Measured by rasterising the real grid
+ * and reading the output as ASCII:
+ *
+ *     1440x900, one line   124 cols x 6 rows / 9 glyphs  =  83 cells/glyph  READS
+ *      390x844, one line    38 cols x 2 rows / 9 glyphs  =   8 cells/glyph  noise
+ *      390x844, two lines   47 cols x 12 rows / 9 glyphs =  63 cells/glyph  READS
+ *
+ * A two-row-tall mark is a smear whatever its font size, and that is why the
+ * fix is a LAYOUT change (field.ts#WORDMARK_STACKED) rather than a scale: at
+ * 2x cell size the mark gets 2.2 columns per glyph — WORSE — and at a smaller
+ * cell it drops below MIN_CELL_PX, which is the 12px floor. Both directions of
+ * "scale the field" are refuted by the arithmetic; the layout is the only free
+ * variable. This is the p4·M1 lesson repeated: assert against the DEFECT, and
+ * the defect is only assertable once you know what it is.
+ *
+ * ── HOW A CANVAS IS ASSERTED AT ALL ──────────────────────────────────────
+ * It is not. `verify-legibility` reads inline `fontSize` and SVG attributes,
+ * `verify-mobile` walks rendered elements, and a `drawImage` call is neither —
+ * which is exactly how an 8-cells-per-glyph smear shipped past 84 gates.
+ * `ColdBoot.tsx` publishes `window.__XMR_FIELD__` (gate.ts#FIELD_REPORT_GLOBAL),
+ * the `__XMR_CLOVER__`/`__XMR_GOV__` idiom: the geometry that was drawn, read
+ * from the same memoised object `drawField` used, so it cannot disagree with
+ * the frame on screen.
+ *
+ * ── THE SECOND HALF: A SLOWER PHONE USED TO GET A LONGER SEQUENCE ────────
+ * `ColdBoot`'s loop clamps its per-frame delta at 64ms, so a device that
+ * cannot hit 15.6fps advances the progress ramp more slowly than the wall
+ * clock. Measured at 390x844: 5,785ms unthrottled and 9,015ms under 6x CPU
+ * throttle, against 5,745ms at 1440 — the phone was served the whole desktop
+ * sequence, and a slow phone was served MORE of it. Both halves are bounded
+ * below, and the wide stage carries a LOWER bound too, because "apply the
+ * phone duration everywhere" would satisfy every upper bound in this section
+ * while silently halving the desktop sequence. */
+R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bounded ──');
+{
+  /* Derived, not chosen. The narrow stage runs EFFECTIVE_NARROW_MS = 3,333ms
+     with a 1.35x wall ceiling of 4,500ms, and this gate zeroes the frame-zero
+     hold, so the flip lands at ~3,523ms (measured 3,557 / 3,523 / 3,545 at
+     360 / 390 / 430). 4,800 is that plus the loop's own measured startup, and
+     it reds on the 5,785ms the same tree took before this release. */
+  const PHONE_FLIP_MAX_MS = 4800;
+  /* The wide stage is bounded BOTH WAYS: 5,556ms nominal, measured 5,745-5,798
+     before and after. Below 4,900 means the narrow duration leaked onto
+     desktop; above 7,000 means the wide sequence grew. */
+  const WIDE_FLIP_MIN_MS = 4900;
+  const WIDE_FLIP_MAX_MS = 7000;
+  /* The raster floor. Measured 53 / 63 / 74 at 360 / 390 / 430 after the fix
+     and EIGHT at all three before it, against a 1440 control of 83. 40 sits in
+     the empty gap between those two populations — it is not a target anyone
+     tuned to, and the two are an order of magnitude apart. */
+  const MIN_CELLS_PER_GLYPH = 40;
+  /* Cells-per-glyph alone could in principle be satisfied by a very wide,
+     very short mark, which is precisely the shape that failed. Rows is the
+     independent axis that says the letterform has vertical structure at all:
+     measured 11 / 12 / 13 after, TWO before, 6 on the 1440 control. */
+  const MIN_MARK_ROWS = 8;
+  /* See the ink assertion below for why the box figure is not the one asserted.
+     Measured 22.6 / 26.9 / 34.2 at 360 / 390 / 430 after the fix and 4.8 / 4.0 /
+     5.7 before it, against a 1440 control of 43.8. */
+  const MIN_INK_PER_GLYPH = 15;
+
+  const PHONES = [
+    ['360x800', { width: 360, height: 800 }],
+    ['390x844', { width: PHONE.width, height: PHONE.height }],
+    ['430x932', { width: 430, height: 932 }],
+  ];
+
+  /** Load `/` cold, read the published field report, and time the phase flip
+   *  from `data-coldboot="decrypt"` to `"console"`. `cpu` throttles via CDP
+   *  (Chromium only — this file already launches Chromium explicitly). */
+  const runStage = async (vp, cpu = 0) => {
+    const { ctx, page } = await cold({ viewport: vp });
+    if (cpu) {
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
+    }
+    const t0 = Date.now();
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const report = await page.waitForFunction(() => window.__XMR_FIELD__ || null, null, { timeout: 25_000 })
+      .then((h) => h.jsonValue()).catch(() => null);
+    /* The report is published in the decrypt effect's setup, BEFORE the first
+       rAF, so this instant is the loop's own start. `flipMs` measures the whole
+       navigation (bundle + hold + loop) and `loopMs` measures only the loop —
+       which is the quantity the wall ceiling actually bounds. */
+    const publishedAt = Date.now();
+    const flipped = await page.waitForFunction(
+      () => document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') === 'console',
+      null, { timeout: 30_000 }).then(() => true).catch(() => false);
+    const now = Date.now();
+    const flipMs = now - t0;
+    const loopMs = now - publishedAt;
+    const pending = await page.evaluate(() => document.documentElement.classList.contains('cb-pending'));
+    await ctx.close();
+    return { report, flipped, flipMs, loopMs, pending };
+  };
+
+  for (const [label, vp] of PHONES) {
+    const { report, flipped, flipMs, pending } = await runStage(vp);
+
+    /* PRECONDITION / VACUITY FLOOR. Every assertion below reads this object;
+       without it they would all be `undefined`-comparisons, and a `>=` against
+       undefined is false, which would look like a real red for the wrong
+       reason. A missing hook is its own, named failure. */
+    const ok = Boolean(report && report.layout && report.mark);
+    R.ok(ok, `${label}: precondition — the field published __XMR_FIELD__ ` +
+      (ok ? `(${report.layout.cols}x${report.layout.rows} cells, font ${report.layout.font}px)` : ''),
+      ok ? '' : 'no field report — the decrypt either never ran or stopped publishing; nothing below has a subject');
+    if (!ok) continue;
+
+    const { layout, mark, narrow } = report;
+
+    R.ok(narrow === true,
+      `${label}: the narrow composition is engaged (stage ${layout.cols}x${layout.rows} cells)`,
+      narrow ? '' : `narrow=false at ${vp.width}px — field.ts#isNarrowStage did not fire, so this stage is ` +
+        'being composed for a wide viewport and the mark below is the desktop layout squeezed onto a phone');
+
+    /* THE CANVAS TYPE FLOOR, ASSERTED FOR THE FIRST TIME. field.ts#MIN_CELL_PX
+       says in its own docblock that "no gate enforces this constant; it is
+       asserted by construction only" — because canvas text is invisible to
+       every DOM legibility gate here. It is enforced now. */
+    R.ok(layout.font >= 12,
+      `${label}: the field's own glyphs are ${layout.font}px — at or above the 12px floor`,
+      `${layout.font}px canvas glyphs. MIN_CELL_PX is 12 and a canvas is invisible to verify-legibility ` +
+      'and verify-mobile, so this is the only place the floor is checked at all.');
+
+    /* THE DISCRIMINATING ASSERTION. Two-sided by construction — the number
+       prints on a pass, so a green run reads "63" and can never be mistaken
+       for a vacuous one. RED at 8 on the pre-p4·M4 tree, at all three widths. */
+    R.ok(mark.cellsPerGlyph >= MIN_CELLS_PER_GLYPH,
+      `${label}: the wordmark rasters at ${mark.cellsPerGlyph} cells per glyph ` +
+      `(${mark.cols} cols x ${mark.rows} rows over ${mark.glyphs} glyphs, floor ${MIN_CELLS_PER_GLYPH})`,
+      mark.cellsPerGlyph >= MIN_CELLS_PER_GLYPH ? '' :
+        `${mark.cellsPerGlyph} cells per glyph — a letterform in that many cells is a smear, not a letter. ` +
+        `The mark is ${mark.cols}x${mark.rows} cells for ${mark.glyphs} glyphs. This is the "wall of glyphs": ` +
+        'the message is drawn at a resolution the grid cannot carry, so it reads as more noise. Note that ' +
+        'scaling the cells CANNOT fix it in either direction — bigger cells mean fewer columns and a worse ' +
+        'raster, smaller cells break MIN_CELL_PX. See field.ts#WORDMARK.');
+
+    /* THE SAME CLAIM IN THE UNIT THAT CANNOT BE GAMED. `cellsPerGlyph` is a
+       BOUNDING BOX, and a box can be large and empty — the first version of
+       this release quoted the box figure against an intuition about ink and
+       overstated its own fix by 2.3x. Measured at 390: box 8 -> 63, INK
+       4.0 -> 26.9, against a 1440 control of 82.7 box / 43.8 ink. 15 sits in
+       the empty gap between the two populations. */
+    R.ok(mark.inkPerGlyph >= MIN_INK_PER_GLYPH,
+      `${label}: the mark inks ${mark.ink} cells — ${mark.inkPerGlyph} per glyph ` +
+      `(floor ${MIN_INK_PER_GLYPH}; box figure ${mark.cellsPerGlyph})`,
+      `${mark.inkPerGlyph} lit cells per letterform. The bounding box can be generous and the raster still ` +
+      'empty, which is why this is asserted in ink and the box figure is only printed beside it.');
+
+    R.ok(mark.rows >= MIN_MARK_ROWS,
+      `${label}: the mark is ${mark.rows} cell-rows tall (floor ${MIN_MARK_ROWS}, of ${layout.rows} available)`,
+      `${mark.rows} rows. A mark this short has no vertical structure to read — the independent axis to ` +
+      'cells-per-glyph, so a very wide very short mark cannot satisfy one by failing the other.');
+
+    /* THE PAYOFF SENTENCE SURVIVES THE GRID.
+       The line the whole sequence closes on is `signer_index ??? — NOT ENCODED
+       IN THE PROTOCOL`, and on a 360px stage it was placed one character wider
+       than the reader can see, so it rendered "...IN THE PROTOCO" — a sentence
+       about what the protocol does not encode, cut mid-word, on the narrowest
+       device. Read back OUT of the composed grid (field.ts#readRow) over the
+       fully visible columns, so this is the text a reader gets rather than the
+       text the code intended. A trailing-word check, not a length check: the
+       narrow stage legitimately ships a shorter form of the line with the
+       padding runs squeezed and every WORD verbatim. */
+    const closing = String(report.closingLine || '');
+    R.ok(/PROTOCOL$/.test(closing.trimEnd()) && /signer_index/.test(closing),
+      `${label}: the closing line is placed intact — "${closing.trimEnd().slice(-34)}"`,
+      closing.trim().length === 0
+        ? 'the closing line is EMPTY — it was never placed, so nothing here is being checked'
+        : `the grid holds "${closing.trimEnd()}". The sequence's closing claim is cut off at the right edge: ` +
+          'putLine drops any cell outside [0, cols) and layoutField returns one more column than the viewport ' +
+          'shows, so a line that "fits in cols" can still lose its last characters. See ' +
+          'field.ts#SIGNER_LINE_NARROW.');
+
+    /* THE SEQUENCE ENDS. `flipped` is the structural half — a sequence that
+       never hands off is the fail-closed case, and it is asserted before the
+       timing so a hang reads as a hang rather than as a slow run. */
+    R.ok(flipped, `${label}: the decrypt hands off to the console (phase reached "console")`,
+      'the sequence never left the decrypt phase within 30s — the reader is trapped on the field');
+    if (!flipped) continue;
+
+    R.ok(flipMs <= PHONE_FLIP_MAX_MS,
+      `${label}: decrypt -> console in ${flipMs}ms (bound ${PHONE_FLIP_MAX_MS}ms)`,
+      `${flipMs}ms on a phone. The narrow stage runs EFFECTIVE_NARROW_MS; this reads like the wide ` +
+      "stage's 5,556ms, i.e. a phone being served the whole desktop sequence.");
+
+    /* FAIL OPEN. `cb-pending` hides #root behind an opaque floor; if it is
+       still on the root once the console is up, a JS-enabled phone is looking
+       at a black page with the splash's own content invisible beneath it. */
+    R.ok(pending === false,
+      `${label}: the frame-zero floor is released (html has no .cb-pending once the console is up)`,
+      'html still carries .cb-pending — #root is hidden behind the anti-flash floor. A permanently blank ' +
+      'phone is worse than any wall; index.html carries three independent removers and none of them ran.');
+  }
+
+  /* ── §10b · A SLOW PHONE GETS A SHORTER SEQUENCE, NOT A LONGER ONE ─────
+   * The whole point of schedule.ts#WALL_CEIL_FACTOR. 6x is this repo's own
+   * throttle convention (verify-memperf, verify-perf-runtime).
+   *
+   * ── THIS SECTION'S FIRST VERSION COULD NOT SEE ITS OWN SUBJECT, AND ONLY
+   *    A BREAK TEST SAID SO ─────────────────────────────────────────────────
+   * It asserted the whole navigation against 7,500ms, calibrated to red on the
+   * 9,015ms this tree measured BEFORE the release. Deleting the wall ceiling
+   * left it GREEN at 167 passed · 0 failed — because the 9,015 came from the
+   * OLD 5,556ms duration, and against the new 3,333ms one the same 1.8x
+   * stretch lands near 7,000ms, under the bound. The number was calibrated
+   * against a baseline that the OTHER half of this release had already moved.
+   * A bound that only reds on a defect nobody can reintroduce is not a bound.
+   *
+   * Two changes, and the SECOND one is the interesting half.
+   *
+   * (1) It measures the LOOP (from the instant the field publishes its report,
+   * which is the loop's own setup) rather than the whole navigation, so bundle
+   * and hold time are not inside the number the ceiling is supposed to govern.
+   * Navigation time under throttle is dominated by parse and is not even
+   * monotonic in the throttle rate — measured 18,539ms at 16x against 11,978ms
+   * at 20x on the same tree — so it is the wrong quantity to bound. The bound
+   * is DERIVED FROM THE CEILING THE PAGE REPORTS rather than written down:
+   * `wallCeilMs * 1.15`. Not a tautology — `wallCeilMs` is a constant the page
+   * states, and the assertion is that the loop's ACTUAL wall duration respected
+   * it.
+   *
+   * (2) THE THROTTLE IS 10x, NOT THIS REPO'S CUSTOMARY 6x, AND THAT IS THE
+   * WHOLE REASON THE FIRST VERSION COULD NOT SEE ITS SUBJECT. Deleting the
+   * ceiling and re-running left the gate green TWICE — once against a 7,500ms
+   * end-to-end bound and again against this loop bound at 6x. Measured across
+   * the rate, loop ms with the ceiling vs without:
+   *
+   *      1x   3,315  /  3,315   — inert by construction (no frame clamps)
+   *      6x   4,187  /  4,486   — 1.07x: the ceiling barely binds
+   *     10x   3,922  /  7,348   — 1.87x
+   *     16x   3,930  / 11,977   — 3.05x
+   *     20x   3,636  / 15,138   — 4.16x
+   *
+   * 6x on this sandbox is simply not slow enough to make the 64ms clamp lie:
+   * the median frame is still under 64ms and only the tail clamps. The operator
+   * reported the splash "still showing at 11s", which on that curve is a device
+   * around 14-16x — so the customary 6x understates the phone this release is
+   * for. 10x is the first rate where the separation is unambiguous, and the
+   * 1x row is the empirical form of the arithmetic proof that this ceiling
+   * changes nothing on a machine that keeps up. */
+  {
+    const { flipped, flipMs, loopMs, report } = await runStage({ width: PHONE.width, height: PHONE.height }, 10);
+    R.ok(Boolean(report) && flipped,
+      '390 @10x CPU: precondition — the field ran and handed off under throttle',
+      'the sequence did not complete under 6x throttle at all — the timing below has no subject');
+    if (report && flipped) {
+      const ceil = Number(report.wallCeilMs) || 0;
+      R.ok(ceil > 0,
+        `390 @10x CPU: precondition — the page reports its own wall ceiling (${ceil}ms)`,
+        'no wallCeilMs in the field report, so the bound below would be derived from zero');
+      if (ceil > 0) {
+        const bound = Math.round(ceil * 1.15);
+        R.ok(loopMs <= bound,
+          `390 @10x CPU: the decrypt LOOP ran ${loopMs}ms against its own ${ceil}ms wall ceiling ` +
+          `(bound ${bound}ms; whole navigation ${flipMs}ms)`,
+          `${loopMs}ms of loop against a ${ceil}ms ceiling. The progress ramp's per-frame delta is clamped ` +
+          'at 64ms, so a device that cannot hit 15.6fps advances it more slowly than real time and the ' +
+          'sequence gets LONGER the slower the phone — measured 9,015ms end-to-end before ' +
+          'schedule.ts#WALL_CEIL_FACTOR existed, and reported by the operator at ~11s. The unclamped wall ' +
+          'accumulator in ColdBoot.tsx is what bounds it, and this reading says it is not doing so.');
+      }
+      /* REPORTED, NOT ASSERTED. What a visitor waits end to end is the number
+         that matters to them, and it is also the one this gate cannot bound
+         honestly: under throttle it is dominated by bundle parse and is not
+         monotonic in the rate (18,539ms at 16x against 11,978ms at 20x). A
+         bound on it would be a bound on the runner. The 1x end-to-end bounds
+         above are stable and are where that claim is made. */
+      R.info(`390 @10x CPU: whole navigation ${flipMs}ms (parse-dominated — reported, not bounded)`);
+    }
+  }
+
+  /* ── §10c · THE WIDE STAGE IS UNTOUCHED, BOUNDED BOTH WAYS ─────────────
+   * A one-sided upper bound would be satisfied by shortening EVERY stage, so
+   * this control also has a FLOOR. And it asserts the wide mark still rasters,
+   * which is what stops §10's cells-per-glyph floor from being a claim that
+   * only holds where it was tuned. */
+  {
+    const { report, flipped, flipMs } = await runStage({ width: 1440, height: 900 });
+    const ok = Boolean(report && report.mark);
+    R.ok(ok, '1440x900 control: precondition — the field published its report', ok ? '' : 'no report');
+    if (ok) {
+      R.ok(report.narrow === false,
+        `1440x900 control: the WIDE composition is engaged (narrow=false, ${report.layout.cols}x${report.layout.rows} cells)`,
+        'narrow=true at 1440 — the phone composition has leaked onto the desktop stage');
+      R.ok(report.mark.cellsPerGlyph >= MIN_CELLS_PER_GLYPH,
+        `1440x900 control: the wide mark rasters at ${report.mark.cellsPerGlyph} cells per glyph ` +
+        `(${report.mark.cols}x${report.mark.rows} over ${report.mark.glyphs})`,
+        `${report.mark.cellsPerGlyph} — the desktop mark regressed`);
+      R.ok(flipped && flipMs >= WIDE_FLIP_MIN_MS && flipMs <= WIDE_FLIP_MAX_MS,
+        `1440x900 control: decrypt -> console in ${flipMs}ms (band ${WIDE_FLIP_MIN_MS}-${WIDE_FLIP_MAX_MS}ms — ` +
+        'the wide sequence is neither shortened nor stretched)',
+        flipMs < WIDE_FLIP_MIN_MS
+          ? `${flipMs}ms — the desktop sequence got SHORTER. The narrow duration has leaked onto the wide ` +
+            'stage; every upper bound in this section would still pass.'
+          : `${flipMs}ms — the desktop sequence got longer, or never completed`);
+    }
+  }
+
+  /* ── §10d · REDUCED MOTION NEVER SEES THE FIELD AT ALL ─────────────────
+   * The host mounts straight to the console at a conceptual T=1 and renders NO
+   * canvas (ColdBoot.tsx's skipDecrypt branch), so "the decrypt loses no
+   * information under reduce" is true because there is no decrypt. Asserted as
+   * an ABSENCE with a POSITIVE CONTROL beside it — the console must be present
+   * and carry real text, or "no canvas" would also be satisfied by a page that
+   * rendered nothing at all. */
+  {
+    const { ctx, page } = await cold({ viewport: { width: PHONE.width, height: PHONE.height }, reducedMotion: 'reduce' });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25_000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, '390 reduce: precondition — the console reached "ready"');
+    if (ready) {
+      await page.waitForTimeout(500);
+      const m = await page.evaluate(() => ({
+        canvases: document.querySelectorAll('[data-coldboot] > canvas').length,
+        phase: document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') ?? null,
+        chars: (document.querySelector('[data-coldboot]')?.innerText || '').trim().length,
+        field: Boolean(window.__XMR_FIELD__),
+      }));
+      R.ok(m.chars > 400,
+        `390 reduce: positive control — the console carries ${m.chars} chars of real text`,
+        `only ${m.chars} chars — the absence below would be satisfied by an empty page`);
+      R.ok(m.canvases === 0 && m.phase === 'console' && !m.field,
+        `390 reduce: no decrypt field is ever rendered (phase "${m.phase}", ${m.canvases} field canvas, ` +
+        `report published: ${m.field})`,
+        `phase "${m.phase}" with ${m.canvases} field canvas — a reduced-motion phone is being shown the ` +
+        'animated decrypt');
+    }
+    await ctx.close();
+  }
+}
+
+/* ══ §11 · THE ORB REACHES THE PHONE'S NETWORK SLOT ══════════════════════
+ *
+ * ── THE DEFECT, AND WHY EVERY EXISTING ASSERTION MISSED IT ───────────────
+ * `[data-orb]` is `position:fixed` and drives itself from the rect
+ * `ColdBootConsole` publishes for its slot. Until p4·M1 that slot could only
+ * change by RESIZING, so a ResizeObserver plus `window.resize` saw everything.
+ * p4·M1 made the stacked grid a SCROLL CONTAINER — the phone fix, and it
+ * stays — and a scroll moves a box without resizing it.
+ *
+ * So on a phone the orb was sized correctly, painted correctly, and pinned at
+ * a viewport coordinate 753px below the fold (measured at 390x844: slot top
+ * y=1597 in an 844px viewport, inside a 2,211px scroller). Scrolling down to
+ * the Network pane arrived at an EMPTY frame. Every assertion that could have
+ * spoken was about the orb's own size or paint, both of which were fine;
+ * `verify-orb` §7 reports it as a reasoned SKIP, because `elementFromPoint` is
+ * viewport-relative and cannot answer about an off-screen element.
+ *
+ * ── WHAT DISCRIMINATES ───────────────────────────────────────────────────
+ * Not "is the orb painted" (it was), not "does the slot exist" (it did), and
+ * not the orb's rect on its own. The only metric that separates the two trees
+ * is the orb's rect AFTER A SCROLL, against the slot's — plus
+ * `elementFromPoint` at the slot's centre, which is exactly the probe
+ * `verify-orb` had to decline. Both are floored by a paint census, so "the orb
+ * is over the slot" cannot pass over a blank canvas. */
+R.group('── 11 · the orb reaches the phone console\'s Network slot ─────────────');
+{
+  const STAGES = [
+    ['360x800', { width: 360, height: 800 }, true],
+    ['390x844', { width: PHONE.width, height: PHONE.height }, true],
+    ['430x932', { width: 430, height: 932 }, true],
+    ['1440x900', { width: 1440, height: 900 }, false],
+  ];
+
+  for (const [label, vp, expectBelowFold] of STAGES) {
+    const { ctx, page } = await cold({ viewport: vp });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 30_000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, `${label}: precondition — the console reached "ready"`);
+    if (!ready) { await ctx.close(); continue; }
+    await page.waitForTimeout(900);
+
+    const before = await page.evaluate(() => {
+      const s = document.querySelector('[data-orb-slot="coldboot-console"]');
+      if (!s) return null;
+      const b = s.getBoundingClientRect();
+      return { top: Math.round(b.top), inView: b.top < window.innerHeight && b.bottom > 0 };
+    });
+    R.ok(before !== null, `${label}: precondition — the console renders an orb slot`,
+      'no [data-orb-slot="coldboot-console"] — there is nothing for the orb to reach');
+    if (!before) { await ctx.close(); continue; }
+
+    /* THE VACUITY FLOOR FOR THE SCROLL TEST. If the slot were already on
+       screen at a phone width, scrolling would prove nothing and the whole
+       section would pass on a tree with no scroll tracking at all. The wide
+       stage is the reverse control: its slot is IN view and must stay so. */
+    if (expectBelowFold) {
+      R.ok(before.inView === false,
+        `${label}: precondition — the slot starts BELOW THE FOLD (top ${before.top}px in a ${vp.height}px ` +
+        'viewport), so the scroll below is a real test',
+        `the slot is already visible at top ${before.top}px, so scrolling to it proves nothing and every ` +
+        'assertion below would pass on a tree that does not track scroll at all');
+    } else {
+      R.ok(before.inView === true,
+        `${label}: control — the wide stage's slot is on screen from the start (top ${before.top}px)`,
+        `the desktop slot is off-screen at top ${before.top}px — the console layout regressed`);
+    }
+
+    await page.evaluate(() => {
+      const g = document.querySelector('[data-cb-grid]');
+      if (g && g.scrollHeight > g.clientHeight) g.scrollTop = g.scrollHeight;
+      document.querySelector('[data-orb-slot="coldboot-console"]')?.scrollIntoView({ block: 'center' });
+    });
+    await page.waitForTimeout(500);
+
+    const m = await page.evaluate(() => {
+      const slot = document.querySelector('[data-orb-slot="coldboot-console"]');
+      const orb = document.querySelector('[data-orb]');
+      const cv = orb ? orb.querySelector('canvas') : null;
+      const sb = slot.getBoundingClientRect();
+      const ob = orb ? orb.getBoundingClientRect() : null;
+      const ix = ob ? Math.max(0, Math.min(sb.right, ob.right) - Math.max(sb.left, ob.left)) : 0;
+      const iy = ob ? Math.max(0, Math.min(sb.bottom, ob.bottom) - Math.max(sb.top, ob.top)) : 0;
+      let lit = 0, n = 0;
+      if (cv && cv.width && cv.height) {
+        try {
+          const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+          for (let i = 3; i < d.length; i += 4 * 13) { n++; if (d[i] > 8) lit++; }
+        } catch { /* tainted canvas would report 0, which fails honestly */ }
+      }
+      const cx = sb.x + sb.width / 2, cy = sb.y + sb.height / 2;
+      const hit = (cy >= 0 && cy <= window.innerHeight) ? document.elementFromPoint(cx, cy) : null;
+      return {
+        slotTop: Math.round(sb.top), slotOnScreen: sb.top < window.innerHeight && sb.bottom > 0,
+        orbTop: ob ? Math.round(ob.top) : null,
+        coverage: sb.width * sb.height > 0 ? +((ix * iy) / (sb.width * sb.height)).toFixed(3) : 0,
+        buf: cv ? `${cv.width}x${cv.height}` : null,
+        litFrac: n ? +(lit / n).toFixed(4) : 0,
+        overSlot: Boolean(hit && hit.closest('[data-orb]')),
+        hitTag: hit ? hit.tagName : 'off-viewport',
+      };
+    });
+
+    R.ok(m.slotOnScreen,
+      `${label}: the slot scrolled into view (top ${m.slotTop}px)`,
+      'the slot could not be brought on screen — the assertions below have no subject');
+    if (!m.slotOnScreen) { await ctx.close(); continue; }
+
+    /* THE PAINT FLOOR, FIRST. Without it "the orb covers the slot" is
+       satisfiable by a correctly-positioned blank canvas, which is the
+       "empty framed box that implies a failed load" this must never ship. */
+    R.ok(m.litFrac >= 0.05,
+      `${label}: the orb canvas is PAINTED (${m.buf} backing store, ${(m.litFrac * 100).toFixed(1)}% of ` +
+      'sampled pixels lit)',
+      `${(m.litFrac * 100).toFixed(1)}% lit on a ${m.buf} buffer — the slot would frame an empty box, which ` +
+      'reads to a visitor as a failed load. Render nothing or render the orb; never a frame around nothing.');
+
+    /* THE DISCRIMINATING ASSERTIONS. On the pre-p4·M4 tree the orb stays
+       pinned at the rect published before the scroll — coverage 0 at all three
+       phone widths, with elementFromPoint returning the slot's own div. */
+    R.ok(m.coverage >= 0.9,
+      `${label}: the orb sits ON the slot after scrolling — ${(m.coverage * 100).toFixed(0)}% of the slot ` +
+      `covered (slot top ${m.slotTop}, orb top ${m.orbTop})`,
+      `only ${(m.coverage * 100).toFixed(0)}% covered: the slot is at ${m.slotTop} and the orb at ${m.orbTop}. ` +
+      '[data-orb] is position:fixed and tracks the rect the console publishes; the console grid is a scroll ' +
+      'container on a phone, and a scroll moves a box without resizing it, so neither the ResizeObserver nor ' +
+      'window.resize fires. See ColdBootConsole.tsx\'s slot effect.');
+
+    /* ── §11b · TRACKING THE SLOT MUST NOT COST LAYOUT SHIFT ──────────────
+     * The orb is `position:fixed` and `Orb.tsx` re-anchors its layout box on
+     * every render at rest, so the naive way to make it follow a scrolling slot
+     * is to write `left`/`top` once per frame — which is a scored layout shift
+     * on every one of them. MEASURED on the tree that first fixed the tracking:
+     * a 40-step scroll of the console grid at 390x844 scored **CLS 0.242**
+     * against this repo's 0.005 ceiling, 64 frames at ~0.0168 each with `DIV`
+     * (the orb) the sole source, IDENTICAL at 1x and 6x. The remedy is in
+     * Orb.tsx: a same-size rect change keeps the base and moves by transform.
+     *
+     * NOTHING ELSE IN THE SUITE CAN SEE THIS. `verify-cls.mjs` and
+     * `verify-vitals.mjs` both call `coldBootOffBrowser`, so `/`'s recorded
+     * 0.0000 is taken with the splash bypassed — it could not have moved, and a
+     * regression here would have shipped green. That is why the assertion lives
+     * beside the tracking it pays for rather than in the CLS gate.
+     *
+     * Floored on BOTH sides: the grid must actually have scrolled and frames
+     * must actually have elapsed, or "0.000" is a statement about a scroll that
+     * never happened. */
+    if (expectBelowFold) {
+      const shift = await page.evaluate(async () => {
+        let cls = 0; const srcs = [];
+        const po = new PerformanceObserver((l) => {
+          for (const e of l.getEntries()) if (!e.hadRecentInput) {
+            cls += e.value;
+            if (e.value > 0.0005 && srcs.length < 4) srcs.push(`${e.value.toFixed(4)} ${(e.sources || []).map((x) => x.node && x.node.nodeName).join(',')}`);
+          }
+        });
+        po.observe({ type: 'layout-shift' });
+        const g = document.querySelector('[data-cb-grid]');
+        if (!g) return { cls: -1, frames: 0, scrolled: 0, srcs };
+        g.scrollTop = 0;
+        let frames = 0;
+        const max = g.scrollHeight - g.clientHeight;
+        for (let i = 1; i <= 40; i++) {
+          g.scrollTop = (max * i) / 40;
+          await new Promise((r) => requestAnimationFrame(() => { frames++; r(); }));
+        }
+        await new Promise((r) => setTimeout(r, 300));
+        po.disconnect();
+        return { cls: +cls.toFixed(5), frames, scrolled: Math.round(g.scrollTop), srcs };
+      });
+      R.ok(shift.frames >= 20 && shift.scrolled > 100,
+        `${label}: precondition — the console really scrolled (${shift.scrolled}px over ${shift.frames} frames)`,
+        `${shift.frames} frames / ${shift.scrolled}px — a shift score over a scroll that did not happen is not a measurement`);
+      if (shift.frames >= 20 && shift.scrolled > 100) {
+        R.ok(shift.cls <= 0.005,
+          `${label}: scrolling the console to the orb emits NO layout shift (CLS ${shift.cls.toFixed(5)}, ceiling 0.005)`,
+          `CLS ${shift.cls} over the scroll — ${shift.srcs.join(' · ')}. The orb is tracking its slot by writing ` +
+          'left/top per frame on a position:fixed element, which is a scored shift every frame. Orb.tsx must keep ' +
+          'its layout base and express a same-size move as a transform, the way the ENTER travel already does.');
+      }
+    }
+
+    R.ok(m.overSlot,
+      `${label}: elementFromPoint at the slot's centre resolves INSIDE [data-orb] (${m.hitTag})`,
+      `resolved to ${m.hitTag}, outside [data-orb] — the reader looking at the Network slot is not looking ` +
+      'at the orb. This is the probe verify-orb §7 has to decline, because it cannot speak about an ' +
+      'off-screen element; here the slot has been scrolled on screen first, so it can.');
+
+    await ctx.close();
   }
 }
 

@@ -104,6 +104,50 @@ export interface FieldTarget {
   readonly tclass: Uint8Array;
   /** the T value (0..1) at which this cell locks to its target glyph. */
   readonly lockAt: Float32Array;
+  /** The wordmark's own bounding box IN CELLS, and how many letterforms it
+   *  spans. Carried on the target rather than recomputed by a caller because
+   *  it is a by-product of the raster loop that already walks every cell —
+   *  and because it is the ONE number that says whether the mark can be read:
+   *  a letterform needs cells, not pixels. See `WORDMARK`'s docblock. */
+  readonly mark: MarkBox;
+  /** The sequence's CLOSING LINE as it was actually PLACED — decoded back out
+   *  of `target`, over the fully visible columns only.
+   *
+   *  Reported rather than assumed because the placement can silently lose
+   *  characters: `putLine` drops any cell outside `[0, cols)`, and
+   *  `layoutField` returns one more column than the viewport shows, so
+   *  "51 characters fit in 51 columns" was true and a 360px reader still saw
+   *  "NOT ENCODED IN THE PROTOCO". This is the OUTPUT of the placement, not its
+   *  input, so a gate reading it checks the grid rather than restating the
+   *  arithmetic that filled it. */
+  readonly closingLine: string;
+}
+
+/** Where the rasterised wordmark landed, in cells. `glyphs` counts
+ *  letterforms (the dot included — it occupies cells like any other). */
+export interface MarkBox {
+  readonly top: number;
+  readonly bottom: number;
+  readonly left: number;
+  readonly right: number;
+  readonly rows: number;
+  readonly cols: number;
+  readonly glyphs: number;
+  /** LIT cells — how many cells the raster actually inked. */
+  readonly ink: number;
+  /** `rows * cols / glyphs` — the mark's BOUNDING-BOX area per letterform. */
+  readonly cellsPerGlyph: number;
+  /** `ink / glyphs` — the same idea in the unit that cannot be gamed.
+   *
+   *  ── WHY BOTH, AND WHY THIS ONE IS THE ASSERTION ──────────────────────
+   *  `cellsPerGlyph` is a BOX, and a box can be large and empty: a mark that
+   *  inked three cells inside a generous bounding box satisfies it. This is
+   *  not hypothetical carefulness — the first version of this release quoted
+   *  the box figure ("8 → 63 at 390") against an intuition about ink, which
+   *  overstates the change by 2.3x. Measured at 390: box 8 → 63, INK 4.0 →
+   *  26.9, against a 1440 control of 82.7 box / 43.8 ink. The gate asserts
+   *  the ink figure and prints both. */
+  readonly inkPerGlyph: number;
 }
 
 /** Cell geometry for a given CSS-pixel viewport. */
@@ -164,6 +208,23 @@ const CULL = 0.06;
  *  No gate enforces this constant; it is asserted by construction only. */
 export const MIN_CELL_PX = 12;
 
+/** The phone predicate — ONE literal, read by `layoutField` (which drops to
+ *  `MIN_CELL_PX` below it) and by `composeTarget` (which stacks the wordmark
+ *  below it). It was already implicit in `layoutField`'s own `w < 560`
+ *  breakpoint; naming it is what stops a second phone threshold drifting away
+ *  from the first, which is the two-lists-one-truth defect this repo records
+ *  against itself repeatedly.
+ *
+ *  560 is `layoutField`'s existing font breakpoint, unchanged — the widest
+ *  phone in the gate band is 430 and the narrowest tablet this repo lays out
+ *  for is 768, so the threshold sits in an empty gap rather than on a device. */
+export const PHONE_MAX_W = 560;
+
+/** True where the field must compose for a TALL, NARROW stage. */
+export function isNarrowStage(w: number): boolean {
+  return w < PHONE_MAX_W;
+}
+
 /** Hard cap on `cols * rows`. The mockup runs to 18000 (:1043); tightened
  *  here per the brief ("~16k... on large displays"). Enforced the same way
  *  the mockup enforces its own cap: inflate `cw`/`ch` (fewer, bigger cells)
@@ -206,6 +267,40 @@ function hexRun(n: number, seed: number): string {
   return s;
 }
 
+/** The mark the field decrypts to. ONE line on a wide stage, verbatim from
+ *  coldboot-splash.html:989.
+ *
+ *  ── WHY THERE IS A SECOND, STACKED FORM ──────────────────────────────────
+ *  The wordmark is not TEXT here, it is a RASTER: `composeTarget` samples a
+ *  drawn bitmap into the cell grid, so its legibility is governed by how many
+ *  CELLS each letter gets, not by its pixel size. Measured, by rasterising the
+ *  real grid and reading the result as ASCII before a line of this was written:
+ *
+ *      1440, one line   124 cols x 6 rows over 9 glyphs  =  83 cells/glyph  READS
+ *       390, one line    38 cols x 2 rows over 9 glyphs  =   8 cells/glyph  noise
+ *       390, one line widened to 0.92w
+ *                        48 cols x 3 rows                =  16 cells/glyph  noise
+ *       390, two lines   47 cols x 12 rows over 9 glyphs =  63 cells/glyph  READS
+ *
+ *  A phone has 56 columns and 51 rows. The columns are the scarce axis and the
+ *  rows are the plentiful one, and a single 9-glyph line spends the scarce one
+ *  to buy nothing: 9 glyphs across 40 columns is 4.2 columns each, and a
+ *  letterform in 4 columns is a smudge at ANY font size. Stacking spends the
+ *  plentiful axis instead — 5 glyphs across the same 47 columns is 9.4 each,
+ *  and the block grows from 2 rows to 12 of the 51 available.
+ *
+ *  This is also why "scale the field" cannot fix it, in EITHER direction:
+ *  bigger cells mean FEWER columns and a worse raster (at 2x cell size the
+ *  mark gets 2.2 columns per glyph), and smaller cells mean sub-12px glyphs,
+ *  which is the floor `MIN_CELL_PX` exists to hold. The layout is the only
+ *  free variable. */
+export const WORDMARK = "XMR.IRISH";
+
+/** The same mark for a narrow stage — see `WORDMARK`'s measurements. Split at
+ *  the dot, so both halves are real tokens of the name rather than an
+ *  arbitrary hyphenation. */
+export const WORDMARK_STACKED: readonly string[] = ["XMR.", "IRISH"];
+
 /** Verbatim — coldboot-splash.html:965. */
 export const KICK = "▪ COLD BOOT ▪";
 export const SUB1 = "SATOSHI'S VISION · MONERO, LIVE";
@@ -231,6 +326,30 @@ export const CIPHER: ReadonlyArray<readonly [string, string]> = [
 /** Verbatim — coldboot-splash.html:1014. The line the whole sequence closes
  *  on: four fields resolve, the fifth is the actual privacy guarantee. */
 export const SIGNER_LINE = "└ signer_index  ???  ── NOT ENCODED IN THE PROTOCOL";
+
+/** The closing line in three forms, WIDEST FIRST — `composeTarget` takes the
+ *  first one that fits the stage's fully-visible columns.
+ *
+ *  ── WHY A LADDER AND NOT A LINE ─────────────────────────────────────────
+ *  `putLine` silently drops any cell outside `[0, cols)`, so a line one
+ *  character too wide loses that character with nothing said. Measured: at
+ *  360px the shipped 51-character line rendered "…NOT ENCODED IN THE PROTOCO",
+ *  and at 320px (iPhone SE, and this repo's own narrowest gated width) even a
+ *  squeezed 49 renders "…NOT ENCODED IN THE PRO". A sentence about what the
+ *  protocol does not encode, cut mid-word, is the one line here that must never
+ *  truncate — so the PADDING yields, then the LINE BREAK yields, and the words
+ *  never do.
+ *
+ *  Rung 2 is the same sentence with its two double spaces squeezed; every word
+ *  is verbatim. Rung 3 wraps at the em-dash, which is where the line already
+ *  divides its subject from its claim. Rows are the abundant axis on a phone —
+ *  the same argument the stacked wordmark rests on — so spending one more of
+ *  them is the cheapest thing this composition can do. */
+export const SIGNER_FORMS: ReadonlyArray<readonly string[]> = [
+  [SIGNER_LINE],
+  ["└ signer_index ??? ── NOT ENCODED IN THE PROTOCOL"],
+  ["└ signer_index  ???", "  ── NOT ENCODED IN THE PROTOCOL"],
+];
 
 // ── CSS custom property resolution (not cssColor() — see file header) ──────
 
@@ -289,7 +408,7 @@ const ABK: Uint8Array = (() => {
  * port of coldboot-splash.html:1038-1044.
  */
 export function layoutField(w: number, h: number, mono?: string): FieldLayout {
-  const font = w < 560 ? MIN_CELL_PX : w < 1000 ? 13 : 14;
+  const font = isNarrowStage(w) ? MIN_CELL_PX : w < 1000 ? 13 : 14;
   const monoFont = mono ?? resolveToken("--f-mono", MONO_FALLBACK);
   let cw = 6;
   let ch = Math.round(font * 1.42);
@@ -384,6 +503,18 @@ function putLine(
   }
 }
 
+/** Read a row of the composed grid back out as text, over the columns a
+ *  reader can actually see. Empty cells become spaces. */
+function readRow(target: Int16Array, cols: number, row: number, visibleCols: number): string {
+  if (row < 0) return "";
+  let out = "";
+  for (let c = 0; c < Math.min(cols, visibleCols); c++) {
+    const g = target[row * cols + c];
+    out += g >= 0 && g < CHARS.length ? CHARS[g] : " ";
+  }
+  return out.trimEnd();
+}
+
 export interface ComposeParams {
   readonly cols: number;
   readonly rows: number;
@@ -410,6 +541,15 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
   const target = new Int16Array(cols * rows).fill(-1);
   const tclass = new Uint8Array(cols * rows);
   const lockAt = new Float32Array(cols * rows);
+  /* Seeded EMPTY, not omitted. Where there is no 2d context there is no raster,
+     and an all-zero box is the honest report of that — a caller reading
+     `cellsPerGlyph` must never be handed a number from a raster that did not
+     happen. */
+  let mark: MarkBox = {
+    top: 0, bottom: 0, left: 0, right: 0, rows: 0, cols: 0, glyphs: 0, ink: 0,
+    cellsPerGlyph: 0, inkPerGlyph: 0,
+  };
+  let closingLine = "";
 
   const off = document.createElement("canvas");
   off.width = Math.max(2, Math.round(w));
@@ -420,7 +560,24 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     og.fillStyle = "#000";
     og.fillRect(0, 0, off.width, off.height);
 
-    let px = Math.min(w * 0.145, h * 0.26);
+    /* ── ONE MARK, TWO LAYOUTS — see WORDMARK's docblock for the measured
+       cells-per-glyph table that forces this. Every number below is a pair:
+       the wide-stage value is the mockup's, unchanged; the narrow one is
+       derived from the phone's own grid, never guessed. */
+    const narrow = isNarrowStage(w);
+    const lines = narrow ? WORDMARK_STACKED : [WORDMARK];
+    /* Size cap. Wide: the mockup's `min(w*.145, h*.26)`. Narrow: the width
+       term is what strangled the mark (390 * .145 = 56.6px over 9 glyphs), and
+       on a stacked mark the binding constraint is the width fit below, so the
+       cap only has to be loose enough not to bind first — h*.26 is 219px at
+       390 and the fit resolves to ~108. */
+    let px = narrow ? h * 0.26 : Math.min(w * 0.145, h * 0.26);
+    /* Fit fraction. 0.74 wide (the mockup's). 0.92 narrow: measured against
+       0.86, which reads too, at 54 cells/glyph against 0.92's 63 — on a stage
+       whose whole problem is a starved raster, the wider fit is the one that
+       buys resolution, and the field is full-bleed so there is no gutter to
+       respect. */
+    const fitFrac = narrow ? 0.92 : 0.74;
     const sansFont = sans ?? resolveToken("--f-sans", SANS_FALLBACK);
     og.textAlign = "center";
     og.textBaseline = "middle";
@@ -430,12 +587,28 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
       if ("letterSpacing" in og) og.letterSpacing = `${Math.round(px * 0.05)}px`;
     };
     setFont();
-    const measured = og.measureText("XMR.IRISH").width;
-    if (measured > w * 0.74) {
-      px *= (w * 0.74) / measured;
+    const measured = Math.max(...lines.map((l) => og.measureText(l).width));
+    /* `measured > 0` FIRST. The refit divides by it, so a face that has not
+       loaded and a fallback that also measures zero yields `px = Infinity`,
+       which Canvas silently REJECTS as a font value — leaving the previous
+       font in place and the mark drawn at the wrong size, or not at all. The
+       exposure predates the stacked layout and is not introduced by it; a
+       taller mark just makes the failure louder. `if (mTop > mBot)` below is
+       the other half of the same fail-open path and must stay: it covers a
+       raster that produced no ink at all, for the two-line branch exactly as
+       it did for the one-line one. */
+    if (measured > 0 && measured > w * fitFrac) {
+      px *= (w * fitFrac) / measured;
       setFont();
     }
-    og.fillText("XMR.IRISH", w / 2, h * 0.335);
+    /* Baseline. Wide: h*.335, the mockup's. Narrow: h*.30, which centres a
+       12-row block high enough to leave the kicker 3 rows above it and the
+       whole cipher below — measured at 390, the block spans rows 9-21 of 51
+       and the closing signer line lands on row 33, well inside the `rows - 3`
+       guard the cipher loop already carries. */
+    const lineH = px * 1.02;
+    const midY = h * (narrow ? 0.30 : 0.335) - ((lines.length - 1) * lineH) / 2;
+    lines.forEach((line, li) => og.fillText(line, w / 2, midY + li * lineH));
 
     const img = og.getImageData(0, 0, off.width, off.height).data;
     const sample = (x: number, y: number): number => {
@@ -446,6 +619,9 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
 
     let mTop = rows;
     let mBot = 0;
+    let mLeft = cols;
+    let mRight = -1;
+    let inked = 0;
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const x = c * cw;
@@ -462,12 +638,28 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
           tclass[i] = 1;
           if (r < mTop) mTop = r;
           if (r > mBot) mBot = r;
+          if (c < mLeft) mLeft = c;
+          if (c > mRight) mRight = c;
+          inked++;
         }
       }
     }
     if (mTop > mBot) {
       mTop = Math.round(rows * 0.3);
       mBot = mTop;
+    } else {
+      /* Only a raster that actually inked cells reports a box. The fallback
+         above is a LAYOUT anchor for the lines below it, not a mark, and
+         publishing it as one would report a 1-row mark where there is none. */
+      const mr = mBot - mTop + 1;
+      const mc = mRight - mLeft + 1;
+      const glyphs = lines.reduce((n, l) => n + [...l].filter((chr) => chr !== " ").length, 0);
+      mark = {
+        top: mTop, bottom: mBot, left: mLeft, right: mRight,
+        rows: mr, cols: mc, glyphs, ink: inked,
+        cellsPerGlyph: glyphs > 0 ? Math.round((mr * mc) / glyphs) : 0,
+        inkPerGlyph: glyphs > 0 ? Math.round((inked / glyphs) * 10) / 10 : 0,
+      };
     }
 
     putLine(target, tclass, cols, rows, KICK, mTop - 3, 3, true);
@@ -475,16 +667,54 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
 
     const labW = 12;
     const bodyW = Math.min(cols - 6, 74);
-    const c0 = Math.floor((cols - bodyW) / 2);
+    /* ── CENTRE ON THE WIDEST LINE THE BLOCK WILL ACTUALLY DRAW ────────────
+       `bodyW` is the body's own width, and every line is cut to it — except
+       the closing line (`SIGNER_FORMS`), which is up to 51 characters and is the sentence the
+       whole sequence closes on. Centring on `bodyW` alone put its left edge at
+       column 3 on a 51-column stage, so the last four characters fell off the
+       grid and a 360px phone read "NOT ENCODED IN THE PROT". Measured, and
+       fixed by measuring: `blockW` equals `bodyW` for every `cols >= 57`, so
+       this is arithmetically INERT at 430 (c0 3 → 3), 768 (13 → 13) and 1440
+       (49 → 49), and moves only where the clip was real — 390 (3 → 2) and 360
+       (3 → 0). */
+    /* FULLY-visible columns. `layoutField` returns `ceil(w/cw) + 1`, so the
+       last column (and often the second-last) lies partly or wholly past the
+       right edge — deliberately, so the ambient field has no gap there. That
+       is right for scramble and wrong for a sentence, and it is why the naive
+       "51 characters fit in 51 columns" arithmetic still lost a character. */
+    const visibleCols = Math.floor(w / cw);
+    /* The widest form that fits, else the narrowest one there is — the ladder
+       is ordered widest-first and its last rung wraps, so "none fits" means the
+       stage is narrower than 32 cells and nothing in this file can help. */
+    const signerRows =
+      SIGNER_FORMS.find((f) => Math.max(...f.map((l) => [...l].length)) <= visibleCols) ??
+      SIGNER_FORMS[SIGNER_FORMS.length - 1];
+    const signerW = Math.max(...signerRows.map((l) => [...l].length));
+    const blockW = Math.max(bodyW, signerW);
+    /* Centred on the grid, then pulled left only as far as the last fully
+       visible column requires. The clamp is what makes this inert above the
+       phone band: it binds only when `c0 + blockW` would exceed `visibleCols`,
+       which at 430/768/1440 it never does (c0 3 → 3, 13 → 13, 49 → 49). */
+    const c0 = Math.min(
+      Math.max(0, Math.floor((cols - blockW) / 2)),
+      Math.max(0, visibleCols - blockW),
+    );
     let row = mBot + 4;
     const cipherRows: number[] = [];
     const txId = hexRun(8, TX_ID_SEED);
+    /* The header is a literal with its own dash run, cut to fit — and the cut
+       used to land INSIDE the word on a narrow stage ("DECRYPTIN" at 360). The
+       floor is the prefix's own length, derived from the same pieces rather
+       than written as a number, so the rule reads "never cut the word" instead
+       of "never cut before 31". Also inert at every width where `bodyW - 16`
+       already cleared it: 390/430/768/1440 are unchanged. */
+    const headHold = `┌ TX 0x${txId}  ── DECRYPTING `;
     putLine(
       target,
       tclass,
       cols,
       rows,
-      `┌ TX 0x${txId}  ── DECRYPTING ─────────────────────`.slice(0, bodyW - 16),
+      `┌ TX 0x${txId}  ── DECRYPTING ─────────────────────`.slice(0, Math.max(bodyW - 16, [...headHold].length)),
       row,
       3,
       false,
@@ -499,8 +729,12 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
       cipherRows.push(row);
       row++;
     }
-    if (row < rows - 2) {
-      putLine(target, tclass, cols, rows, SIGNER_LINE, row, 3, false, c0);
+    /* `rows - 1 - signerRows.length` so a two-row form needs two rows of
+       headroom, not one. The old guard was `row < rows - 2` for a single line;
+       for one row that arithmetic is identical. */
+    if (row < rows - 1 - signerRows.length) {
+      signerRows.forEach((line, i) => putLine(target, tclass, cols, rows, line, row + i, 3, false, c0));
+      closingLine = signerRows.map((_, i) => readRow(target, cols, row + i, visibleCols)).join(" ").trimEnd();
     }
 
     const lastRow = row;
@@ -532,7 +766,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     }
   }
 
-  return { cols, rows, target, tclass, lockAt };
+  return { cols, rows, target, tclass, lockAt, mark, closingLine };
 }
 
 // ── geometry cache — the ONLY module-level mutable state in this file, and
@@ -559,6 +793,47 @@ function geometryFor(w: number, h: number, dpr: number): FieldGeometry {
   const geometry = buildGeometry(w, h, dpr);
   cached = { key, geometry };
   return geometry;
+}
+
+/** What the field resolved to for a given stage — the layout, the wordmark's
+ *  cell box, and whether the narrow composition is in play.
+ *
+ *  ── WHY THIS EXISTS ──────────────────────────────────────────────────────
+ *  The decrypt is a canvas, and a canvas is invisible to every DOM-based gate
+ *  in this repo: `verify-legibility` reads inline `fontSize` and SVG
+ *  attributes, `verify-mobile` walks rendered elements, and neither can see a
+ *  `drawImage` call. So the ONE property that decides whether the phone
+ *  sequence is a message or a wall — how many cells each letterform gets —
+ *  was unassertable, which is why an 8-cells-per-glyph smear shipped past 84
+ *  gates. This is the `__XMR_CLOVER__` / `__XMR_GOV__` idiom: publish the
+ *  number the gate would otherwise have to infer from pixels.
+ *
+ *  PURE, and it writes nothing to `window` — the HOST publishes it (see
+ *  `ColdBoot.tsx`), because a module that reaches for `window` at import time
+ *  is a module `scripts/prerender.mjs` cannot evaluate. It reads the same
+ *  memoised geometry `drawField` uses, so on a warm cache it costs a map
+ *  lookup and cannot disagree with what was drawn. */
+export interface FieldReport {
+  readonly layout: FieldLayout;
+  readonly mark: MarkBox;
+  /** See `FieldTarget#closingLine`. */
+  readonly closingLine: string;
+  readonly narrow: boolean;
+  readonly cells: number;
+}
+
+/** Resolve (and cache) the geometry for a stage, and report what it produced.
+ *  Same three arguments as `drawField`'s own geometry key, so a caller reading
+ *  this is reading the frame that was drawn rather than a second derivation. */
+export function fieldReport(w: number, h: number, dpr: number): FieldReport {
+  const geo = geometryFor(Math.round(w), Math.round(h), Math.round(Math.max(0.5, Math.min(2, dpr || 1)) * 100) / 100);
+  return {
+    layout: geo.layout,
+    mark: geo.fieldTarget.mark,
+    closingLine: geo.fieldTarget.closingLine,
+    narrow: isNarrowStage(Math.round(w)),
+    cells: geo.layout.cols * geo.layout.rows,
+  };
 }
 
 // ── drawField (coldboot-splash.html:1065-1105) ──────────────────────────────

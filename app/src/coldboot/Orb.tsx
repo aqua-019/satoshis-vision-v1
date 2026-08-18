@@ -781,12 +781,44 @@ export function Orb(): React.JSX.Element {
      through it buys nothing; during the travel it is the entire point. The two
      needed separate names.
 
-     The one-per-frame relayout that argument is about is the TRAVEL's, and it
-     is measured: see the CLS numbers above, taken with the lerp written into
-     left/top/width/height. The console phase's own writes are one per resize. */
+     ── AND A THIRD CASE ARRIVED: THE CONSOLE-PHASE *MOVE* ───────────────────
+     This block used to end "The console phase's own writes are one per resize",
+     and p4·M4 made that false in the course of fixing something else. #196 made
+     the phone console grid a scroll container, and p4·M4 gave the slot effect a
+     scroll listener so the orb tracks its slot through it — so during a phone
+     scroll the rect now changes once per FRAME, at constant size, and every one
+     of those was landing in `left`/`top` as a layout write on a fixed element.
+
+     Measured on the shipping tree before this condition existed: a 40-step
+     scroll of the console grid at 390x844 scored **CLS 0.242** against this
+     repo's 0.005 ceiling — 64 frames at ~0.0168 each, `DIV` (this element) the
+     sole source, and IDENTICAL at 1x and 6x, so it is structural rather than a
+     contention artefact. `verify-cls` and `verify-vitals` both call
+     `coldBootOffBrowser`, so `/`'s recorded 0.0000 could not have moved and
+     NOTHING in the suite would have reported this. "Cannot move the baseline"
+     and "is safe" are different claims.
+
+     So the pin now also covers a console-phase move: SAME SIZE, new position ⇒
+     keep the base and express the delta as a transform, exactly as the travel
+     does. A size CHANGE still re-anchors, which is what the paragraph above is
+     about and is untouched — so the ellipse defect cannot come back through
+     this door. It is scoped to `active` so Home keeps re-anchoring every
+     render, which the clip-path below depends on: it computes its insets
+     against `base` assuming the transform there is identity.
+
+     The one-per-frame relayout the argument above is about is the TRAVEL's, and
+     it is measured: see the CLS numbers above, taken with the lerp written into
+     left/top/width/height. */
   const baseRef = React.useRef<Rect | null>(null);
-  if (effectiveRect && (!coldBootOrb.travelling || baseRef.current === null)) {
-    baseRef.current = effectiveRect;
+  {
+    const prev = baseRef.current;
+    const pureMove =
+      coldBootOrb.active && prev !== null && effectiveRect !== null &&
+      prev.w === effectiveRect.w && prev.h === effectiveRect.h;
+    const pinned = coldBootOrb.travelling || pureMove;
+    if (effectiveRect && (!pinned || prev === null)) {
+      baseRef.current = effectiveRect;
+    }
   }
   const base = baseRef.current;
 
