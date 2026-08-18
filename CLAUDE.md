@@ -740,6 +740,136 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-18**: p4·M2 "THE README REDESIGN, AND THE ABOUT PAGE'S CENTRE OF GRAVITY"
+  (README + app/) — three operator asks kept in three commits on one PR: the README
+  becomes a statement of how the site treats its readers, `/about/site` puts the ask
+  second instead of fifth, and the theme toggle leaves Main Home for ⌘ DESIGN.
+  **THE BRIEF'S §0.1 WAS A FALSE POSITIVE IN THE AUTHORITY SLOT, AND ONE GATE SETTLED
+  IT.** It reported that the README's "`Math.random()` is confined to
+  `app/src/protocols/`" is "measurably untrue" and named NINE files, instructing that
+  the sentence be rewritten around them. **All nine are COMMENTS, and every one says
+  `Math.random` is NOT used there** — `bridge.tsx:27` reads "never Math.random",
+  `usePolling.ts:101` reads "WITHOUT Math.random()", `MinePage.tsx:112` reads "is
+  banned outside `src/protocols/`". A grep that counts MENTIONS is not a grep that
+  counts CALL SITES, the family this file already records against itself. The decisive
+  instrument was already in the tree and took one command: `verify-prng.mjs` §6 STRIPS
+  COMMENTS first, scans 174 `.ts/.tsx` files, and reports **zero call sites outside
+  `src/protocols/`** — with a paired positive control (7 simulator files DO use it)
+  that stops the first assertion passing by scanning nothing.
+  **BUT THE BRIEF'S OWN SCOPE HID THE REAL CALL SITES, WHICH IS THE HALF WORTH
+  KEEPING.** Its grep covered `app/src`. A whole-repo sweep finds three things it
+  structurally could not see: `api/markets.js:335` and `api/coingecko.js:120`, both
+  AWS-style full-jitter retry backoff where the random number is a count of
+  MILLISECONDS TO WAIT and never becomes a value anyone reads; and `app/legacy/**`,
+  which carries dozens of genuine `genTx`/fabricated-difficulty call sites and **is not
+  in the module graph** — nothing under `src/` or `scripts/` imports it and
+  `tsconfig.json`'s `include` is `["src"]`. So the claim was TRUE and the WORDING was
+  too narrow. The replacement is about RENDERED VALUES rather than the function's
+  presence, and states all three cases. **State a premise's SCOPE beside its result.**
+  **THE README IS UNGATED AND THAT DECIDED ITS SHAPE.** `verify-mine.mjs` and `ci.yml`
+  both mention "README" and BOTH mean something else — upstream P2Pool/XMRig READMEs
+  and `app/README.md`. Nothing reads the root file, so every count in it rots silently,
+  which is the actual argument for deleting the Verification section rather than
+  updating it. What replaced it is a claim-to-mechanism table where each row names a
+  file, a header or a gate, every one checked against the tree: 12 woff2 counted, 18
+  routes prerendered by the build, no `<iframe>` anywhere in `app/src`, no cookie code,
+  and the MIT warranty paragraph verified WORD-FOR-WORD by whitespace-normalised
+  comparison against `LICENSE`. The CSP is quoted IN FULL because paraphrasing it costs
+  the reader the ability to check it.
+  **THE CLOSING FENCE GLUED ITSELF TO THE CLOVER AND WOULD HAVE SWALLOWED THE WHOLE
+  FILE.** The delivered ASCII has NO TRAILING NEWLINE, so `cat` followed by `echo '```'`
+  produced `|##|` + backticks on one line — GitHub would have rendered the entire README
+  as one code block. Found by reading line ends with `cat -A` rather than trusting that
+  the write looked right, and the art is now proven byte-identical by round-tripping
+  lines 2-27 back out and `cmp`-ing.
+  **FOUND AND NOT FIXED: `LICENSE` NAMES A DELETED FEATURE.** Its ADDITIONAL DISCLAIMERS
+  item 3 says "Exchange widgets (ChangeNOW, Wagyu Wallet references) are included".
+  Measured: **there is no `<iframe>` anywhere in `app/src`** — the widget went in v6.1.0,
+  and those two names survive only as editorial TEXT on `MarketsPage` and in an education
+  chapter. A legal document advertising an integration that does not exist. Reported to
+  the operator rather than edited: a licence is not this PR's to change.
+  **THE ABOUT REORDER IS A PURE BLOCK PERMUTATION, ASSERTED AS ONE.** The six sections
+  were split on their own marker comments, reassembled, and the result checked to be the
+  same MULTISET OF LINES as the original — so no prose was retyped and no sentence can
+  have drifted in a 184-line diff.
+  **THE CTA REUSES `a.proto-btn` AND THAT IS WHY `cssGz` IS BYTE-IDENTICAL.** It is the
+  house's existing primary affordance, the same control Main Home gives "Open the
+  mempool", so the emphasis costs ZERO stylesheet rules against an 18,184-of-18,600
+  budget. **The label is short BY MEASUREMENT**: `proto-btn` is uppercase at 0.16em
+  tracking and at 390 `.main * { min-width: 0 !important }` removes the min-content floor
+  — p4·04's recorded shatter — so the first label was shortened and then measured rather
+  than estimated: **215×38, ONE line, right edge 258 of 390 and of 320**, zero route
+  overflow at both.
+  **NEW `verify-site` §12 EXISTS BECAUSE THE REORDER WAS STRUCTURALLY UNPROTECTED.** §9
+  checks the overview's MEMBERSHIP against `nav/ia.ts` and is indifferent to position;
+  §1 checks prerendered TEXT and is indifferent to order. A later edit could have
+  restored the old sequence with every assertion still green. §12 reads new
+  `data-site-section` markers in DOCUMENT ORDER and pins it, and asserts the CTA's
+  SHAPE — still an anchor, carries the primary class, bigger target than the secondary
+  links, prints no digit, and **no fixed or sticky ancestor**, which is the one
+  regression a screenshot of the page top would not show. The marker sits on the header
+  div each Section already renders, NOT on `<Card>`, which forwards no arbitrary props
+  and is an eager shared primitive. 68 → **81**.
+  **FIVE BREAK TESTS, EVERY ONE RED WHERE INTENDED**, mutation proven applied by
+  `git diff` before each run, harness aborting on a failed build, every restore proven
+  against the COMMITTED BLOB with a marker sweep, rebuilt between restore and re-measure:
+  M1 the old order → 3 · M2 a sticky container → 1 naming `div/sticky` · M3 back to
+  `.v6-res` → 2, the second reading **`42px vs 42px`**, which is the weight assertion
+  doing real work · M4 a lost marker → 1 · M5 "42% of goal raised" → 2, in §8 AND §12.
+  **PART C IS A MOUNT REMOVAL AND THE DOCSTRING WAS REWRITTEN RATHER THAN LEFT TO ROT.**
+  `ThemeToggle.tsx` said "Mounted twice" and justified its `React.useId()` keying by
+  two-instances-on-one-page collision; both halves were about to become false. The keying
+  is KEPT with its reason restated — a second mount is one JSX line away and the failure
+  it causes is silent. `verify-contrast`'s comment naming the Home instance was corrected
+  the same way, **comment-only, verified that every changed line in that file is a
+  comment** so no assertion moved. Two-polarity on `/` ITSELF (stronger than
+  verify-contrast, which exercises `/live/markets`): **0 toggles on `/`**, and all three
+  themes still selectable and applying from the dropdown. **Deliberately NOT gated**, and
+  the distinction is real: §12 pins the About order because that revert is invisible in a
+  184-line permutation; a two-line mount removal reverts visibly.
+  **BUDGETS: EXACTLY TWO STEMS MOVED OF 74, RESIDUAL ZERO ON BOTH HALVES.** Paired
+  against an ISOLATED `git worktree` build of `e0c87ad` with its own `dist/`, served on
+  its own port, both holders confirmed by `lsof` + `/proc/<pid>/cwd`. `SitePage`
+  17,686 → 17,865 = **+179**; the `index` stem holds TWO chunks split by ENTRY IDENTITY
+  read out of `dist/index.html`'s own `<script src>` and never by basename — eager
+  101,566 → 101,533 = **−33**, lazy member byte-identical at 2,253. +179 lazy − 33 eager
+  = **+146 = the `totalJsRaw` delta exactly**. `cssGz` **BYTE-IDENTICAL at 18,184**.
+  Chunk count **76 both sides — nothing minted**. **EAGER WENT DOWN, so 17 of 18 routes
+  got SMALLER** (−8 to −23 B); only `/about/site` grew, by **+71**. No ceiling raised or
+  crossed. **The `/about/site` row comment was ALREADY STALE AT BASE** — it read 96,252
+  against a measured 96,448 — re-derived to 96,519; the other rows are left because a
+  concurrent PR owns some of them.
+  **CENSUS UNCHANGED — 88 / 84 / 22 / 38 / 74 / 6** — correct for a release that adds no
+  gate FILE and extends an e2e member in place. The instrument was CONTROLLED against
+  THREE commits with DIFFERENT recorded figures before being trusted, all reproduced
+  EXACTLY including the six orphans by name: `768ba13` 85/81/22/35/71/6, `74bc561`
+  86/82/22/36/72/6, `e0c87ad` 88/84/22/38/74/6.
+  **SEVEN THINGS I GOT WRONG.** (1) the glued fence above. (2) A first CTA label of ~37
+  uppercase characters, which my own arithmetic put at ~377px inside ~358px at 390 —
+  shortened AND THEN MEASURED rather than shipping either estimate. (3) **I ran
+  `npx playwright install` despite the environment stating Chromium is pre-installed**,
+  which failed AND left the project's Playwright expecting build 1223 where 1194 is
+  present, breaking my own probe until I reused `verify-lib`'s `findChrome()` shim; the
+  gates were never affected because they already use it. (4) My probe called
+  `ctx.addInitScript` AFTER `newPage()`, so the cold-boot bypass never applied and the
+  splash intercepted every click — `verify-lib:498` warns about that exact ordering.
+  (5) **My shell's `cd` did not survive and four gates "failed" with `MODULE_NOT_FOUND`**
+  — a red with no named assertion, which reads exactly like a broken gate; p3·12d's trap,
+  caught by reading the stack rather than the exit code. (6) `PORT=4174` on
+  `serve-dist.mjs`, whose port is `argv[2]` — it tried 4173 and hit `EADDRINUSE`, and
+  **only that loud failure stopped it silently serving the wrong tree from a
+  right-looking port**. (7) I authored the handoff file LATE; manual mode says before
+  substantive work.
+  **NOT FIXED, and named**: `LICENSE`'s stale item 3 (above); phosphor's green-overlay
+  feel, an operator decision deliberately not pre-empted; every non-`/about/site` budget
+  row comment, now ~13-23 B stale for the eager saving; the live production headers,
+  which this sandbox cannot confirm — the proxy answers **403 to CONNECT** for
+  `xmr.irish`, so the README cites `vercel.json` and gives a `curl` line instead of
+  claiming a measurement it did not take. **No human has seen the rendered result in a
+  browser** — read from screenshots at 1440 and 390, before and after, plus the CTA at
+  320, and reduced motion.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/197
+
 - **2026-08-18**: p4·M1 "THE COLD BOOT ON A PHONE" (app/) — mobile hotfix, jumps ahead of
   p4·07. The splash was a wall of overprinted glyphs on a phone; the operator called it
   unusable. **THE ✓-BLOCK'S DIAGNOSIS WAS WRONG IN TWO WAYS AND A MEASUREMENT OVERTURNED

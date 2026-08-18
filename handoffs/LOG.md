@@ -616,3 +616,4 @@
   74 / 6. `cssGz` BYTE-IDENTICAL — zero new stylesheet rules.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/195
 - XMRIRISH-20260818-M1 · done · p4·M1 cold boot on a phone (overprint fix + §9 gate) · https://github.com/aqua-019/satoshis-vision-v1/pull/196
+- XMRIRISH-20260818-M2 · done · p4·M2 README redesign + /about/site centre of gravity + theme toggle off Main Home · https://github.com/aqua-019/satoshis-vision-v1/pull/197
