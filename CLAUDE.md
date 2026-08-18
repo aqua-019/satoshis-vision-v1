@@ -28,7 +28,17 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **86** `verify-*.mjs` files (`app/` ×77, `app/scripts/` ×1, `api/_tests/` ×8) — **82 gates**
+- Verification: **87** `verify-*.mjs` files (`app/` ×78, `app/scripts/` ×1, `api/_tests/` ×8) — **83 gates**
+  (p4·06 added `verify-protocol.mjs` for the seventeenth route AND WIRED IT, so FOUR figures
+  move where a bare add moves fewer: files, gates, `verify:e2e` and CI. `verify:static` and
+  the orphan count are UNCHANGED, which is the correct outcome and worth stating — a gate
+  that is added and wired in the same release never passes through the orphan list.
+  Recounted, never incremented, with the script CONTROLLED against SIX commits — the five
+  p4·05 used plus `74bc561` itself — all reproduced EXACTLY including the invocation
+  arithmetic. Measured: **87 / 83 / 22 / 37 / 73 / 6**, i.e. 79 invocations − 6 duplicates.
+  **A WORKER'S CENSUS COUNTED THE THREE SHARED MODULES AS ORPHANS** and reported 9; the
+  lead re-derived independently and got 6, the same six this file already names. A count is
+  a REPORT until the lead has reproduced it — p4·03's rule, earning its keep again.)
   (p4·04 added `verify-mine.mjs` for the fifteenth route and wired it MID-CHAIN at `verify:e2e`
   position 16, beside the other page gates — never the tail, which carries `verify-vitals`.
   Recounted, never incremented, with the script CONTROLLED against the same three commits, all
@@ -78,14 +88,14 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **71 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **73 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
   `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
   into `verify:e2e`, then p3·15's `verify-peers`, p3·16's `verify-superstress`, p3·17's
   `verify-releases-dom` at position 16 and p3·18's `verify-legality` at position 17, then
   p4·04's `verify-mine` at position 16 (pushing releases-dom to 17 and legality to 18)
-  (**35** members).
+  (**37** members — p4·05's `verify-site` at 17 and p4·06's `verify-protocol` at 18).
   **THE TWO CI FIGURES DISAGREED AGAIN — FOURTH RECORDED INSTANCE — AND THEY DISAGREED AT THE BASE
   COMMIT, not because of this release.** The line above read `69 distinct files` while `:39` read
   CI **70** for `fdb105e`; a controlled recount at that commit measures 70, so the 69 had been
@@ -192,19 +202,27 @@ chain and market data.
 
 ## Site Routes
 
-The 16 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
+The 17 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
 both `scripts/prerender.mjs` (emits `dist/<route>/index.html` so the site works with JS
 off) and `scripts/gen-sitemap.mjs` (emits `dist/sitemap.xml` + `dist/robots.txt`).
 Add or remove a route there and both follow.
 
 `/` · `/live/mempool` · `/live/markets` · `/live/markets/thesis` · `/live/network` ·
-`/learn` · `/learn/sim` · `/monero` · `/future` · `/future/outlook` ·
-`/operate/node` · `/operate/mine` · `/operate/superstress` · `/about/peers` · `/about/sources` ·
-`/about/site`
+`/learn` · `/learn/sim` · `/monero` · `/future` · `/future/outlook` · `/future/protocol` ·
+`/operate/node` · `/operate/mine` · `/operate/superstress` · `/operate/peers` ·
+`/about/sources` · `/about/site`
+
+**`/operate/peers` MOVED from `/about/peers` in p4·06, and it is the FIRST route this repo
+has relocated rather than minted.** Both layers carry the 301 and `/peers` — a redirect
+source since v6.1.6 — was REPOINTED at the new path rather than left pointing at the old
+one, because a chain's first hop resolves to something no longer in ROUTES and `verify-ia`
+§6 reds on exactly that. A route that moves is the one case where REDIRECTS grows for a
+URL this repo minted itself.
 
 Not in that list, by design: `/live/mempool/tx/:txid` (unbounded param, falls through to
 the SPA shell), the `:tab` paths (`/monero/:tab`, `/learn/:tab`), the `?v=` / `?p=` /
-`?range=` query surfaces, and every REDIRECT SOURCE — v6.1.6 added 12 of those, each a
+`?range=` query surfaces, and every REDIRECT SOURCE — 13 of those now, 12 from v6.1.6
+plus p4·06's own relocation, each a
 301 in `vercel.json` mirrored 1:1 by a client `<Navigate>`, plus 2 fragment redirects that
 a server structurally cannot see. Listing a redirect source would advertise a URL that
 never serves its own content; `verify-redirects.mjs` proves the two lists agree.
@@ -445,7 +463,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **72 of the 82** gates on every PR to `main` and on every push to `main`
+- CI runs **73 of the 83** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **6**
   are wired to nothing (p3·18 wired `verify-legality`, an orphan since v6.0.10). This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the

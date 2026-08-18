@@ -424,9 +424,37 @@ console.log('engine:', engine, '\n');
 
   // 11b — the gate mechanism itself still works: an id with no registered
   // simulator degrades to a disabled PENDING affordance rather than routing.
-  const gateSrc = readFileSync(new URL('./src/pages/future/ProtoPopup.tsx', import.meta.url), 'utf8');
-  ok(/SIM_IDS\.has\(p\.sim\)/.test(gateSrc), '11b · ProtoPopup still gates the CTA on SIM_IDS');
-  ok(/SIMULATOR PENDING/.test(gateSrc), '11b · the PENDING affordance is still in the code path');
+  //
+  // p4·06 · TWO FIXES, AND THE SECOND IS A PRE-EXISTING VACUITY THIS RELEASE
+  // ONLY EXPOSED.
+  //
+  //  (1) THE SUBJECT MOVED. This read ProtoPopup.tsx alone. p4·06 extracted
+  //      everything below `v6-modal-head` into ./ProtocolDetail so the
+  //      /future/protocol page renders the identical body, and the SIM_IDS
+  //      gating went with it. The mechanism is intact; the file that holds it
+  //      changed, and an assertion naming a file is a claim about WHERE code
+  //      lives. Both modules are read now, so the mechanism is found wherever
+  //      the seam is drawn — and the pair is asserted TOGETHER, since gating
+  //      in one file and the affordance in the other would be a real defect.
+  //
+  //  (2) COMMENTS ARE STRIPPED FIRST, and without that this section could not
+  //      fail. `SIMULATOR PENDING` appears in ProtoPopup's own DOCBLOCK — it
+  //      did before this release too, in the sentence explaining the
+  //      affordance — so "the PENDING affordance is still in the code path"
+  //      was satisfied by PROSE DESCRIBING IT and would have stayed green
+  //      after the affordance itself was deleted. Measured here: the raw
+  //      grep passes on a ProtoPopup that no longer contains the code. Same
+  //      family as verify-orb §4's self-referential grep.
+  const stripJsComments = (s) => s
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .split('\n').map((l) => l.replace(/(^|[^:])\/\/.*$/, '$1')).join('\n');
+  const gateSrc = ['ProtoPopup.tsx', 'ProtocolDetail.tsx']
+    .map((f) => stripJsComments(readFileSync(new URL('./src/pages/future/' + f, import.meta.url), 'utf8')))
+    .join('\n');
+  ok(/SIM_IDS\.has\(p\.sim\)/.test(gateSrc),
+    '11b · the protocol CTA is still gated on SIM_IDS (ProtoPopup + ProtocolDetail, comments stripped)');
+  ok(/SIMULATOR PENDING/.test(gateSrc),
+    '11b · the PENDING affordance is still in the CODE path, not merely described in a comment');
 
   // 11c — an unknown ?p= must name what it could not find, never substitute.
   await page.goto(base + '/learn/sim?p=definitely-not-a-simulator');
