@@ -616,3 +616,43 @@
   74 / 6. `cssGz` BYTE-IDENTICAL — zero new stylesheet rules.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/195
 - XMRIRISH-20260818-M1 · done · p4·M1 cold boot on a phone (overprint fix + §9 gate) · https://github.com/aqua-019/satoshis-vision-v1/pull/196
+- XMRIRISH-20260818-M4 · done · p4·M4 the mobile terminal sequence, and the missing orb
+  **THE PHONE WORDMARK WAS A TWO-ROW SMEAR AND THE ARITHMETIC SAYS NO AMOUNT OF SCALING
+  COULD HAVE FIXED IT.** The decrypt rasterises "XMR.IRISH" into the cell grid, so its
+  legibility is governed by CELLS PER LETTERFORM, not by font size. Measured by rasterising
+  the real grid and reading it as ASCII before a line was written: 390 gave 38 cols × 2 rows
+  = 4.0 INK cells per glyph against a 1440 control of 43.8 — an 11× deficit. Bigger cells
+  mean FEWER columns and a worse raster (2.2 cols/glyph at 2× cell size); smaller cells break
+  the 12px floor. The layout is the only free variable, so the mark stacks onto two lines
+  below 560px: 4.0 → 26.3 ink per glyph at 390 (23.4 at 360, 33.8 at 430).
+  **A SLOWER PHONE USED TO GET A LONGER SEQUENCE.** The loop clamps its per-frame delta at
+  64ms, so a device that cannot keep up advances the ramp more slowly than the wall clock.
+  A narrow duration (3,000ms base) plus an UNCLAMPED wall accumulator bounding the run at
+  1.35× its effective duration: 5,785 → 3,523ms at 1×, and at 10× throttle 7,348 → 3,922ms.
+  1440 is unchanged at 5,745 → 5,787 and the gate bounds it BOTH ways so the narrow duration
+  cannot leak onto it.
+  **THE ORB WAS PAINTED, SIZED AND POSITIONED CORRECTLY — 753px BELOW THE FOLD.** #196 made
+  the phone console grid a scroll container, and a scroll moves a box without resizing it, so
+  neither the ResizeObserver nor window.resize fired and the Network slot arrived empty. A
+  capture-phase, passive, rAF-coalesced scroll listener republishes the rect.
+  **AND THAT FIX COST CLS 0.242 UNTIL IT WAS MEASURED** — 48× the repo ceiling, 64 frames at
+  ~0.0168 each, because the orb re-anchors its layout box every render and a per-frame rect
+  became a per-frame `left`/`top` write on a fixed element. `verify-cls` and `verify-vitals`
+  both bypass the cold boot, so `/`'s 0.0000 could not have moved and NOTHING would have said
+  so. Same-size moves now keep the base and translate; 0.242 → 0.000, gated beside the
+  tracking that pays for it.
+  **THREE BREAK-TEST REFUSALS, and each pointed at the gate rather than the code.** The
+  ceiling assertion stayed green through TWO revisions: it bounded the whole navigation
+  against a number calibrated on the OLD duration, and then bounded the loop at 6×, which is
+  not slow enough on this sandbox to make the clamp lie. Measured across the throttle rate,
+  loop ms with the ceiling vs without: 1× 3,315/3,315 · 6× 4,187/4,486 · 10× 3,922/7,348 ·
+  16× 3,930/11,977 · 20× 3,636/15,138. The operator's reported ~11s sits around 14-16×.
+  **AND THE HEADLINE FIGURE WAS THE WRONG UNIT** — "8 → 63 cells per glyph" is BOUNDING-BOX
+  AREA, and a box can be large and empty; the ink figure is 4.0 → 26.3, so the box number
+  overstated the fix by 2.3×. Caught by an adversarial panel, not by review.
+  Budgets: eager and cssGz BYTE-IDENTICAL, chunk count 76 = 76 (nothing minted), lazy +2,079
+  attributed to ColdBoot +2,008 and Orb +71 — residual ZERO. lazyJsRaw margin is 1,296 B and
+  is NOT raised because it is not crossed. Census RECOUNTED with the instrument CONTROLLED
+  against three commits, all reproduced exactly: 88 / 84 / 22 / 38 / 74 / 6 — UNCHANGED, the
+  correct outcome for a release that extends an e2e member rather than adding a gate file.
+  · https://github.com/aqua-019/satoshis-vision-v1/pull/199
