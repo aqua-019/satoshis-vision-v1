@@ -1353,13 +1353,28 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
        there. The claim is that the mark is a MARK: it may not eat the field. */
     const boxShare = (mark.rows * mark.cols) / (layout.rows * layout.cols);
     const rowShare = mark.rows / layout.rows;
-    R.ok(boxShare <= MARK_SHARE_MAX && rowShare <= MARK_ROW_SHARE_MAX,
-      `${label}: the mark occupies ${(boxShare * 100).toFixed(1)}% of the grid and ` +
-      `${(rowShare * 100).toFixed(1)}% of its rows (ceilings ${(MARK_SHARE_MAX * 100).toFixed(0)}% / ${(MARK_ROW_SHARE_MAX * 100).toFixed(0)}%)`,
-      `${(boxShare * 100).toFixed(1)}% of the grid / ${(rowShare * 100).toFixed(1)}% of the rows. The mark has ` +
-      'stopped being a mark and become the field — the fit fraction has been restored to the full stage width, ' +
-      'the margin reserve has been removed, or the stacked layout has been replaced by one very large line. ' +
-      'See field.ts#narrowMarginCols.');
+    /* SPLIT, and the split is the point. These were ONE assertion joined by
+       `&&` until p4·M7's post-merge review, which is why neither had a
+       demonstrated polarity: a conjunction can only ever be shown to red as a
+       conjunction, so "both ceilings are exercised" was unprovable however many
+       mutations were run. They measure different things — AREA against the
+       whole grid, and HEIGHT against the row count — and a mark can breach
+       either alone. Two assertions, two break tests, two answers. */
+    R.ok(boxShare <= MARK_SHARE_MAX,
+      `${label}: the mark's box is ${(boxShare * 100).toFixed(1)}% of the grid ` +
+      `(ceiling ${(MARK_SHARE_MAX * 100).toFixed(0)}%)`,
+      `${(boxShare * 100).toFixed(1)}% of the grid. The mark has stopped being a mark and become the field — ` +
+      'the fit fraction has been restored to the full stage width, the margin reserve has been removed, or ' +
+      'the stacked layout has been replaced by one very large line. See field.ts#narrowMarginCols and ' +
+      'field.ts#fitFrac.');
+
+    R.ok(rowShare <= MARK_ROW_SHARE_MAX,
+      `${label}: the mark is ${(rowShare * 100).toFixed(1)}% of the grid's rows ` +
+      `(ceiling ${(MARK_ROW_SHARE_MAX * 100).toFixed(0)}%)`,
+      `${(rowShare * 100).toFixed(1)}% of the rows. A stacked mark that keeps growing pushes the cipher block ` +
+      'off the bottom of the stage — the `row < rows - 1 - signerRows.length` guard then silently drops the ' +
+      'closing line rather than overflowing, so this reds BEFORE the sequence loses its own payoff. See ' +
+      'field.ts#px, whose narrow branch is a fraction of the stage HEIGHT.');
 
     R.ok(mark.colsPerGlyph >= MIN_COLS_PER_GLYPH,
       `${label}: each letterform of the widest line gets ${mark.colsPerGlyph} cell columns ` +
