@@ -121,6 +121,14 @@ export interface FieldTarget {
    *  edge while the mark does not. */
   readonly blockLeft: number;
   readonly blockW: number;
+  /** The EARLIEST `lockAt` over the wordmark's own cells — the T at which the
+   *  mark starts resolving out of the scramble.
+   *
+   *  Published rather than left to be re-derived because it is one half of an
+   *  ORDERING the host has to keep: `ensureMarkFont`'s geometry rebuild must
+   *  land BEFORE this, or a reader watches the mark thicken after it has begun
+   *  to read. A gate comparing two published numbers restates neither. */
+  readonly markLockFrom: number;
   /** The sequence's CLOSING LINE as it was actually PLACED — decoded back out
    *  of `target`, over the fully visible columns only.
    *
@@ -848,6 +856,10 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
   let closingLine = "";
   let blockLeft = 0;
   let blockWidth = 0;
+  /* 1 = "no wordmark cell locks at all", which is the honest report of a raster
+     that produced nothing — and it is above every real value, so an ordering
+     assertion against it fails rather than passes vacuously. */
+  let markLockFrom = 1;
 
   const off = document.createElement("canvas");
   off.width = Math.max(2, Math.round(w));
@@ -1113,6 +1125,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
           t = 0.355 + (ord.get(r) ?? 0) * 0.03 + (c / cols) * 0.02;
         }
         lockAt[i] = clamp01(t * 0.78 + 0.05);
+        if (cls === 1 && lockAt[i] < markLockFrom) markLockFrom = lockAt[i];
       }
     }
 
@@ -1122,7 +1135,11 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     }
   }
 
-  return { cols, rows, target, tclass, lockAt, ambient, mark, blockLeft, blockW: blockWidth, closingLine };
+  return {
+    cols, rows, target, tclass, lockAt, ambient, mark,
+    blockLeft, blockW: blockWidth, markLockFrom: Math.round(markLockFrom * 1000) / 1000,
+    closingLine,
+  };
 }
 
 // ── geometry cache — the ONLY module-level mutable state in this file, and
@@ -1253,6 +1270,8 @@ export interface FieldReport {
    *  cheap corroborator for the gate's canvas read-back: if this moves and the
    *  measured coverage does not, one of the two instruments is lying. */
   readonly ambientMean: number;
+  /** See `FieldTarget#markLockFrom`. */
+  readonly markLockFrom: number;
 }
 
 /** Resolve (and cache) the geometry for a stage, and report what it produced.
@@ -1281,6 +1300,7 @@ export function fieldReport(w: number, h: number, dpr: number): FieldReport {
     blockMarginLeft: Math.max(0, fieldTarget.blockLeft),
     blockMarginRight: Math.max(0, visibleCols - (fieldTarget.blockLeft + fieldTarget.blockW)),
     ambientMean: amb.length > 0 ? Math.round((awSum / amb.length) * 1000) / 1000 : 1,
+    markLockFrom: fieldTarget.markLockFrom,
   };
 }
 

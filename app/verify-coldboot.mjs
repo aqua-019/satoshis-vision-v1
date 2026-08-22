@@ -1376,6 +1376,41 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
       'the field never reported a settled raster, so the numbers above describe whichever font happened to be ' +
       'resident when composeTarget ran. See field.ts#ensureMarkFont.');
 
+    /* ── AND IT LANDS BEFORE THE MARK BEGINS TO READ ────────────────────
+       ASSERTED RATHER THAN FENCED, and that is a decision with an argument.
+       `ensureMarkFont`'s geometry rebuild is unconditional in T, so the raster
+       always ends up in the settled face — the DETERMINISM is safe either way.
+       What is not safe is the ORDER: a rebuild after the mark has started
+       resolving is a wordmark that visibly thickens while a reader is reading
+       it. Measured, T at the rebuild: 0.015 at 1x, 0.181 at 6x CPU, 0.316 at
+       10x and 0.388 at Slow 4G + 10x, against a MEASURED first lock of 0.318
+       (`field.ts#markLockFrom`; an earlier draft of this block said 0.241,
+       which is the theoretical floor of `composeTarget`'s cls-1 expression at
+       t=0 and not a value any real cell takes — the assertion below reads the
+       published number and restates neither side).
+
+       So the margin at 1x is wide and it is ALREADY CROSSED under throttle —
+       which is exactly why this is an assertion and not a comment. Fencing the
+       rebuild instead would leave the slow device with a mark rastered in a
+       face nobody chose, permanently, and would make `markFontSettled` a lie.
+       BOTH SIDES ARE PUBLISHED (`markFontSettledAtT`, `markLockFrom`), so this
+       restates neither and cannot drift from the composition.
+
+       STATED BLIND SPOT: the three stages here run UNTHROTTLED. §10b throttles
+       at 10x and deliberately does not make this claim, because the measured
+       0.316 there is a known, accepted crossing rather than a regression. What
+       this catches is the 1x margin closing — a mark whose first lock moves
+       earlier, or a font path that starts resolving late on an ordinary
+       device. */
+    const settledAtT = Number(report.markFontSettledAtT);
+    R.ok(settledAtT < report.markLockFrom,
+      `${label}: the raster settles at T=${settledAtT.toFixed(3)}, before the mark's own first lock at ` +
+      `T=${report.markLockFrom} (margin ${(report.markLockFrom - settledAtT).toFixed(3)})`,
+      `the raster settled at T=${settledAtT.toFixed(3)} against a first lock of ${report.markLockFrom}. The ` +
+      'wordmark begins resolving out of the scramble and THEN changes shape, because the face it rasters with ' +
+      'arrived late. See field.ts#ensureMarkFont for the measured table and ColdBoot.tsx for why the rebuild ' +
+      'is unconditional rather than fenced.');
+
     R.ok(report.ambientMean >= AMBIENT_MEAN_BAND[0] && report.ambientMean <= AMBIENT_MEAN_BAND[1],
       `${label}: the ambient weight field means ${report.ambientMean} ` +
       `(band ${AMBIENT_MEAN_BAND[0]}-${AMBIENT_MEAN_BAND[1]} — a clearing round the message and a fade far from it)`,
@@ -1638,6 +1673,19 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
    * within 1.4 points of the full frame at every stage. */
   R.group('── 10e · the field converges: the canvas, read back at dpr 1 and dpr 2 ──');
   {
+    /* ── EVERY FIGURE BELOW IS IN THE STRIP SAMPLER'S OWN UNITS ───────────
+     * The bands here were CALIBRATED WITH THE SAMPLER THAT ENFORCES THEM, and
+     * that is deliberate: a band derived from a full-frame read and enforced
+     * with a cheaper one is two instruments, and the next person to re-derive
+     * would get a different number and be unable to tell drift from method.
+     *
+     * The bias is small and it is not zero. Measured on one tree, strip against
+     * full-frame, peak lit: 390x844 dpr2 17.1 vs 17.1 · 1440x900 dpr1 20.8 vs
+     * 21.1 · 1440x900 dpr2 17.3 vs 18.7 — so the strip figure runs up to ~1.4
+     * points LOW at 1440 dpr 2 and is identical on a phone. The tail figures,
+     * which are what the load-bearing assertion reads, are 0.0 under both.
+     * A re-derivation with the full frame will therefore read slightly HIGHER
+     * peaks than these ceilings were set against; that is method, not drift. */
     /* Non-vacuity. Measured 32 samples on a phone and 50-54 at 1440. */
     const MIN_SAMPLES = 12;
     /* The field PAINTED. Without this every ceiling below is satisfied by a
@@ -1662,6 +1710,25 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
        MESSAGE names the line rather than leaving the next reader to find it. */
     const QUAD_SPREAD_MAX = 3;
 
+    /* ══ DO NOT SIMPLIFY THIS TO ONE WIDE STAGE AND ONE PHONE ═════════════
+     * The obvious version of this section — a phone plus a wide control —
+     * WOULD HAVE PASSED ON THE TREE THAT SHIPPED THE BUG. Measured against a
+     * build of the pre-p4·M7 tree, last frame before the handoff:
+     *     390x844 dpr 2   46.4 % lit   <- red
+     *    1440x900 dpr 2   42.5 % lit   <- red
+     *    1440x900 dpr 1    0.0 % lit   <- GREEN, on the broken tree
+     * Each of the three answers a different question, and dropping any one of
+     * them restores a specific blindness:
+     *   · the PHONE is the subject the operator reported;
+     *   · the WIDE dpr 1 stage is the control that says the suite is not
+     *     simply reporting universal failure — without it a red here cannot be
+     *     told apart from "everything is broken";
+     *   · the WIDE dpr 2 stage is NOT a symmetry nicety and is the one most
+     *     likely to be tidied away. It is what makes this a claim about the
+     *     DEVICE PIXEL RATIO rather than about phones, and it is the stage that
+     *     covers every retina laptop and 4K desktop — which is to say the
+     *     defect it guards was never a mobile one. The same 1440x900 viewport
+     *     is broken at one ratio and clean at the other, on one build. */
     const STAGES = [
       ['390x844 dpr2', { width: PHONE.width, height: PHONE.height }, 2],
       ['1440x900 dpr1', { width: 1440, height: 900 }, 1],

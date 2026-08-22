@@ -716,6 +716,15 @@ export function ColdBoot(): React.JSX.Element | null {
      * report. `markFontSettled` means "the raster is final", NOT "the font
      * arrived" — a load that fails is a settled outcome too. */
     let markFontSettled = false;
+    /* The T the loop was at when the raster settled, and 1 until it does. Half
+       of the ORDERING assertion `field.ts#markLockFrom` is the other half of:
+       the rebuild must land BEFORE the mark starts resolving, or a reader
+       watches it thicken after they have begun to read it. Published rather
+       than left as a comment, because a margin nothing measures is a margin
+       nothing will notice losing — this file's own re-lay table already shows
+       it crossed at 10x CPU. */
+    let markFontSettledAtT = 1;
+    let lastT = 0;
     const publishReport = (): void => {
       try {
         const dpr = ctx.canvas.width > 0 && dims.w > 0 ? ctx.canvas.width / dims.w : 1;
@@ -724,6 +733,7 @@ export function ColdBoot(): React.JSX.Element | null {
           effectiveMs,
           wallCeilMs,
           markFontSettled,
+          markFontSettledAtT,
         };
       } catch {
         /* a report is diagnostics; it must never be able to blank the splash */
@@ -745,13 +755,19 @@ export function ColdBoot(): React.JSX.Element | null {
      *      Slow 4G + 6x CPU        0.215         0.259
      *      Slow 4G + 10x CPU       0.388         0.238
      *
-     * The wordmark's earliest `lockAt` is 0.24 (`composeTarget`'s cls-1 branch
-     * at t=0), so at and above 6x the re-lay CAN land after the mark has begun
-     * to resolve, and a reader there sees it thicken by one cell-row (390:
-     * rows 11 -> 12, ink 216 -> 230, ~6%).
+     * The wordmark's earliest `lockAt` is **0.318**, MEASURED over the mark's
+     * own cells and published as `field.ts#markLockFrom` — not the 0.24 an
+     * earlier draft of this comment derived by hand from `composeTarget`'s
+     * cls-1 branch at t=0, which is the theoretical floor of that expression
+     * and not a value any real cell takes. (Same family as everything else
+     * this release corrected: an arithmetic claim standing in for a
+     * measurement. The gate now compares two PUBLISHED numbers, so neither is
+     * restated anywhere.) Even against 0.318, at and above 10x the re-lay can
+     * land after the mark has begun to resolve, and a reader there sees it
+     * thicken by one cell-row (390: rows 11 -> 12, ink 216 -> 230, ~6%).
      *
      * KEPT UNCONDITIONAL ANYWAY, and the alternative is what decides it. A
-     * fence at T < 0.24 would leave the slow device with a mark rastered in a
+     * fence before first lock would leave the slow device with a mark rastered in a
      * face nobody chose, permanently — which is the behaviour this exists to
      * remove — and it would make `markFontSettled` a lie, because the promise
      * would have settled while the geometry had not been rebuilt. A reader at
@@ -764,6 +780,7 @@ export function ColdBoot(): React.JSX.Element | null {
     void ensureMarkFont().then(() => {
       if (cancelledFont) return;
       markFontSettled = true;
+      markFontSettledAtT = lastT;
       invalidateGeometry();
       publishReport();
     });
@@ -791,6 +808,7 @@ export function ColdBoot(): React.JSX.Element | null {
          it was before this line existed. It takes over only where the clamp
          has started lying about time. */
       const t = Math.max(T(elapsed, effectiveMs), clamp01(wall / wallCeilMs));
+      lastT = t;
       drawField(ctx, dims.w, dims.h, t, 1);
       if (consoleWrapRef.current) {
         const op = consoleOpacity(t);
