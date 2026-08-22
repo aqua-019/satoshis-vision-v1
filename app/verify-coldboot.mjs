@@ -1259,11 +1259,34 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
     return { report, flipped, flipMs, loopMs, pending };
   };
 
+  /** Every field §10 asserts on, as one comparable string. Derived from the
+   *  report rather than listed at the call site so the invariance control and
+   *  the assertions it justifies can never drift apart: a field added to §10
+   *  and not to this is a field the control silently stops covering. */
+  const geomOf = (r) => {
+    const l = r.layout || {};
+    const m = r.mark || {};
+    return JSON.stringify({
+      cols: l.cols, rows: l.rows, cw: l.cw, ch: l.ch,
+      visibleCols: r.visibleCols, narrow: r.narrow, cells: r.cells,
+      markMarginLeft: r.markMarginLeft, markMarginRight: r.markMarginRight,
+      blockMarginLeft: r.blockMarginLeft, blockMarginRight: r.blockMarginRight,
+      ambientMean: r.ambientMean, markLockFrom: r.markLockFrom,
+      closingRowLocks: r.closingRowLocks, closingLine: r.closingLine,
+      markRows: m.rows, markCols: m.cols, ink: m.ink,
+      colsPerGlyph: m.colsPerGlyph, cellsPerGlyph: m.cellsPerGlyph, inkPerGlyph: m.inkPerGlyph,
+    });
+  };
+
   /* Collected across the stage loop so the ordering assertion below cannot go
      vacuous: a ONE-ROW closing line is trivially non-decreasing, and if every
      phone stopped wrapping, every per-stage check would pass while asserting
      nothing about the case that broke. */
   const closingShapes = [];
+  /* Stashed so the dpr-invariance control below can compare against the very
+     report these assertions were made on, rather than taking a second dpr-1
+     reading and comparing two things neither of which was asserted. */
+  let dpr1Geom = null;
 
   for (const [label, vp] of PHONES) {
     const { report, flipped, flipMs, pending } = await runStage(vp);
@@ -1469,6 +1492,7 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
        reading order. */
     const locks = Array.isArray(report.closingRowLocks) ? report.closingRowLocks.map(Number) : [];
     closingShapes.push([label, locks.length]);
+    if (label === '390x844') dpr1Geom = geomOf(report);
     const descending = locks.findIndex((v, i) => i > 0 && v < locks[i - 1]);
     R.ok(locks.length > 0 && descending === -1,
       `${label}: the closing line resolves top row first — locks [${locks.join(', ')}] over ${locks.length} row(s)`,
@@ -1517,6 +1541,42 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
     'vacuous on a one-row line, so with nothing wrapping it proves nothing. Either the ladder stopped wrapping ' +
     '(see field.ts#signerFit and #narrowMarginCols) or the stage widths no longer straddle the rung boundary — ' +
     'at cw 7.2, 360 and 390 wrap and 430 does not.');
+
+  /* ══ WHY THIS SECTION MAY RUN AT ONE DEVICE PIXEL RATIO ═══════════════
+   * Every figure §10 reads comes out of `composeTarget`, which fills a CELL
+   * GRID and never touches a pixel — so it is dpr-INVARIANT, and reading it at
+   * the context default measures exactly what a retina device would report.
+   *
+   * THAT IS LOAD-BEARING AND IT WAS ASSERTED NOWHERE. The release this gate
+   * was written for was a defect that existed ONLY at dpr >= 2, and the reason
+   * these assertions could not see it is precisely this invariance: the wall
+   * was in the PAINT, which is §10e's subject. But the argument runs both ways.
+   * A change that made the GEOMETRY dpr-dependent — deriving `cw` from the
+   * backing store, keying a margin on the ratio — would silently narrow every
+   * assertion in this section to one device class, and §10e would stay green,
+   * because §10e reads COVERAGE and not geometry. Nothing would speak.
+   *
+   * Measured across dpr 1, 2 and 3 at 390x844, 320x568 and 1440x900 before
+   * this was written: every field identical at every stage. One stage is
+   * asserted here rather than all nine, because the claim is structural — the
+   * grid is computed in CSS pixels — and one counter-example falsifies it. */
+  if (dpr1Geom) {
+    const { report: hi } = await runStage({ width: PHONE.width, height: PHONE.height }, 0, 2);
+    const dpr2Geom = hi ? geomOf(hi) : null;
+    R.ok(dpr2Geom !== null && dpr2Geom === dpr1Geom,
+      '390x844: the composed geometry is IDENTICAL at dpr 2 and dpr 1 — which is what makes ' +
+      'every other assertion in this section a claim about all devices rather than about dpr 1',
+      dpr2Geom === null
+        ? 'the dpr 2 stage published no report at all, so the invariance is unchecked'
+        : `the grid DIFFERS by device pixel ratio.\n      dpr1: ${dpr1Geom}\n      dpr2: ${dpr2Geom}\n` +
+          '      Every assertion in §10 is taken at dpr 1, and they are only claims about a retina ' +
+          'device while this holds. Something now derives the CELL GRID from the backing store rather ' +
+          'than from CSS pixels — see field.ts#layoutField, which takes cw from measureText.');
+  } else {
+    R.ok(false, '390x844: the composed geometry is IDENTICAL at dpr 2 and dpr 1',
+      'the dpr 1 stage never published a report, so there is no baseline to compare against and this ' +
+      'control is vacuous rather than passing');
+  }
 
   /* ── §10b · A SLOW PHONE GETS A SHORTER SEQUENCE, NOT A LONGER ONE ─────
    * The whole point of schedule.ts#WALL_CEIL_FACTOR. 6x is this repo's own
