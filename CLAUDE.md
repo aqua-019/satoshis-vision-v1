@@ -41,7 +41,16 @@ chain and market data.
   87/83/22/37/73/6, `e0c87ad` 88/84/22/38/74/6 and `5854cbd` 88/84/22/38/74/6, all reproduced
   EXACTLY including the invocation arithmetic and the six orphans by name. TWO SIDE FIGURES
   IN THIS FILE ARE STALE and are not among the six: the `ci.yml` "30 `run:` lines" below
-  measures **31**, and the shared-module importer counts of 31/11/1 measure **49/25/3**.)
+  measures **31**, and the shared-module importer counts of 31/11/1 are stale in the same
+  direction — measured **39/21/3** by ESM IMPORT EDGE (multiline-aware, excluding the module
+  itself), against **47/25/3** by TEXT MENTION. The two instruments disagree and the word here
+  is "importer", so the edge count is the one that answers it. **p4·M7 first wrote 49/25/3 and
+  that was a MIX of two instruments matching neither** — 49 is a bare-name count INCLUDING the
+  module itself, 25 and 3 are text mentions. Corrected at p4·M7 after a pre-merge audit, and
+  recorded rather than quietly overwritten: it is this file's own two-figures-disagreeing
+  defect committed INSIDE the correction of another instance of it, which is the third time
+  that has happened and the first where the wrong number was newly minted rather than
+  inherited. State the instrument beside the count.)
   (p4·06 added `verify-protocol.mjs` for the seventeenth route AND WIRED IT, so FOUR figures
   move where a bare add moves fewer: files, gates, `verify:e2e` and CI. `verify:static` and
   the orphan count are UNCHANGED, which is the correct outcome and worth stating — a gate
@@ -1068,7 +1077,9 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   release's; `markFontSettled` can arrive after the decrypt has ended on a device at 10x CPU
   (measured 9.4s), leaving that reader the fallback raster; CLAUDE.md's own `ci.yml` figure
   of "30 `run:` lines" measures **31**, and its shared-module importer counts of 31/11/1
-  measure **49/25/3**; `:130`'s "12 individually-named offline gates" still measures 14, as
+  measure **39/21/3** by import edge and 47/25/3 by text mention — see the head block; the
+  49/25/3 first written here was a MIX of two instruments and matched neither, found by the
+  pre-merge audit and corrected; `:130`'s "12 individually-named offline gates" still measures 14, as
   p4·07 flagged. **No human has seen the rendered result in a browser** — read from
   screenshots of the REAL page at 390, 320 and 1440, at 1,200/2,200/3,100ms, before and
   after, plus the probe's own exact-T frames and the composed grid read back as ASCII.

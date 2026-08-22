@@ -1306,8 +1306,14 @@ const BUDGETS = {
      when a reader opens a brief. What they DO cost is page weight on that
      interaction, and no budget in this file measures it — stated here so the
      absence is deliberate rather than assumed. Largest single shot: 53,936 B. */
-  /* p4·M7 RAISE, 978,000 -> 982,000. Built 979,150 on the FINAL tree, margin
-     2,711; red first at `❌ lazy JS 979150 B raw ≤ 978000`, before the raise.
+  /* p4·M7 RAISE, 978,000 -> 982,000. Built 979,555 on the FINAL tree, margin
+     2,445. Red first at `❌ lazy JS 979150 B raw ≤ 978000` before the raise —
+     that 979,150 is a DATED quote of the first reading, not the final figure,
+     and this line used to pair it with a margin computed from a later one
+     (982,000 - 979,150 is 2,850, not the 2,711 it claimed). A pre-merge audit
+     caught the disagreement. Keep the two apart: the built figure and its
+     margin must come from the SAME measurement, and a historical red is a
+     quote.
 
      THE ATTRIBUTION IS ONE TERM AND THE RESIDUAL IS ZERO — the simplest this
      table has recorded. Paired per chunk STEM against an ISOLATED `git
