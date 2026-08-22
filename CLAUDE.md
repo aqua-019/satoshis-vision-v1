@@ -983,14 +983,19 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   the correct outcome for a release that extends an e2e member in place and adds no gate
   file. `verify-coldboot` **177 → 216**.
   **SUITE ON THE SHIPPING TREE**: `verify:static` exit 0 · **`verify:e2e` ran all 38 members
-  with ONE red — `verify-vitals`, at `/live/mempool · median LCP 4356ms ≤ 4350ms`, SIX
-  milliseconds over a route this PR cannot reach.** PAIRED rather than waved away, because
-  "implausible" is not "measured": the BASE build, in its own worktree on its own port,
-  reads **4,332ms** and two re-samples of the SHIPPING tree read **4,260** and **4,348**, both
-  green. One tree spanning 4,260-4,356 across a 4,350 ceiling is p4·07's recorded finding
-  reproduced — and the route is structurally unreachable from here anyway, since
-  `verify-vitals` bypasses the splash and `ColdBoot` is a dynamic import `/live/mempool`
-  never loads. The four inherited counts HOLD EXACTLY: `verify-peers` **44** · `verify-mobile`
+  in TWO full chain runs, with ONE red each time — `verify-vitals`, AND A DIFFERENT ROUTE ON
+  EACH RUN**, which is the signature rather than an excuse. Run A:
+  `/live/mempool · median LCP 4356ms ≤ 4350ms`, six milliseconds. Run B, same tree:
+  mempool green and `/live/markets · median LCP 4368ms ≤ 2600ms` instead. PAIRED rather than
+  waved away, because "implausible" is not "measured" — the BASE build in its own worktree on
+  its own port reads **`/live/mempool` 4,332ms** (green) and **`/live/markets` 4,432ms**, the
+  latter DECLINED only because its 87.2 % run spread tripped the gate's own contention guard,
+  with the gate printing `WOULD HAVE FAILED` beside it. So on the one route both trees judged,
+  the SHIPPING tree is **64ms BETTER**, and the difference between "declined" and "failed" was
+  the guard firing, not the code. Two re-samples of `/live/mempool` on the shipping tree read
+  **4,260** and **4,348**, both green. **Neither route is reachable from this change**:
+  `verify-vitals` bypasses the splash, and `ColdBoot` is a dynamic import that neither route
+  loads. p4·07's recorded finding, reproduced on a second route. The four inherited counts HOLD EXACTLY: `verify-peers` **44** · `verify-mobile`
   **59** · `verify-site` **81** · `verify-protocol` **62**, and `verify-orb` is UNCHANGED at
   **217 passed · 1 skipped** on both trees. `verify-coldboot` **177 → 216**.
   **NOT FIXED, and named**: the deliberate audit of the other 30 canvas clear sites (above —

@@ -705,5 +705,10 @@
   assertion's plumbing landed after it, and every ceiling was green throughout. No route row moves, structurally: ColdBoot is a
   DYNAMIC import and `staticClosure` never reads `.dynamicImports`. Census RECOUNTED with
   the instrument controlled against three commits: 88 / 84 / 22 / 38 / 74 / 6, UNCHANGED.
-  `verify-coldboot` 177 -> 216, across NINE break tests.
+  `verify-coldboot` 177 -> 216, across NINE break tests. Two full `verify:e2e` runs, one red
+  each and a DIFFERENT route each time — verify-vitals at /live/mempool 4356ms then at
+  /live/markets 4368ms — against a base that reads 4,332 and 4,432 on the same two routes,
+  the second only DECLINED because its 87.2 % spread tripped the contention guard. On the one
+  route both trees judged, the shipping tree is 64ms better. Neither is reachable from this
+  change: vitals bypasses the splash and ColdBoot is a dynamic import neither route loads.
   · https://github.com/aqua-019/satoshis-vision-v1/pull/200
