@@ -760,6 +760,25 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   **T=0.40 20.0/6.8 at dpr 1 against 35.4/18.1 at dpr 2; T=0.90 4.6/0.0 against 32.6/15.0.**
   At dpr 1 the field converges and fades to nothing, which is the whole point of the
   sequence. At dpr 2 it rose monotonically and never came down.
+  **THIS IS NOT MOBILE POLISH, AND THE OPERATOR SHOULD READ THAT SENTENCE FIRST.** The
+  decrypt they called a v6 highlight has been degraded on EVERY dpr >= 2 display since it
+  shipped — every retina laptop, every 4K desktop, every phone. The PR is filed under a
+  mobile brief because that is where the report came from, not because that is where the
+  defect lives.
+  **CORROBORATED INDEPENDENTLY BY THE BRIEF'S AUTHOR, on their own instrument.** Their
+  read-back of the base build at t=3,100ms: **1440 dpr 1 lit 18.2 % / bright 6.0 %** against
+  **1440 dpr 2 lit 47.8 % / bright 39.1 %** — 6.5x on one viewport. And their whole-canvas
+  37.3 % lit at 390 dpr 2 against the mean of this gate's four quadrant windows, **40.9 %**:
+  different T, two instruments, same fact.
+  **AND THE REASON THEIR BRIEF SCOPED IT TO PHONES IS THE SHARPEST STATEMENT OF WHY THE
+  SAMPLING MOMENT MATTERED.** At **t=1,000ms** the base build reads **0.3 %** bright at 1440
+  dpr 1 and **0.6 %** at dpr 2 — indistinguishable. The broken and the healthy trees AGREE at
+  that instant, because the accumulation has barely started. That single sample is what the
+  brief's desktop column was built on. The phone looked worse in the same sample only
+  because its sequence is shorter, so at one wall-clock instant it is proportionally further
+  along. One root — sampling at matched WALL-CLOCK rather than matched T — produced two
+  stacked errors: a rendering bug attributed to the composition, and a global defect scoped
+  to one breakpoint.
   **THE SCREENSHOT IS THE ARTIFACT AND IT IS A DESKTOP ONE.** At 1440x900 dpr 2 on the base
   build the top-left quarter shows the correct wide composition and the other three quarters
   are a solid orange wall, with the boundary exactly at (1440, 900) — the half-point of the
@@ -845,6 +864,21 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   unconditional anyway and the full table now says so — a fence would leave the slow device
   with a mark rastered in a face nobody chose, permanently, and would make `markFontSettled`
   a lie.
+  **THE RE-LAY'S MARGIN IS ASSERTED RATHER THAN FENCED, AND THE CHOICE IS RECORDED RATHER
+  THAN DEFAULTED.** A margin that only a comment knows about is a margin nothing will notice
+  losing — this session shipped one race that was green by luck for exactly that reason
+  (`verify-protocol` §6 had 65ms of slack at four peer cards and −25ms at six, and only the
+  content changed). The rebuild stays UNCONDITIONAL, because fencing it would leave the slow
+  device with a mark rastered in a face nobody chose, permanently, and would make
+  `markFontSettled` a lie. What is asserted instead is the ORDER, with BOTH SIDES PUBLISHED
+  — `markFontSettledAtT` from the host and `markLockFrom` from the composition — so the gate
+  compares two measured numbers and restates neither. Reads **0.019 against 0.318, margin
+  0.299** at all three phone widths.
+  **AND THE FIRST-LOCK FIGURE I HAD BEEN QUOTING WAS DERIVED, NOT MEASURED.** Two comments
+  said **0.24**, from `composeTarget`'s cls-1 branch evaluated at t=0 — the theoretical floor
+  of that expression, and not a value any real cell takes. Measured over the mark's own
+  cells: **0.318**. The same family as everything else this release corrected, arriving in
+  my own prose about the correction.
   **THE GATE: FOUR FLOORS, AND THE BRIEF WAS RIGHT ABOUT THE SHAPE AND WRONG ABOUT THE
   MECHANISM.** It said a degenerate field maximises `cellsPerGlyph`, `inkPerGlyph`, `rows`
   and `chars`. Those come out of `composeTarget`, which runs once per geometry and never
@@ -871,7 +905,13 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   and ~40ms per sample at 1440x900 dpr2 pushed the run from ~5,950ms to ~7,990ms, past the
   page's own wall ceiling. Ten 48px strips cost ~10ms and read within 1.4 points of the full
   frame. An instrument that moves its subject is not measuring it.
-  **EIGHT BREAK TESTS, and the two that did not simply go red taught the most.**
+  **AND THE BANDS ARE CALIBRATED WITH THE SAMPLER THAT ENFORCES THEM, which is a decision
+  and not a convenience**: a band derived from a full-frame read and enforced with a cheaper
+  one is TWO INSTRUMENTS, and the next person to re-derive would get a different number and
+  be unable to tell drift from method. The bias is stated beside the constants — the strip
+  figure runs up to **~1.4 points LOW** at 1440 dpr 2, is IDENTICAL on a phone, and both read
+  0.0 at the tail, which is where the load-bearing assertion is.
+  **NINE BREAK TESTS, and the two that did not simply go red taught the most.**
   M1 the clear reverted → **7** reds, and the quadrant assertion printed the operator's own
   report as a failure message: `[0, 47.41, 60.29, 55.95]% lit, spread 60.3` — the cleared
   quadrant at zero and the other three holding the whole run · M2 the margin reserve to 0 →
@@ -881,13 +921,29 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   floor · M6 the ladder fitted to the visible width → 4, `"???  ·· NOT ENCODED IN THE
   PROTOCO"` · M7 the narrow ambient applied to the wide stage → 1 · M8 the stacked mark
   reverted to one line → **12**, with `colsPerGlyph` reading 4.4/4.9/5.4 exactly as that
-  floor's own comment predicts.
+  floor's own comment predicts · M9 the raster re-lay delayed past the mark's first lock →
+  **3**, `the raster settles at T=0.779 … first lock at T=0.318 (margin -0.461)` at every phone width.
   **M5 REFUSED TO GO RED AND WAS PREDICTED TO.** Reverting the narrow top-to-bottom sweep to
   the wide left-to-right one leaves all 213 green. The vertical beat is UNGATED, deliberately
   and stated: the composition is top-weighted at every breakpoint, so a sweep-direction
   assertion built on quadrant coverage would be confounded by the layout rather than
   measuring the beat. Recorded as a blind spot rather than papered over with an assertion
   that would pass for the wrong reason.
+  **AND M4 FOUND A DEFECT IN THIS RELEASE'S OWN GATE — WHICH IS NOW A PATTERN AND NOT AN
+  ANECDOTE.** p4·07's M5 refused to fire and turned out to be the gate's defect rather than
+  the page's; this release's M4 went red for the RIGHT reason and, in doing so, exposed a
+  second one. **Two instances, two different shapes — a mutation that will not fire and a
+  mutation that fires noisily — and both times the thing at fault was the INSTRUMENT.** The
+  transferable form: when a break test behaves surprisingly IN EITHER DIRECTION, suspect the
+  gate before the code. Reviewing the assertion would have found neither; only running the
+  mutation did.
+  **AND A TIMED-OUT BREAK TEST LEAVES THE TREE MUTATED — A RULE, NOT AN ANECDOTE.** A
+  ten-minute shell limit killed the harness mid-M4 and the tree happened to be between
+  rounds. It might not have been. **After ANY aborted or timed-out break test, re-prove every
+  touched file against the COMMITTED BLOB and sweep for markers BEFORE taking another
+  measurement** — every number read off a silently mutated tree is void, and nothing about
+  it looks wrong. The bracketed `<<<marker sweep>>>…<<<end>>>` form exists so that "empty" is
+  distinguishable from "the grep crashed".
   **AND M4 FOUND A DEFECT IN THIS RELEASE'S OWN GATE.** Waiting for the SETTLED report and
   taking `publishedAt` from that instant quietly redefined `loopMs`: the comment beside it
   says "this instant is the loop's own start" and had stopped being true, so §10b measured
@@ -907,14 +963,17 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   **BUDGETS: ONE TERM, RESIDUAL ZERO, 75 OF 76 FILES SIZE-IDENTICAL.** Paired per chunk STEM
   against an ISOLATED `git worktree` build of `5854cbd` with its own dist/ and node_modules,
   served on its own port with the holder confirmed by `lsof` + `/proc/<pid>/cwd`:
-  **`ColdBoot` 33,632 -> 35,613 = +1,981**, and +1,981 IS `totalJsRaw`'s whole delta too,
+  **`ColdBoot` 33,632 -> 35,752 = +2,120**, and +2,120 IS `totalJsRaw`'s whole delta too,
   which is what proves the eager half did not move. `eagerJsRaw` **BYTE-IDENTICAL at
   264,448** and `cssGz` **BYTE-IDENTICAL at 18,184** — no stylesheet rule at all.
   `eagerJsGz` moves **−1 B** from compressibility. `SITE_PR` 199 -> 200 contributed
   **exactly 0**, three digits at identical length, reproducing p4·01's own measurement.
   `CHUNK_COUNT` **76 = 76, nothing minted**. `lazyJsRaw` 978,000 → **982,000** (built
-  979,150, margin 2,850) and `totalJsRaw` 1,243,000 → **1,247,000** (built 1,243,598, margin
-  3,402), moved together so the gap is UNCHANGED at 265,000. **NO ROUTE ROW MOVES, and that
+  979,289, margin 2,711) and `totalJsRaw` 1,243,000 → **1,247,000** (built 1,243,737, margin
+  3,263), moved together so the gap is UNCHANGED at 265,000. **THE RE-MEASURE RULE FIRED AND
+  EVERY CEILING WAS GREEN WHILE THE PROSE WENT STALE**: the first reading was 979,150 /
+  +1,981 and the ordering assertion's plumbing landed after it, moving both figures by 139 B
+  with nothing red. Re-derive after the LAST src commit, not after the last green run. **NO ROUTE ROW MOVES, and that
   is structural rather than lucky**: `ColdBoot` is `React.lazy`, so it is a DYNAMIC import,
   and `staticClosure` reads `.imports` and never `.dynamicImports`.
   Census RECOUNTED, never incremented, with the instrument CONTROLLED against THREE commits
@@ -922,7 +981,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `5854cbd` 88/84/22/38/74/6 — all reproduced EXACTLY including the invocation arithmetic
   and the six orphans by name. Measured: **88 / 84 / 22 / 38 / 74 / 6, UNCHANGED**, which is
   the correct outcome for a release that extends an e2e member in place and adds no gate
-  file. `verify-coldboot` **177 → 213**.
+  file. `verify-coldboot` **177 → 216**.
   **SUITE ON THE SHIPPING TREE**: `verify:static` exit 0 · **`verify:e2e` ran all 38 members
   with ONE red — `verify-vitals`, at `/live/mempool · median LCP 4356ms ≤ 4350ms`, SIX
   milliseconds over a route this PR cannot reach.** PAIRED rather than waved away, because
@@ -933,7 +992,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `verify-vitals` bypasses the splash and `ColdBoot` is a dynamic import `/live/mempool`
   never loads. The four inherited counts HOLD EXACTLY: `verify-peers` **44** · `verify-mobile`
   **59** · `verify-site` **81** · `verify-protocol` **62**, and `verify-orb` is UNCHANGED at
-  **217 passed · 1 skipped** on both trees. `verify-coldboot` **177 → 213**.
+  **217 passed · 1 skipped** on both trees. `verify-coldboot` **177 → 216**.
   **NOT FIXED, and named**: the deliberate audit of the other 30 canvas clear sites (above —
   no second instance found, but inspection is weaker than assertion); the narrow sweep
   direction, ungated per M5; at 1440x900 **dpr 2** the loop is slow enough in this sandbox

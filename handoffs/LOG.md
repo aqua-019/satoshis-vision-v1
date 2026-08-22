@@ -697,11 +697,13 @@
   found a defect in this release's own gate: the settled-raster wait was inside the timed
   window, so §10b measured the loop MINUS the settle delay (3,108ms where the corrected
   anchor reads 3,492ms) and its ceiling got more permissive with nothing red.
-  Budgets: the simplest attribution this repo has recorded — ONE term, `ColdBoot` +1,981,
+  Budgets: the simplest attribution this repo has recorded — ONE term, `ColdBoot` +2,120,
   75 of 76 files size-identical, residual ZERO on both halves, eager and cssGz BYTE-IDENTICAL,
-  chunk count 76 = 76. lazyJsRaw 978,000 -> 982,000 and totalJsRaw 1,243,000 -> 1,247,000,
-  moved together so the gap is unchanged. No route row moves, structurally: ColdBoot is a
+  chunk count 76 = 76. lazyJsRaw 978,000 -> 982,000 (built 979,289) and totalJsRaw 1,243,000
+  -> 1,247,000 (built 1,243,737), moved together so the gap is unchanged. RE-DERIVED after
+  the last src commit and it HAD moved — the first reading was +1,981, the ordering
+  assertion's plumbing landed after it, and every ceiling was green throughout. No route row moves, structurally: ColdBoot is a
   DYNAMIC import and `staticClosure` never reads `.dynamicImports`. Census RECOUNTED with
   the instrument controlled against three commits: 88 / 84 / 22 / 38 / 74 / 6, UNCHANGED.
-  `verify-coldboot` 177 -> 213.
+  `verify-coldboot` 177 -> 216, across NINE break tests.
   · https://github.com/aqua-019/satoshis-vision-v1/pull/200
