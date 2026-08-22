@@ -732,20 +732,31 @@ export function ColdBoot(): React.JSX.Element | null {
     publishReport();
 
     /* THE RE-LAY IS UNCONDITIONAL IN T, AND THAT IS MEASURED RATHER THAN
-     * ARGUED. A rebuild after the wordmark has locked would be a visible pop,
-     * so the obvious move is to fence it to an early beat — and a fence would
-     * be dead code. The load is requested AT MOUNT, so it races the bundle
-     * rather than the sequence. Measured, T at the moment the geometry is
-     * rebuilt:
+     * ARGUED — AND THE FIRST VERSION OF THIS COMMENT OVERCLAIMED. It said
+     * every case lands during scramble, on a table that stopped at 6x CPU.
+     * Extending the same measurement to the rate this repo's own gate uses
+     * (`verify-coldboot` §10b throttles at 10x) refutes that. T at the moment
+     * the geometry is rebuilt:
      *
-     *                          390x844      1440x900
-     *      fast                  0.016         0.021
-     *      Slow 4G               0.074         0.070
-     *      Slow 4G + 6x CPU      0.180         0.186
+     *                            390x844      1440x900
+     *      fast                    0.015         0.012
+     *      6x CPU                  0.181         0.228
+     *      10x CPU                 0.316         0.198
+     *      Slow 4G + 6x CPU        0.215         0.259
+     *      Slow 4G + 10x CPU       0.388         0.238
      *
-     * The wordmark's own earliest `lockAt` is 0.24 (`composeTarget`'s cls-1
-     * branch at t=0), so every case lands during scramble, where a mark that
-     * thickens by one cell-row is drawing something nobody can see yet. The
+     * The wordmark's earliest `lockAt` is 0.24 (`composeTarget`'s cls-1 branch
+     * at t=0), so at and above 6x the re-lay CAN land after the mark has begun
+     * to resolve, and a reader there sees it thicken by one cell-row (390:
+     * rows 11 -> 12, ink 216 -> 230, ~6%).
+     *
+     * KEPT UNCONDITIONAL ANYWAY, and the alternative is what decides it. A
+     * fence at T < 0.24 would leave the slow device with a mark rastered in a
+     * face nobody chose, permanently — which is the behaviour this exists to
+     * remove — and it would make `markFontSettled` a lie, because the promise
+     * would have settled while the geometry had not been rebuilt. A reader at
+     * 10x CPU is already being served a sequence whose wall ceiling has
+     * engaged; one cell-row of thickening is not that reader's problem. The
      * cost is one atlas rebuild. `ColdBoot`'s resize path already re-lays
      * mid-run and states the rule this follows: the composition may change
      * mid-run, the clock may not — and this changes no clock. */

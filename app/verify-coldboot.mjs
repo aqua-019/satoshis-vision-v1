@@ -1185,6 +1185,15 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
      two instruments is lying. */
   const AMBIENT_MEAN_BAND = [0.40, 0.75];
 
+  /* How long to wait for the raster to report itself final. Measured: 900ms at
+     1x, 3.1s at 6x CPU, 9.4s at 10x CPU (this file's own §10b rate) and 10.7s
+     at Slow 4G + 10x. 15s clears the worst of those with room and, unlike the
+     25s this started at, cannot dominate a stage that never settles. On the
+     timeout the FIRST report is used instead of nothing, so the bands below
+     still have a subject and the dedicated `markFontSettled` assertion names
+     the failure. */
+  const SETTLE_TIMEOUT_MS = 15_000;
+
   const PHONES = [
     ['360x800', { width: 360, height: 800 }],
     ['390x844', { width: PHONE.width, height: PHONE.height }],
@@ -1202,6 +1211,28 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
     }
     const t0 = Date.now();
     await page.goto(BASE + '/', { waitUntil: 'load' });
+    /* TWO WAITS, AND THE ORDER IS LOAD-BEARING — A BREAK TEST FOUND THIS.
+       The first version of this block waited for the SETTLED report and took
+       `publishedAt` from that instant, which quietly redefined `loopMs`: the
+       comment below says "this instant is the loop's own start" and it had
+       stopped being true, so §10b measured the loop MINUS the settle delay and
+       its own ceiling got more permissive with nothing red. M4 (the host never
+       reports the raster settled) is what exposed it — the timing assertions
+       came back at 25,125ms against a 4,800ms bound, for a reason that has
+       nothing to do with timing. Now the FIRST publish anchors the loop, the
+       flip is timed by a promise started BEFORE the settle wait so that wait
+       cannot be counted as part of the sequence, and the settled report is
+       fetched afterwards purely to give the bands a determinate subject. */
+    const first = await page.waitForFunction(() => window.__XMR_FIELD__ || null, null, { timeout: 25_000 })
+      .then((h) => h.jsonValue()).catch(() => null);
+    /* The report is published in the decrypt effect's setup, BEFORE the first
+       rAF, so this instant is the loop's own start. `flipMs` measures the whole
+       navigation (bundle + hold + loop) and `loopMs` measures only the loop —
+       which is the quantity the wall ceiling actually bounds. */
+    const publishedAt = Date.now();
+    const flipAt = page.waitForFunction(
+      () => document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') === 'console',
+      null, { timeout: 30_000 }).then(() => Date.now()).catch(() => null);
     /* WAIT FOR THE SETTLED RASTER, NOT THE FIRST PUBLISH.
        `composeTarget` rasterises the wordmark through a canvas, and a canvas
        substitutes a fallback face SILENTLY for a webfont that has not loaded.
@@ -1212,23 +1243,15 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
        reading a coin flip, which a floor survives and a BAND cannot.
        `markFontSettled` means the raster is FINAL, not that the font arrived —
        a load that fails is a settled outcome too, so this cannot hang on a
-       missing face. It falls back to the first publish after the timeout rather
-       than returning null, so a host that stopped publishing the flag reds on
-       the band below by NAME instead of on the precondition. */
+       missing face. */
     const report = await page.waitForFunction(
       () => (window.__XMR_FIELD__ && window.__XMR_FIELD__.markFontSettled ? window.__XMR_FIELD__ : null),
-      null, { timeout: 25_000 })
+      null, { timeout: SETTLE_TIMEOUT_MS })
       .then((h) => h.jsonValue())
-      .catch(() => page.evaluate(() => window.__XMR_FIELD__ || null).catch(() => null));
-    /* The report is published in the decrypt effect's setup, BEFORE the first
-       rAF, so this instant is the loop's own start. `flipMs` measures the whole
-       navigation (bundle + hold + loop) and `loopMs` measures only the loop —
-       which is the quantity the wall ceiling actually bounds. */
-    const publishedAt = Date.now();
-    const flipped = await page.waitForFunction(
-      () => document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') === 'console',
-      null, { timeout: 30_000 }).then(() => true).catch(() => false);
-    const now = Date.now();
+      .catch(() => first);
+    const at = await flipAt;
+    const flipped = at !== null;
+    const now = at ?? Date.now();
     const flipMs = now - t0;
     const loopMs = now - publishedAt;
     const pending = await page.evaluate(() => document.documentElement.classList.contains('cb-pending'));
