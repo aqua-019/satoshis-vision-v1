@@ -116,6 +116,11 @@ export interface FieldTarget {
    *  and because it is the ONE number that says whether the mark can be read:
    *  a letterform needs cells, not pixels. See `WORDMARK`'s docblock. */
   readonly mark: MarkBox;
+  /** The cipher block's left edge and width, in cells — reported because the
+   *  block is placed by a different path from the wordmark and can run to the
+   *  edge while the mark does not. */
+  readonly blockLeft: number;
+  readonly blockW: number;
   /** The sequence's CLOSING LINE as it was actually PLACED — decoded back out
    *  of `target`, over the fully visible columns only.
    *
@@ -841,6 +846,8 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     lineGlyphs: 0, colsPerGlyph: 0, ink: 0, cellsPerGlyph: 0, inkPerGlyph: 0,
   };
   let closingLine = "";
+  let blockLeft = 0;
+  let blockWidth = 0;
 
   const off = document.createElement("canvas");
   off.width = Math.max(2, Math.round(w));
@@ -1029,6 +1036,8 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
           Math.max(0, Math.floor((cols - blockW) / 2)),
           Math.max(0, visibleCols - blockW),
         );
+    blockLeft = c0;
+    blockWidth = blockW;
     let row = mBot + 4;
     const cipherRows: number[] = [];
     const txId = hexRun(8, TX_ID_SEED);
@@ -1113,7 +1122,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     }
   }
 
-  return { cols, rows, target, tclass, lockAt, ambient, mark, closingLine };
+  return { cols, rows, target, tclass, lockAt, ambient, mark, blockLeft, blockW: blockWidth, closingLine };
 }
 
 // ── geometry cache — the ONLY module-level mutable state in this file, and
@@ -1227,6 +1236,11 @@ export interface FieldReport {
   readonly closingLine: string;
   readonly narrow: boolean;
   readonly cells: number;
+  /** The CIPHER BLOCK's own clearance from each edge, in visible columns — the
+   *  wordmark and the block are laid out by different code paths off the same
+   *  reserve, so one can be margined while the other runs to the edge. */
+  readonly blockMarginLeft: number;
+  readonly blockMarginRight: number;
   /** Columns a reader can actually SEE — `floor(w / cw)`. `layout.cols` is one
    *  more than this by design (the ambient field must not gap at the right
    *  edge), so every margin question has to be asked in this unit or the right
@@ -1264,6 +1278,8 @@ export function fieldReport(w: number, h: number, dpr: number): FieldReport {
        a gate bands has to mean "clearance the reader sees". */
     markMarginLeft: mark.glyphs > 0 ? Math.max(0, mark.left) : 0,
     markMarginRight: mark.glyphs > 0 ? Math.max(0, visibleCols - 1 - mark.right) : 0,
+    blockMarginLeft: Math.max(0, fieldTarget.blockLeft),
+    blockMarginRight: Math.max(0, visibleCols - (fieldTarget.blockLeft + fieldTarget.blockW)),
     ambientMean: amb.length > 0 ? Math.round((awSum / amb.length) * 1000) / 1000 : 1,
   };
 }

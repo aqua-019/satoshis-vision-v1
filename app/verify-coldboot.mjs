@@ -1326,6 +1326,33 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
       'the edge of the stage with ambient scramble pressing on the letterforms at the same size and the same ' +
       'tint. Measured at 3 on the pre-p4·M7 tree at every width in this band.');
 
+    /* THE BLOCK IS MARGINED TOO, AND IT IS A SEPARATE CLAIM. The wordmark's
+       fit and the cipher block's left edge are computed by different code paths
+       off the same reserve, so one can be inside the margin while the other
+       runs to the edge — which is what the pre-p4·M7 tree did: mark at column 3
+       and the closing line reaching column 53 of 54. The ladder in
+       field.ts#SIGNER_FORMS is measured against the MARGINED width on a narrow
+       stage precisely so this holds; measuring it against the visible width
+       instead restores rung 1 and pushes the block back out to the edge with
+       every other assertion here still green. */
+    const blockMargin = Math.min(report.blockMarginLeft, report.blockMarginRight);
+    R.ok(blockMargin >= MIN_MARK_MARGIN_COLS,
+      `${label}: the cipher block clears both edges — ${report.blockMarginLeft} / ${report.blockMarginRight} ` +
+      `of ${report.visibleCols} visible columns (floor ${MIN_MARK_MARGIN_COLS})`,
+      `${report.blockMarginLeft} / ${report.blockMarginRight} visible columns. The block runs to the edge of ` +
+      'the stage while the mark above it does not — the closing-line ladder is being fitted to the full ' +
+      'visible width rather than to the margined one. See field.ts#SIGNER_FORMS.');
+
+    /* THE RASTER IS FINAL. `markFontSettled` is set once the face the wordmark
+       rasters with has settled — loaded or failed, both of which are final
+       outcomes — so it is ALWAYS true on a healthy host and asserting it costs
+       nothing. Without it, removing the wait leaves every band above reading a
+       fallback-face raster that still sits inside its band, and nothing says so. */
+    R.ok(report.markFontSettled === true,
+      `${label}: the wordmark raster is final (markFontSettled) — every band above has a determinate subject`,
+      'the field never reported a settled raster, so the numbers above describe whichever font happened to be ' +
+      'resident when composeTarget ran. See field.ts#ensureMarkFont.');
+
     R.ok(report.ambientMean >= AMBIENT_MEAN_BAND[0] && report.ambientMean <= AMBIENT_MEAN_BAND[1],
       `${label}: the ambient weight field means ${report.ambientMean} ` +
       `(band ${AMBIENT_MEAN_BAND[0]}-${AMBIENT_MEAN_BAND[1]} — a clearing round the message and a fade far from it)`,
