@@ -157,7 +157,7 @@
  */
 
 import * as React from "react";
-import { drawField, fieldReport, isNarrowStage } from "./field";
+import { drawField, ensureMarkFont, fieldReport, invalidateGeometry, isNarrowStage } from "./field";
 import { T, E, seg, clamp01, lerp, EFFECTIVE_MS, EFFECTIVE_NARROW_MS, WALL_CEIL_FACTOR } from "./schedule";
 import { ColdBootConsole } from "./ColdBootConsole";
 import { useReducedMotion } from "@/design/useReducedMotion";
@@ -703,6 +703,19 @@ export function ColdBoot(): React.JSX.Element | null {
      * canvas. Published by the HOST, never by field.ts — see fieldReport's
      * docblock. Republished on resize below, so it always describes the
      * geometry currently being drawn rather than the one this loop started on. */
+    /* ── WHY THE REPORT CARRIES A SETTLED FLAG (p4·M7) ────────────────────
+     * `composeTarget` rasterises the wordmark through a canvas, and a canvas
+     * substitutes a fallback face SILENTLY for a webfont that has not loaded.
+     * The mark this loop publishes at mount is therefore whichever face was
+     * resident at that instant — measured on the shipped build, ink 237 before
+     * and 268 after at 390, and mark rows 6 -> 8 at 1440. A gate reading the
+     * first publish is reading a coin flip, which is fine for a floor and fatal
+     * for a BAND. So the loop asks for the face explicitly (see
+     * `field.ts#ensureMarkFont` for why `document.fonts.ready` is the wrong
+     * signal), rebuilds the geometry when that settles, and says so in the
+     * report. `markFontSettled` means "the raster is final", NOT "the font
+     * arrived" — a load that fails is a settled outcome too. */
+    let markFontSettled = false;
     const publishReport = (): void => {
       try {
         const dpr = ctx.canvas.width > 0 && dims.w > 0 ? ctx.canvas.width / dims.w : 1;
@@ -710,12 +723,39 @@ export function ColdBoot(): React.JSX.Element | null {
           ...fieldReport(dims.w, dims.h, dpr),
           effectiveMs,
           wallCeilMs,
+          markFontSettled,
         };
       } catch {
         /* a report is diagnostics; it must never be able to blank the splash */
       }
     };
     publishReport();
+
+    /* THE RE-LAY IS UNCONDITIONAL IN T, AND THAT IS MEASURED RATHER THAN
+     * ARGUED. A rebuild after the wordmark has locked would be a visible pop,
+     * so the obvious move is to fence it to an early beat — and a fence would
+     * be dead code. The load is requested AT MOUNT, so it races the bundle
+     * rather than the sequence. Measured, T at the moment the geometry is
+     * rebuilt:
+     *
+     *                          390x844      1440x900
+     *      fast                  0.016         0.021
+     *      Slow 4G               0.074         0.070
+     *      Slow 4G + 6x CPU      0.180         0.186
+     *
+     * The wordmark's own earliest `lockAt` is 0.24 (`composeTarget`'s cls-1
+     * branch at t=0), so every case lands during scramble, where a mark that
+     * thickens by one cell-row is drawing something nobody can see yet. The
+     * cost is one atlas rebuild. `ColdBoot`'s resize path already re-lays
+     * mid-run and states the rule this follows: the composition may change
+     * mid-run, the clock may not — and this changes no clock. */
+    let cancelledFont = false;
+    void ensureMarkFont().then(() => {
+      if (cancelledFont) return;
+      markFontSettled = true;
+      invalidateGeometry();
+      publishReport();
+    });
 
     const onResize = () => {
       dims = resizeCanvas(canvas);
@@ -808,6 +848,7 @@ export function ColdBoot(): React.JSX.Element | null {
 
     return () => {
       stop();
+      cancelledFont = true;
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("resize", onResize);
     };
