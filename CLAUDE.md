@@ -998,6 +998,24 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   loads. p4·07's recorded finding, reproduced on a second route. The four inherited counts HOLD EXACTLY: `verify-peers` **44** · `verify-mobile`
   **59** · `verify-site` **81** · `verify-protocol` **62**, and `verify-orb` is UNCHANGED at
   **217 passed · 1 skipped** on both trees. `verify-coldboot` **177 → 216**.
+  **AND CI SETTLED THE VITALS QUESTION OUTRIGHT, which the paired local readings only made
+  plausible.** On the runner at `1688b92`, `verify-vitals` reports **19 passed · 0 skipped ·
+  0 failed** — every route JUDGED, none declined by the contention guard:
+  `/` LCP 2,032 · **`/live/mempool` 4,044** · **`/live/markets` 2,168** · `/learn/sim` 2,400,
+  against this sandbox's 4,260-4,356 and 4,368 for the two middle ones. `/live/markets` is a
+  FACTOR OF TWO apart between the two machines. CLAUDE.md's standing claim — "a local vitals
+  red is not evidence; CI is the calibrated environment" — now has direct evidence rather
+  than an argument from spread.
+  **AND THE §10e BANDS TRANSFER TO A DIFFERENT RUNNER UNCHANGED**, which is the property a
+  band calibrated in one sandbox most needs and least often gets. On CI: peak lit **17.7 %**
+  at 390 dpr2, **21.6 %** at 1440 dpr1, **18.1 %** at 1440 dpr2 (ceiling 32), tail
+  **0.0 / 0.0** and quadrants **[0, 0, 0, 0]** at all three, and the ordering assertion reads
+  T=0.010-0.015 against a first lock of 0.318-0.319. No constant needed adjusting.
+  **THE ONE CI FAILURE IN THE SERIES WAS MY OWN BUDGET RED, and nothing else.** At `f403af3`
+  exactly one STEP failed — `Gate: bundle budgets`, step 7 of 23 — while the whole hardening
+  job including all 38 e2e gates passed on the same commit. Read off the job's step list
+  rather than inferred from the commit order. The raise in `9bc64ed` cleared it, green at
+  `6f29192`, `9a2bdee` and `1688b92`.
   **NOT FIXED, and named**: the deliberate audit of the other 30 canvas clear sites (above —
   no second instance found, but inspection is weaker than assertion); the narrow sweep
   direction, ungated per M5; at 1440x900 **dpr 2** the loop is slow enough in this sandbox

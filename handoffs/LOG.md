@@ -711,4 +711,10 @@
   the second only DECLINED because its 87.2 % spread tripped the contention guard. On the one
   route both trees judged, the shipping tree is 64ms better. Neither is reachable from this
   change: vitals bypasses the splash and ColdBoot is a dynamic import neither route loads.
+  CI SETTLED THE VITALS QUESTION OUTRIGHT: on the runner, verify-vitals is 19 passed · 0
+  skipped · 0 failed with every route JUDGED — /live/mempool 4,044ms and /live/markets
+  2,168ms against this sandbox's 4,260-4,356 and 4,368. The §10e bands transfer to that
+  runner with no constant adjusted (peak lit 17.7 / 21.6 / 18.1, tail 0.0/0.0, quadrants
+  [0,0,0,0]). The only CI failure in the series was my own budget red at f403af3 — one step
+  of 23, with all 38 e2e gates passing on the same commit — cleared by the raise.
   · https://github.com/aqua-019/satoshis-vision-v1/pull/200
