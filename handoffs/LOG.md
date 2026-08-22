@@ -735,3 +735,13 @@
   M10 → 2 reds with 430 staying green. verify-coldboot 216 → 220. Budgets re-derived a THIRD
   time: ColdBoot 35,752 → 36,018, +266, residual zero, every ceiling green throughout.
   · https://github.com/aqua-019/satoshis-vision-v1/pull/200
+  LEDGERED, NOT FIXED, from the pre-merge audit's stated limits: (1) the MONO face is a
+  geometry input with no invalidation — layoutField derives cw from measureText("M") and cw
+  sizes the whole grid, while invalidateGeometry() fires only on the SANS settle, so a late
+  mono arrival is never re-laid. Not currently firing (the face is preloaded and the gate
+  reads the real 7.2000579833984375), but the failure mode was OBSERVED in this session's own
+  probe at cw 7.22, which flips cols 56 -> 55 at 390. Pre-existing. (2) MARK_SHARE_MAX /
+  MARK_ROW_SHARE_MAX carry ~2x slack at every gated stage and no break test reds them — a
+  ceiling nothing has driven is not coverage. CI green on all three heads: 1ccc659, a5504b7
+  (the src fix) and 72f6d31.
+  · https://github.com/aqua-019/satoshis-vision-v1/pull/200

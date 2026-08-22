@@ -1080,7 +1080,24 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   measure **39/21/3** by import edge and 47/25/3 by text mention — see the head block; the
   49/25/3 first written here was a MIX of two instruments and matched neither, found by the
   pre-merge audit and corrected; `:130`'s "12 individually-named offline gates" still measures 14, as
-  p4·07 flagged. **No human has seen the rendered result in a browser** — read from
+  p4·07 flagged.
+  **AND TWO THE PRE-MERGE AUDIT NAMED AS LIMITS RATHER THAN FINDINGS.**
+  (1) **THE MONO FACE IS A GEOMETRY INPUT AND NOTHING INVALIDATES ON IT.** `layoutField`
+  derives `cw` from `measureText("M")`, and `cw` sizes the ENTIRE grid — columns, margins, and
+  which rung the closing-line ladder selects. `invalidateGeometry()` fires on the SANS settle
+  only (`ensureMarkFont`), never on a later mono arrival. That is this release's own wordmark
+  race one level up, and it decides more. NOT currently firing, and the reason is stated
+  rather than assumed: `jetbrains-mono-400.woff2` is preloaded at `index.html:45` and the gate
+  reads `cw` **7.2000579833984375**, which is the real face. **The failure mode was OBSERVED,
+  in this session's own probe** — without an explicit `document.fonts.load` it measured
+  **7.22**, a fallback, which flips `cols` 56 → 55 at 390 and moves the margin arithmetic and
+  possibly the rung. PRE-EXISTING (the base had no invalidation at all), so named not fixed.
+  (2) **`MARK_SHARE_MAX` / `MARK_ROW_SHARE_MAX` ARE CEILINGS WITH NO DEMONSTRATED RED.** At
+  the three gated phone stages boxShare reads ~0.20-0.25 against 0.45 and rowShare ~0.25
+  against 0.55 — roughly 2× slack — and none of the ten break tests reds them (M8 lowers both
+  rather than raising them). Deliberate per their own comment, and recorded here because a
+  ceiling nothing has ever driven is not coverage.
+  **No human has seen the rendered result in a browser** — read from
   screenshots of the REAL page at 390, 320 and 1440, at 1,200/2,200/3,100ms, before and
   after, plus the probe's own exact-T frames and the composed grid read back as ASCII.
 
