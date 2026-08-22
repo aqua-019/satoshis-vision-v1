@@ -963,13 +963,13 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   **BUDGETS: ONE TERM, RESIDUAL ZERO, 75 OF 76 FILES SIZE-IDENTICAL.** Paired per chunk STEM
   against an ISOLATED `git worktree` build of `5854cbd` with its own dist/ and node_modules,
   served on its own port with the holder confirmed by `lsof` + `/proc/<pid>/cwd`:
-  **`ColdBoot` 33,632 -> 35,752 = +2,120**, and +2,120 IS `totalJsRaw`'s whole delta too,
+  **`ColdBoot` 33,632 -> 36,018 = +2,386**, and +2,386 IS `totalJsRaw`'s whole delta too,
   which is what proves the eager half did not move. `eagerJsRaw` **BYTE-IDENTICAL at
   264,448** and `cssGz` **BYTE-IDENTICAL at 18,184** — no stylesheet rule at all.
   `eagerJsGz` moves **−1 B** from compressibility. `SITE_PR` 199 -> 200 contributed
   **exactly 0**, three digits at identical length, reproducing p4·01's own measurement.
   `CHUNK_COUNT` **76 = 76, nothing minted**. `lazyJsRaw` 978,000 → **982,000** (built
-  979,289, margin 2,711) and `totalJsRaw` 1,243,000 → **1,247,000** (built 1,243,737, margin
+  979,555, margin 2,445) and `totalJsRaw` 1,243,000 → **1,247,000** (built 1,244,003, margin
   3,263), moved together so the gap is UNCHANGED at 265,000. **THE RE-MEASURE RULE FIRED AND
   EVERY CEILING WAS GREEN WHILE THE PROSE WENT STALE**: the first reading was 979,150 /
   +1,981 and the ordering assertion's plumbing landed after it, moving both figures by 139 B
@@ -981,7 +981,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `5854cbd` 88/84/22/38/74/6 — all reproduced EXACTLY including the invocation arithmetic
   and the six orphans by name. Measured: **88 / 84 / 22 / 38 / 74 / 6, UNCHANGED**, which is
   the correct outcome for a release that extends an e2e member in place and adds no gate
-  file. `verify-coldboot` **177 → 216**.
+  file. `verify-coldboot` **177 → 220**.
   **SUITE ON THE SHIPPING TREE**: `verify:static` exit 0 · **`verify:e2e` ran all 38 members
   in TWO full chain runs, with ONE red each time — `verify-vitals`, AND A DIFFERENT ROUTE ON
   EACH RUN**, which is the signature rather than an excuse. Run A:
@@ -997,7 +997,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `verify-vitals` bypasses the splash, and `ColdBoot` is a dynamic import that neither route
   loads. p4·07's recorded finding, reproduced on a second route. The four inherited counts HOLD EXACTLY: `verify-peers` **44** · `verify-mobile`
   **59** · `verify-site` **81** · `verify-protocol` **62**, and `verify-orb` is UNCHANGED at
-  **217 passed · 1 skipped** on both trees. `verify-coldboot` **177 → 216**.
+  **217 passed · 1 skipped** on both trees. `verify-coldboot` **177 → 220**.
   **AND CI SETTLED THE VITALS QUESTION OUTRIGHT, which the paired local readings only made
   plausible.** On the runner at `1688b92`, `verify-vitals` reports **19 passed · 0 skipped ·
   0 failed** — every route JUDGED, none declined by the contention guard:
@@ -1016,6 +1016,50 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   job including all 38 e2e gates passed on the same commit. Read off the job's step list
   rather than inferred from the commit order. The raise in `9bc64ed` cleared it, green at
   `6f29192`, `9a2bdee` and `1688b92`.
+  **AND AN ADVERSARIAL SWEEP OF THE DIFF AFTER CI WENT GREEN FOUND A DEFECT THIS RELEASE
+  ITSELF INTRODUCED — 220 assertions and a green CI run were both blind to it.** Five
+  read-only lenses over `5854cbd..1ccc659`, each batch-verified by a refute-by-default pass:
+  six findings refuted with traced reasoning, ONE confirmed and then reproduced independently
+  by the lead before a line was edited, which is this file's own standing rule about a
+  worker's report earning its keep for the second time.
+  **THE FIX FOR §3d BROKE §3e, AND ONLY BECAUSE IT WORKED.** `signerFit = narrow ? bodyW :
+  visibleCols` is what finally exercises the wrapped rung — the whole line-set ask — so 360
+  and 390 now take a TWO-ROW closing form where they took a one-row one. `putLine` writes
+  those rows at `row + i`; the schedule named only the first, `const lastRow = row` against
+  `else if (r === lastRow) t = 0.58`. Every later row fell into the generic branch, which
+  resolves EARLIER. Measured off the real grid by the gate: **`[0.502, 0.358]` at 360x800 and
+  `[0.502, 0.361]` at 390x844** — the sentence the sequence closes on resolved ENTIRELY
+  BEFORE its own opening row, so the reader watched the answer appear and then the question.
+  **IT CONTRADICTED THE COMMENT EIGHT LINES ABOVE IT**, which says a vertical sweep "lands on
+  the closing line last — which is where the sequence's payoff already sits". A claim in a
+  comment, about the code directly beneath it, that the code had just stopped honouring.
+  **NOTHING COULD HAVE CAUGHT IT: every assertion about that line reads its TEXT, and the
+  text was perfect.** `closingLine` is decoded back out of the grid precisely so a truncated
+  line reds — and truncation was the failure this release had already been taught to expect,
+  so the instrument was aimed at the previous defect rather than at ordering. The lock
+  SCHEDULE had no reader at all.
+  **`closingRowLocks` IS MEASURED OFF `lockAt`, NEVER RESTATED FROM THE SCHEDULE**, so a
+  change to the schedule moves the number a gate reads. The assertion is that the series never
+  DECREASES — and because a ONE-ROW line is non-decreasing by construction, a floor after the
+  stage loop asserts the set exercises BOTH forms (360 and 390 wrap, 430 does not). Without
+  that floor every phone could stop wrapping and three green per-stage checks would prove
+  nothing about the case that broke. **BLIND SPOT STATED IN THE GATE**: it does NOT assert the
+  closing line locks last of ALL text, because it does not — KICK, SUB1 and the block header
+  take the generic branch, whose jitter can carry a cell past 0.502. The narrower true claim is
+  the one asserted.
+  M10: only the first row takes the closing case → **2 reds, and 430 STAYS GREEN**, which is
+  what proves the assertion discriminates rather than firing on everything.
+  **AND THE RE-MEASURE RULE FIRED A THIRD TIME IN ONE RELEASE.** +266 B, one term, residual
+  zero: `ColdBoot` 35,752 → **36,018**, and the same 266 is `totalJsRaw`'s whole delta.
+  `eagerJsRaw` byte-identical at 264,448, chunk count 76 = 76. Every ceiling stayed GREEN
+  through all three re-derivations — which is the entire content of the rule.
+  **ONE RED IN THE FIRST POST-FIX RUN WAS THE MACHINE AND WAS PAIRED RATHER THAN WAVED AT**:
+  §10b read `5,394ms against a 5,175ms bound` with a whole navigation of **31,436ms**; the
+  identical tree re-run reads **3,727ms** and a navigation of 20,612ms. The change adds a
+  ≤3-entry Map lookup inside `composeTarget`, which runs once per GEOMETRY and not per frame,
+  so it cannot reach the loop's duration — but "implausible" is not "measured", and the
+  re-run is the measurement.
+
   **NOT FIXED, and named**: the deliberate audit of the other 30 canvas clear sites (above —
   no second instance found, but inspection is weaker than assertion); the narrow sweep
   direction, ungated per M5; at 1440x900 **dpr 2** the loop is slow enough in this sandbox

@@ -718,3 +718,20 @@
   [0,0,0,0]). The only CI failure in the series was my own budget red at f403af3 — one step
   of 23, with all 38 e2e gates passing on the same commit — cleared by the raise.
   · https://github.com/aqua-019/satoshis-vision-v1/pull/200
+  POST-CI ADDENDUM — an adversarial sweep of this PR's own diff, run after all three checks
+  went green at 1ccc659, found a defect the release itself introduced and that 220 assertions
+  plus a green CI run were both blind to. Five read-only lenses, each batch-verified by a
+  refute-by-default pass: 6 refuted with traced reasoning, 1 confirmed and then reproduced
+  independently by the lead before any edit. THE FIX FOR THE LINE-SET ASK BROKE THE SWEEP ASK,
+  and only because it worked: `signerFit` measuring against the margined width is what finally
+  selects the WRAPPED closing rung at 360/390, and the lock schedule named only that block's
+  FIRST row, so every later row fell to the generic branch and resolved EARLIER — measured
+  [0.502, 0.358] at 360x800 and [0.502, 0.361] at 390x844, i.e. the sentence the sequence
+  closes on landed before its own opening row. It contradicted the comment eight lines above
+  it. Nothing caught it because every assertion about that line reads its TEXT, and the text
+  was perfect. Fixed via `closingOrd` (inert on wide: one row, index 0, same 0.58) and gated
+  with `closingRowLocks`, MEASURED off lockAt rather than restated, asserted non-decreasing,
+  with a both-forms floor after the stage loop so a one-row line cannot make it vacuous.
+  M10 → 2 reds with 430 staying green. verify-coldboot 216 → 220. Budgets re-derived a THIRD
+  time: ColdBoot 35,752 → 36,018, +266, residual zero, every ceiling green throughout.
+  · https://github.com/aqua-019/satoshis-vision-v1/pull/200

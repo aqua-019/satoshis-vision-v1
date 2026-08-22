@@ -675,14 +675,14 @@ const BUDGETS = {
      block records has now been lapsed for eleven releases. */
   /* p4·M7 RAISE, 1,243,000 -> 1,247,000. Moves WITH `lazyJsRaw` by the same
      4,000 so the gap between them is UNCHANGED at 265,000, which is what the
-     backstop is for. This PR's whole delta is +2,120 and it is entirely lazy.
-     Built 1,243,737, margin 3,263, against a base of 1,241,617 — the same
-     +2,120, twice over.
+     backstop is for. This PR's whole delta is +2,386 and it is entirely lazy.
+     Built 1,244,003, margin 2,997, against a base of 1,241,617 — the same
+     +2,386, twice over.
      THE RECONCILIATION IS STILL NOT DONE and still is not this PR's to make:
      eagerJsRaw 280,000 + lazyJsRaw 982,000 = 1,262,000 against this line's
      1,247,000, so the "sum of the two real budgets" construction this comment
      block records has now been lapsed for twelve releases. */
-  totalJsRaw: 1_247_000,  // p4·M7: built 1,243,737 on the FINAL tree, margin 3,263.
+  totalJsRaw: 1_247_000,  // p4·M7: built 1,244,003 on the FINAL tree, margin 2,997.
   //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
   //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
   //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
@@ -1315,18 +1315,23 @@ const BUDGETS = {
      its own port with the holder confirmed by `lsof` + /proc/<pid>/cwd. 75 of
      76 files SIZE-IDENTICAL:
 
-         ColdBoot        33,632 -> 35,752     +2,120
-                                            = +2,120
+         ColdBoot        33,632 -> 36,018     +2,386
+                                            = +2,386
 
-     and +2,120 IS `totalJsRaw`'s whole delta as well, which is what proves the
+     and +2,386 IS `totalJsRaw`'s whole delta as well, which is what proves the
      eager half did not move.
 
      RE-DERIVED AFTER THE LAST SRC COMMIT, AND IT HAD MOVED. The first
      measurement read 979,150 / +1,981; the ordering assertion's plumbing
      (`markLockFrom`, `markFontSettledAtT`) landed afterwards and took it to
-     979,289 / +2,120. EVERY CEILING WAS GREEN THROUGHOUT — the margin absorbed
-     it — which is exactly why the rule is re-derive rather than "check the gate
-     is green". A budget comment is not gated by the budget it annotates. `eagerJsRaw` is BYTE-IDENTICAL at 264,448 and
+     979,289 / +2,120. THEN IT MOVED A THIRD TIME: a pre-merge audit of this
+     PR's own diff found the wrapped closing line resolving out of reading
+     order, and that fix plus its published `closingRowLocks` took it to
+     979,555 / +2,386. EVERY CEILING WAS GREEN THROUGH ALL THREE — the margin
+     absorbed every one — which is exactly why the rule is re-derive rather
+     than "check the gate is green". A budget comment is not gated by the
+     budget it annotates, and three re-derivations inside one release is the
+     strongest evidence this file carries for that. `eagerJsRaw` is BYTE-IDENTICAL at 264,448 and
      `cssGz` BYTE-IDENTICAL at 18,184 — the release adds no stylesheet rule at
      all. `eagerJsGz` moves by −1 B, from compressibility alone.
 
@@ -1338,7 +1343,7 @@ const BUDGETS = {
      `ColdBoot` is `React.lazy` in App.tsx, so it is a DYNAMIC import, and
      `staticClosure` reads `.imports` and never `.dynamicImports`. The splash is
      a second round-trip that no route's first load pays for. */
-  lazyJsRaw: 982_000,   // p4·M7: built 979,289 on the FINAL tree, margin 2,711 (base 977,169).
+  lazyJsRaw: 982_000,   // p4·M7: built 979,555 on the FINAL tree, margin 2,445 (base 977,169).
   //   RE-DERIVED after the LAST src commit, not after the last green run: the
   //   first measurement read 952,561 and three later commits (SITE_PR, a
   //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing
