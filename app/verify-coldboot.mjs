@@ -1359,7 +1359,33 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
        conjunction, so "both ceilings are exercised" was unprovable however many
        mutations were run. They measure different things — AREA against the
        whole grid, and HEIGHT against the row count — and a mark can breach
-       either alone. Two assertions, two break tests, two answers. */
+       either alone. Two assertions, two break tests, two answers.
+
+       AND THE TWO ARE COMPLEMENTARY RATHER THAN REDUNDANT, which only the
+       split makes visible. boxShare IS rowShare scaled by the mark's width
+       ratio (`mark.cols / layout.cols`), so WHICH ONE BINDS FIRST depends on
+       how wide the mark is:
+         · at the shipped narrow fit the ratio is 0.77 (43 of 56 cols), where
+           rowShare reaches 0.55 while boxShare is still 0.424 — ROW binds;
+         · at full width the ratio is 1.0 and the two shares are the SAME
+           NUMBER, so the lower ceiling — BOX at 0.45 — binds.
+       A mark that grows TALL at its fitted width is caught by one; a mark that
+       grows WIDE is caught by the other. Deleting either leaves a real shape
+       uncovered.
+
+       BREAK TESTS (p4·M7 follow-up — before these, neither ceiling had ever
+       been driven red, which is not the same as having slack):
+         M12  fitFrac 0.849 -> 2.2 (the mark allowed past its fit)
+              -> BOX RED at 45.1 % at 390 while ROW stays GREEN at 45.1 %
+                 against 55. An INDEPENDENT red for boxShare, and the clearest
+                 proof the two are not one assertion written twice.
+         M13  WORDMARK_STACKED -> eight short lines (a tall, narrow mark)
+              -> ROW RED at 94.1 % and BOX RED at 70.6 % at 390.
+       LIMIT, STATED: rowShare has a demonstrated red but NOT a demonstrated
+       INDEPENDENT one. At the shipped 0.77 ratio the window where row is red
+       and box is not is rowShare 0.55..0.584 — about three grid rows at 390 —
+       and no plausible mutation lands inside it. Recorded rather than
+       manufactured with a contrived mark tuned to that gap. */
     R.ok(boxShare <= MARK_SHARE_MAX,
       `${label}: the mark's box is ${(boxShare * 100).toFixed(1)}% of the grid ` +
       `(ceiling ${(MARK_SHARE_MAX * 100).toFixed(0)}%)`,

@@ -506,6 +506,22 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 ## Known Issues / TODOs
 
 <!-- Track open items here -->
+- **THE MONO FACE IS A GEOMETRY INPUT AND NOTHING INVALIDATES ON IT — the wordmark race
+  p4·M7 fixed, one level up, deciding more.** `coldboot/field.ts#layoutField` derives `cw`
+  from `measureText("M")`, and `cw` sizes the ENTIRE cold-boot grid: columns, margins, and
+  which rung the closing-line ladder selects. `invalidateGeometry()` fires on the SANS settle
+  only (`ensureMarkFont`) and never on a later MONO arrival, so a grid laid out against a
+  fallback face stays wrong for the whole session.
+  **NOT currently firing, and the reason is measured rather than assumed**:
+  `jetbrains-mono-400.woff2` is preloaded at `index.html:45` and the gate reads `cw`
+  **7.2000579833984375**, which is the real face. **The failure mode was OBSERVED** — a probe
+  in the p4·M7 session, before it called `document.fonts.load` explicitly, measured **7.22**,
+  a fallback, which flips `cols` 56 → 55 at 390 and moves the margin arithmetic and possibly
+  the rung. PRE-EXISTING: the base had no invalidation at all, so p4·M7 named it rather than
+  widening its own PR. The fix is `ensureMarkFont`'s shape applied to the mono descriptor,
+  plus an `invalidateGeometry()` on its settle. **A gate would have to compare `cw` against
+  the real face's metric**, because a report taken off a fallback-laid grid agrees with
+  itself — the compare-the-source-to-itself defect this file records.
 - **WHY MOBILE HAS NEVER LOOKED RIGHT — measured root cause, not a polish problem.**
   `.mp-fit` scales a mempool view by `min(1, canvasW / naturalW)`. Sediment's natural size
   is **2279×2495** (`styles.css:1207`), so at a 390px phone the wrapper squeezes a 2279px
@@ -755,6 +771,54 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-22**: p4·M7b "THE TWO CEILINGS AND THE INVARIANT" (app/) — a gate-only follow-up
+  opened after #200 MERGED, on operator review of the p4·M7 close. No `src/` change, no route,
+  no budget move; three items, and the first reframed itself under measurement.
+  **THE dpr-2 LANE ALREADY EXISTED, AND THE REAL GAP WAS ONE LEVEL OVER.** The review asked
+  for a dpr-2 lane in `verify-coldboot` on the ground that "nothing you added this PR runs at
+  dpr 2 either". §10e runs THREE dpr-2 stages and its own comment block is about why the wide
+  one must not be tidied away. What IS dpr-1-only is §10's COMPOSITION half — mark box,
+  margins, `colsPerGlyph`, `ambientMean`, the closing-line locks — reached by `runStage(vp)`
+  with no dpr argument.
+  **MEASURED BEFORE ASSERTING, and the measurement is why the fix is a control rather than a
+  lane**: across dpr 1, 2 and 3 at 390x844, 320x568 and 1440x900, EVERY field is identical —
+  cols, rows, cw, ch, visibleCols, cells, all four margins, ambientMean, markLockFrom,
+  closingRowLocks and the whole mark box. Those figures come out of `composeTarget`, which
+  fills a CELL GRID and never touches a pixel, so they are dpr-INVARIANT and reading them at
+  dpr 1 measures what a retina device reports. **That invariance was load-bearing and asserted
+  nowhere**, and the argument cuts both ways: the reason §10 could not see p4·M7's defect is
+  exactly this invariance (the wall was in the PAINT, §10e's subject), but a change deriving
+  `cw` from the backing store would silently narrow all of §10 to one device class with §10e
+  still green, because §10e reads COVERAGE and not geometry. `geomOf` derives the compared set
+  FROM the report, so a field added to §10 and not to the control is not a field the control
+  quietly stops covering. **M11** (geometry keyed on dpr) → exactly ONE red, the control, with
+  every other assertion unmoved — which is what proves it discriminates.
+  **THE TWO MARK CEILINGS WERE ONE ASSERTION JOINED BY `&&`, WHICH IS WHY NEITHER HAD A
+  POLARITY.** A conjunction can only be shown to red as a conjunction, so "both are exercised"
+  was unprovable however many mutations ran — ten had left them untouched. Split, then broken:
+  **M12** (`fitFrac` 0.849 → 2.2) reds BOX at 45.1 % while ROW stays GREEN at 45.1 % against
+  55 — an INDEPENDENT red, and the clearest proof they are not one assertion written twice;
+  **M13** (a tall narrow mark) reds ROW at 94.1 % and BOX at 70.6 %.
+  **AND THEY ARE COMPLEMENTARY RATHER THAN REDUNDANT, which only the split makes visible.**
+  `boxShare` IS `rowShare` scaled by the mark's width ratio, so which one BINDS depends on how
+  wide the mark is: at the shipped narrow fit (0.77, i.e. 43 of 56 cols) ROW binds first —
+  rowShare hits 0.55 while box is still 0.424 — and at full width the two are the SAME NUMBER
+  so the lower ceiling, BOX at 0.45, binds. A mark growing TALL at its fitted width is caught
+  by one, a mark growing WIDE by the other. **LIMIT STATED**: rowShare has a demonstrated red
+  but not a demonstrated INDEPENDENT one — the window is rowShare 0.55..0.584, about three
+  grid rows at 390, and no plausible mutation lands in it. Recorded rather than manufactured
+  with a mark tuned to the gap.
+  **PROCESS, ACCEPTED**: p4·M7 banked two ledger items to avoid crowding the runner, then
+  committed them the moment the job landed — resetting a green head the operator was waiting
+  on, for two paragraphs. "Docs-only on top of green" is not a safety argument here: the
+  `logMax <= SITE_PR <= logMax + 1` invariant is precisely what a docs commit reds, and it
+  reds silently until CI runs. **Once a head is green and the operator is waiting, it is
+  frozen.** This note is in a NEW PR for that reason, not appended to the merged one.
+  `verify-coldboot` **220 → 224** (+1 invariance control, +3 from the ceiling split across the
+  three phone stages). **No human has seen the rendered result in a browser** — and the
+  preview host answers 403 to CONNECT from this sandbox, so that is a measured limit rather
+  than an omission.
 
 - **2026-08-22**: p4·M7 "THE PHONE GETS ITS OWN TERMINAL SEQUENCE" (app/) — the decrypt
   read as a wall of static on a phone. **IT IS ONE LINE, IT IS NOT A COMPOSITION PROBLEM,
