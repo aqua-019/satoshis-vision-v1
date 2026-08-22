@@ -140,6 +140,16 @@ export interface FieldTarget {
    *  input, so a gate reading it checks the grid rather than restating the
    *  arithmetic that filled it. */
   readonly closingLine: string;
+  /** The lock time of each row the CLOSING LINE occupies, in placement order,
+   *  MEASURED off `lockAt` rather than restated from the schedule that set it.
+   *
+   *  Published because "a vertical sweep lands on the closing line last" was a
+   *  comment nothing checked, and it stopped being true the moment the phone
+   *  started WRAPPING that line — the payoff row resolved before its own intro
+   *  row. The property is that this series never DECREASES. A one-row form
+   *  makes that trivially true, so a gate reading it must pin the row COUNT at
+   *  a wrapping width too, or it asserts nothing on the stage that broke. */
+  readonly closingRowLocks: readonly number[];
 }
 
 /** Where the rasterised wordmark landed, in cells. `glyphs` counts
@@ -854,6 +864,10 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     lineGlyphs: 0, colsPerGlyph: 0, ink: 0, cellsPerGlyph: 0, inkPerGlyph: 0,
   };
   let closingLine = "";
+  /* Same scope as `closingLine` and for the same reason: assigned inside the
+     composition block, read by the return. Stays EMPTY when the block never
+     placed a closing line, which is the honest report of that. */
+  let closingRowLocks: number[] = [];
   let blockLeft = 0;
   let blockWidth = 0;
   /* 1 = "no wordmark cell locks at all", which is the honest report of a raster
@@ -1083,17 +1097,36 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     /* `rows - 1 - signerRows.length` so a two-row form needs two rows of
        headroom, not one. The old guard was `row < rows - 2` for a single line;
        for one row that arithmetic is identical. */
+    const closingPlaced: number[] = [];
     if (row < rows - 1 - signerRows.length) {
-      signerRows.forEach((line, i) => putLine(target, tclass, cols, rows, line, row + i, 3, false, c0));
+      signerRows.forEach((line, i) => {
+        putLine(target, tclass, cols, rows, line, row + i, 3, false, c0);
+        closingPlaced.push(row + i);
+      });
       closingLine = signerRows.map((_, i) => readRow(target, cols, row + i, visibleCols)).join(" ").trimEnd();
     }
 
-    const lastRow = row;
     const cx = cols / 2;
     const cy = rows / 2;
     const maxd = Math.hypot(cx, cy);
     const ord = new Map<number, number>();
     cipherRows.forEach((r, i) => ord.set(r, i));
+    /* THE CLOSING LINE CAN OCCUPY MORE THAN ONE ROW AND THE SCHEDULE HAS TO
+       KNOW ALL OF THEM. A wrapped form places rows at `row + i`; keying the
+       case on the FIRST row alone — which is what `lastRow` was — drops every
+       later row into the generic branch below, and that branch resolves
+       EARLIER than 0.58. So the sentence the sequence closes on landed before
+       its own opening row at every width that wraps: measured at 390x844 the
+       payoff row locks over [0.373, 0.478] against an intro row locking
+       uniformly at 0.502, and at 320x568 [0.381, 0.490] against the same.
+       Nothing rendered the two out of order before this release, because
+       nothing wrapped: `signerFit` measured against the VISIBLE width and
+       every phone chose a one-row rung.
+       Inert on a wide stage, where the ladder always fits one row and index 0
+       adds nothing to 0.58. */
+    const closingOrd = new Map<number, number>();
+    closingPlaced.forEach((r, i) => closingOrd.set(r, i));
+    closingRowLocks = closingPlaced.map(() => 1);
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -1119,13 +1152,17 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
           t = lerp(t, 0.3, 0.55) + 0.08;
         } else if (cls === 2 || cls === 3) {
           if (ord.has(r)) t = 0.34 + ord.get(r)! * 0.03 + (c / cols) * 0.012;
-          else if (r === lastRow) t = 0.58;
+          else if (closingOrd.has(r)) t = 0.58 + closingOrd.get(r)! * 0.03;
           else t = lerp(t, 0.4, 0.5) + 0.06;
         } else if (cls === 4) {
           t = 0.355 + (ord.get(r) ?? 0) * 0.03 + (c / cols) * 0.02;
         }
         lockAt[i] = clamp01(t * 0.78 + 0.05);
         if (cls === 1 && lockAt[i] < markLockFrom) markLockFrom = lockAt[i];
+        if (cls === 3 && closingOrd.has(r)) {
+          const k = closingOrd.get(r)!;
+          if (lockAt[i] < closingRowLocks[k]) closingRowLocks[k] = lockAt[i];
+        }
       }
     }
 
@@ -1139,6 +1176,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
     cols, rows, target, tclass, lockAt, ambient, mark,
     blockLeft, blockW: blockWidth, markLockFrom: Math.round(markLockFrom * 1000) / 1000,
     closingLine,
+    closingRowLocks: closingRowLocks.map((v) => Math.round(v * 1000) / 1000),
   };
 }
 
@@ -1272,6 +1310,8 @@ export interface FieldReport {
   readonly ambientMean: number;
   /** See `FieldTarget#markLockFrom`. */
   readonly markLockFrom: number;
+  /** See `FieldTarget#closingRowLocks`. */
+  readonly closingRowLocks: readonly number[];
 }
 
 /** Resolve (and cache) the geometry for a stage, and report what it produced.
@@ -1301,6 +1341,7 @@ export function fieldReport(w: number, h: number, dpr: number): FieldReport {
     blockMarginRight: Math.max(0, visibleCols - (fieldTarget.blockLeft + fieldTarget.blockW)),
     ambientMean: amb.length > 0 ? Math.round((awSum / amb.length) * 1000) / 1000 : 1,
     markLockFrom: fieldTarget.markLockFrom,
+    closingRowLocks: fieldTarget.closingRowLocks,
   };
 }
 

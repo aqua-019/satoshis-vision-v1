@@ -1259,6 +1259,12 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
     return { report, flipped, flipMs, loopMs, pending };
   };
 
+  /* Collected across the stage loop so the ordering assertion below cannot go
+     vacuous: a ONE-ROW closing line is trivially non-decreasing, and if every
+     phone stopped wrapping, every per-stage check would pass while asserting
+     nothing about the case that broke. */
+  const closingShapes = [];
+
   for (const [label, vp] of PHONES) {
     const { report, flipped, flipMs, pending } = await runStage(vp);
 
@@ -1441,6 +1447,39 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
           'field.ts#SIGNER_FORMS — the ladder of forms, widest first, and field.ts#narrowMarginCols, which is ' +
           'what the ladder is measured against on a narrow stage.');
 
+    /* THE CLOSING LINE RESOLVES IN READING ORDER, TOP ROW FIRST.
+       `signerFit` measures the ladder against the MARGINED width on a narrow
+       stage, so a phone now takes a WRAPPED rung where it used to take a
+       one-row one — and the schedule case that puts the closing line last was
+       keyed on the block's FIRST row alone. Every later row fell into the
+       generic branch, which resolves EARLIER: measured at 390x844 the payoff
+       row "── NOT ENCODED IN THE PROTOCOL" locked over [0.373, 0.478] against
+       an intro row locking uniformly at 0.502, so the reader watched the answer
+       appear and then the question. Nothing caught it — every assertion here
+       reads the closing line's TEXT, and the text was perfect.
+
+       Read as a SERIES rather than a pair so a three-row form is covered too,
+       and MEASURED off `lockAt` in field.ts rather than restated from the
+       schedule, so a change to the schedule moves this number.
+
+       BLIND SPOT, stated: this does NOT assert the closing line locks last of
+       all text. It does not — KICK, SUB1 and the block header take the generic
+       branch, whose jitter term can carry a cell past 0.502. The claim being
+       made is the narrower true one: the closing block resolves in its own
+       reading order. */
+    const locks = Array.isArray(report.closingRowLocks) ? report.closingRowLocks.map(Number) : [];
+    closingShapes.push([label, locks.length]);
+    const descending = locks.findIndex((v, i) => i > 0 && v < locks[i - 1]);
+    R.ok(locks.length > 0 && descending === -1,
+      `${label}: the closing line resolves top row first — locks [${locks.join(', ')}] over ${locks.length} row(s)`,
+      locks.length === 0
+        ? 'the closing line reported NO rows, so its lock order is unchecked — field.ts#closingRowLocks is empty, ' +
+          'which means the block was never placed'
+        : `the closing line resolves OUT OF ORDER: locks [${locks.join(', ')}], row ${descending} at ` +
+          `${locks[descending]} lands before row ${descending - 1} at ${locks[descending - 1]}. The sentence the ` +
+          'sequence closes on appears before its own opening row. See field.ts#closingOrd — every row the block ' +
+          'occupies must carry the closing case, not just its first.');
+
     /* THE SEQUENCE ENDS. `flipped` is the structural half — a sequence that
        never hands off is the fail-closed case, and it is asserted before the
        timing so a hang reads as a hang rather than as a slow run. */
@@ -1461,6 +1500,23 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
       'html still carries .cb-pending — #root is hidden behind the anti-flash floor. A permanently blank ' +
       'phone is worse than any wall; index.html carries three independent removers and none of them ran.');
   }
+
+  /* THE ORDERING CHECK ABOVE IS ONLY WORTH ANYTHING IF SOMETHING WRAPS.
+     A one-row closing line is non-decreasing by construction, so without this
+     floor every stage could stop wrapping and all three per-stage assertions
+     would go green while the case that actually broke went unexercised — the
+     shape this repo keeps re-recording, an assertion that is true about the
+     wrong subject. 360 and 390 take a wrapped rung and 430 takes a one-row
+     one, so the stage set carries BOTH paths and is asserted to. */
+  const wrapped = closingShapes.filter(([, n]) => n >= 2);
+  const single = closingShapes.filter(([, n]) => n === 1);
+  const shapeText = closingShapes.map(([l, n]) => `${l}:${n}`).join(' ');
+  R.ok(wrapped.length > 0 && single.length > 0,
+    `the stage set exercises BOTH closing forms — wrapped ${wrapped.length}, one-row ${single.length} (${shapeText})`,
+    `every phone stage reported the same closing-line shape (${shapeText}). The reading-order assertion above is ` +
+    'vacuous on a one-row line, so with nothing wrapping it proves nothing. Either the ladder stopped wrapping ' +
+    '(see field.ts#signerFit and #narrowMarginCols) or the stage widths no longer straddle the rung boundary — ' +
+    'at cw 7.2, 360 and 390 wrap and 430 does not.');
 
   /* ── §10b · A SLOW PHONE GETS A SHORTER SEQUENCE, NOT A LONGER ONE ─────
    * The whole point of schedule.ts#WALL_CEIL_FACTOR. 6x is this repo's own
