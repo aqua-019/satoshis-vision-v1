@@ -673,7 +673,16 @@ const BUDGETS = {
      eagerJsRaw 280,000 + lazyJsRaw 978,000 = 1,258,000 against this line's
      1,243,000, so the "sum of the two real budgets" construction this comment
      block records has now been lapsed for eleven releases. */
-  totalJsRaw: 1_243_000,  // p4·M3: built 1,239,538 post-merge, margin 3,462.
+  /* p4·M7 RAISE, 1,243,000 -> 1,247,000. Moves WITH `lazyJsRaw` by the same
+     4,000 so the gap between them is UNCHANGED at 265,000, which is what the
+     backstop is for. This PR's whole delta is +1,981 and it is entirely lazy.
+     Built 1,243,598, margin 3,402, against a base of 1,241,617 — the same
+     +1,981, twice over.
+     THE RECONCILIATION IS STILL NOT DONE and still is not this PR's to make:
+     eagerJsRaw 280,000 + lazyJsRaw 982,000 = 1,262,000 against this line's
+     1,247,000, so the "sum of the two real budgets" construction this comment
+     block records has now been lapsed for twelve releases. */
+  totalJsRaw: 1_247_000,  // p4·M7: built 1,243,598 on the FINAL tree, margin 3,402.
   //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
   //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
   //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
@@ -1297,7 +1306,32 @@ const BUDGETS = {
      when a reader opens a brief. What they DO cost is page weight on that
      interaction, and no budget in this file measures it — stated here so the
      absence is deliberate rather than assumed. Largest single shot: 53,936 B. */
-  lazyJsRaw: 978_000,   // p4·M3: built 975,090 post-merge, margin 2,910 (base 969,804).
+  /* p4·M7 RAISE, 978,000 -> 982,000. Built 979,150 on the FINAL tree, margin
+     2,850; red first at `❌ lazy JS 979150 B raw ≤ 978000`.
+
+     THE ATTRIBUTION IS ONE TERM AND THE RESIDUAL IS ZERO — the simplest this
+     table has recorded. Paired per chunk STEM against an ISOLATED `git
+     worktree` build of 5854cbd with its own dist/ and node_modules, served on
+     its own port with the holder confirmed by `lsof` + /proc/<pid>/cwd. 75 of
+     76 files SIZE-IDENTICAL:
+
+         ColdBoot        33,632 -> 35,613     +1,981
+                                            = +1,981
+
+     and +1,981 IS `totalJsRaw`'s whole delta as well, which is what proves the
+     eager half did not move. `eagerJsRaw` is BYTE-IDENTICAL at 264,448 and
+     `cssGz` BYTE-IDENTICAL at 18,184 — the release adds no stylesheet rule at
+     all. `eagerJsGz` moves by −1 B, from compressibility alone.
+
+     `SITE_PR` 199 -> 200 contributed EXACTLY 0 to the eager figure, three
+     digits changing value at identical length — p4·01 measured that directly
+     and this reproduces it.
+
+     NO ROUTE ROW MOVES, and the reason is structural rather than lucky:
+     `ColdBoot` is `React.lazy` in App.tsx, so it is a DYNAMIC import, and
+     `staticClosure` reads `.imports` and never `.dynamicImports`. The splash is
+     a second round-trip that no route's first load pays for. */
+  lazyJsRaw: 982_000,   // p4·M7: built 979,150 on the FINAL tree, margin 2,850 (base 977,169).
   //   RE-DERIVED after the LAST src commit, not after the last green run: the
   //   first measurement read 952,561 and three later commits (SITE_PR, a
   //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing

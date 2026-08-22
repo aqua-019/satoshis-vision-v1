@@ -35,6 +35,13 @@ chain and market data.
   `0f00d26` — all reproduced EXACTLY. Measured: **88 / 84 / 22 / 38 / 74 / 6**, i.e. 80
   invocations − 6 duplicates. Four figures move and `verify:static` and the orphan count do
   NOT, which is the correct outcome for a gate added and wired in one release.)
+  (p4·M7 RECOUNTED and every figure is UNCHANGED — **88 / 84 / 22 / 38 / 74 / 6** — the
+  correct outcome for a release that EXTENDS an e2e member in place and adds no gate FILE.
+  The instrument was CONTROLLED against THREE commits before being trusted: `0f00d26`
+  87/83/22/37/73/6, `e0c87ad` 88/84/22/38/74/6 and `5854cbd` 88/84/22/38/74/6, all reproduced
+  EXACTLY including the invocation arithmetic and the six orphans by name. TWO SIDE FIGURES
+  IN THIS FILE ARE STALE and are not among the six: the `ci.yml` "30 `run:` lines" below
+  measures **31**, and the shared-module importer counts of 31/11/1 measure **49/25/3**.)
   (p4·06 added `verify-protocol.mjs` for the seventeenth route AND WIRED IT, so FOUR figures
   move where a bare add moves fewer: files, gates, `verify:e2e` and CI. `verify:static` and
   the orphan count are UNCHANGED, which is the correct outcome and worth stating — a gate
@@ -739,6 +746,186 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-22**: p4·M7 "THE PHONE GETS ITS OWN TERMINAL SEQUENCE" (app/) — the decrypt
+  read as a wall of static on a phone. **IT IS ONE LINE, IT IS NOT A COMPOSITION PROBLEM,
+  AND IT WAS NEVER ABOUT PHONES.**
+  **`drawField` CLEARED IN CSS PIXELS AND DREW IN BACKING-STORE PIXELS.** `ctx.fillRect(0,
+  0, w, h)` against glyphs blitted at `colX[c] = round(c * cw * dpr)` with no transform on
+  the context. At dpr 1 the two spaces coincide and the frame cleared correctly; at dpr 2
+  it repainted the top-left QUARTER of the store and the other three accumulated every
+  frame of the sequence. Phones are dpr 2-3 and the desktops this was authored on are
+  dpr 1, so a DEVICE-PIXEL-RATIO defect presented as a breakpoint one. Measured on ONE
+  1440x900 build, the only difference being dpr — lit (any channel > 24) / bright (> 120):
+  **T=0.40 20.0/6.8 at dpr 1 against 35.4/18.1 at dpr 2; T=0.90 4.6/0.0 against 32.6/15.0.**
+  At dpr 1 the field converges and fades to nothing, which is the whole point of the
+  sequence. At dpr 2 it rose monotonically and never came down.
+  **THE SCREENSHOT IS THE ARTIFACT AND IT IS A DESKTOP ONE.** At 1440x900 dpr 2 on the base
+  build the top-left quarter shows the correct wide composition and the other three quarters
+  are a solid orange wall, with the boundary exactly at (1440, 900) — the half-point of the
+  2880x1800 store. The operator's report of "a blank box top-left, filled everywhere else"
+  is that image. Any developer on a retina display would have seen it; headless Chromium and
+  DevTools emulation both default to dpr 1, which is where all 84 gates ran.
+  **THE BRIEF'S NUMBERS WERE REAL AND ITS ATTRIBUTION WAS WRONG, AND THE CORRECTION CAME
+  FROM RE-MEASURING RATHER THAN FROM READING.** It reported "15.3 % bright at 390 against
+  0.7 % at 1440 — 20x" and assigned it to the ambient density law. Read at t≈1000ms, which
+  is T=0.30 on a phone (`EFFECTIVE_NARROW_MS` 3,333) and T=0.18 on a desktop
+  (`EFFECTIVE_MS` 5,556) — two different beats of one schedule. Re-measured at MATCHED T on
+  a cleared canvas the two stages sit within ~3 points of each other at every beat, and at
+  T=0.30 the DESKTOP is the brighter of the two. The rest was accumulation. **The operator
+  confirmed the diagnosis mid-flight, withdrew §3b, and instructed that the post-fix numbers
+  set the density — which is why nothing here thins the phone's live field at all.**
+  **THE SWEEP THE OPERATOR ASKED TO BE LEDGERED CAME BACK NARROWER THAN FEARED.** All 31
+  `clearRect(`/`fillRect(0` sites in `app/src` fall into exactly two internally consistent
+  groups: those whose context carries a DPR transform and correctly clear in CSS px
+  (`useMemCanvas:147`, `use-proto-canvas:88`, `ArtBackground:336`, `CandleCanvas:221`,
+  `FutureMini:68`, `sim-fx:249` — which covers every mempool view, every protocol simulator
+  and both chart canvases), and those with no transform that correctly clear with the
+  store's own dimensions (`orb.ts:492`, `cloverField.ts:493/506`). **`field.ts` was the one
+  file in the tree that mixed the two.** No second instance. A deliberate audit is still the
+  right follow-up — "consistent by inspection" is weaker than "asserted" — and it is NOT
+  this PR's, per the operator.
+  **WHAT THE COMPOSITION CHANGE IS, AND WHAT IT DELIBERATELY IS NOT.** After the clear fix
+  the phone's live density already matches the desktop's (peak lit **22.6 %** at 390x844
+  dpr2 against **20.0 %** at 1440x900 dpr1), so the ambient ring's peak IS the wide stage's
+  density and there is no global thinning term. What the narrow stage gains is a per-cell
+  ambient WEIGHT field — a chamfer distance to the nearest content cell, measured in CSS
+  pixels so it is isotropic across a 7.2 x 17 cell — shaped as a BUMP: a clearing near the
+  message (so scramble does not fill the counters of R and S at the same size and tint), the
+  full ring in between, and a fade far out (so the 18 content-free rows under the cipher
+  block read as the end of the transmission). `/about/site`'s clover is the precedent: the
+  stream is CONSUMED where the shape is. Peak lit lands at **17.0 %**, and the whole 5.6-point
+  difference from the un-composed 22.6 % is the clearing and the fade rather than a knob.
+  Ring peaks of 0.85 and 0.62 were rendered too and both read; 1.0 is the one that corrects
+  the defect once instead of twice.
+  **THE MARGIN IS A FRACTION, AND THE FLAT CONSTANT IT REPLACED WAS MEASURED FIRST.** A flat
+  4-column reserve charges the narrowest stage the most — 8 of 44 visible columns at 320
+  against 8 of 59 at 430 — and took 320x844 from 46 cells per glyph to **34**, below
+  `verify-coldboot`'s own floor of 40 at the narrowest width this repo gates anywhere.
+  `narrowMarginCols` spends `round(visibleCols * 0.075)`, clamped at 3, and across 144
+  stages (w 320-550 x h 560-1000) the worst cells-per-glyph is exactly **40** and the worst
+  margin **4 visible columns** against the pre-release tree's 3 at every width.
+  **AND THE PHONE LINE SET ARRIVED WITHOUT A SINGLE NEW WORD.** The brief's §3d asks for one.
+  `SIGNER_FORMS` already carried a wrapped rung; what it lacked was anything that would
+  exercise it. Measuring the ladder against the MARGINED width instead of the visible one
+  drops 390 from rung 1 (51 characters, one line, reaching column 53 of 54) to rung 3 (two
+  lines, widest 31). Every word verbatim.
+  **§3a IS DECLINED, ON A MEASURED TABLE.** Raising the phone cell 12 -> 15px was asked for
+  as "fewer, bigger cells". The mark's pixel size is bound by the WIDTH fit, so bigger cells
+  do not make it bigger — they make it COARSER at the same physical size. At the brief's own
+  numbers the raster falls to **32 cells per glyph**, below the existing floor of 40, with
+  its ink figure landing exactly on the floor of 15. And it buys nothing against the wall,
+  because coverage is a per-cell probability times a glyph's fill of its own cell: 1,890
+  bigger cells and 2,856 smaller ones paint about the same fraction of the screen.
+  `MIN_CELL_PX` is untouched in either direction.
+  **THE BRIEF'S `colsPerGlyph` COMPARED TWO DIFFERENT THINGS THROUGH ONE FORMULA.** Its 5.2
+  (phone) against 13.8 (desktop) is `mark.cols / mark.glyphs` on both sides — the same
+  expression — but `mark.cols` is the width of the WIDEST LINE, so on a stacked mark it
+  charges one line's width to BOTH lines' letter count. The honest per-line figure is
+  47/5 = **9.4** against 124/9 = 13.8: a real gap, 1.5x rather than 2.6x. `mark.lineGlyphs`
+  and `mark.colsPerGlyph` are published so the question has an answer that survives stacking.
+  **AND THE WORDMARK RASTER WAS FONT-RACE DEPENDENT, WHICH MAKES A BAND UNASSERTABLE.**
+  `composeTarget` rasterises through a canvas, and a canvas substitutes a fallback face
+  SILENTLY for a webfont that has not loaded. Geist ships 400/500/600/700 and the mark asks
+  for **800**, so nothing on the route had ever fetched the face it resolves to. Measured
+  between the first publish and the settled one: **390 ink 237 -> 268, mark rows 12 -> 13;
+  1440 ink 391 -> 442, mark rows 6 -> 8.** Two runs of one tree reported different marks.
+  **`document.fonts.ready` IS THE WRONG SIGNAL, ALSO MEASURED** — it resolves when nothing is
+  PENDING, and a face nobody has asked for is not pending: at `ready` the loaded set is
+  `[JetBrains Mono 400/500/700, Newsreader 400, Geist 400]` on a fast connection AND on
+  Slow 4G. `ensureMarkFont` asks for the exact face by descriptor; the host rebuilds the
+  geometry when it settles and publishes `markFontSettled`, which means the raster is FINAL
+  rather than that the font arrived — a failed load is a settled outcome too. The settled
+  report is now identical across 3 runs at every stage AND across dpr, where before dpr
+  changed it.
+  **MY OWN COMMENT ABOUT THAT FIX OVERCLAIMED, ON A TABLE THAT STOPPED TOO EARLY.** It said
+  the re-lay always lands during scramble, from measurements up to Slow 4G + 6x CPU
+  (T 0.180/0.186). Extending to the rate this repo's own gate uses: **T 0.316 at 10x CPU and
+  0.388 at Slow 4G + 10x**, against the wordmark's earliest lock of **0.24**. Kept
+  unconditional anyway and the full table now says so — a fence would leave the slow device
+  with a mark rastered in a face nobody chose, permanently, and would make `markFontSettled`
+  a lie.
+  **THE GATE: FOUR FLOORS, AND THE BRIEF WAS RIGHT ABOUT THE SHAPE AND WRONG ABOUT THE
+  MECHANISM.** It said a degenerate field maximises `cellsPerGlyph`, `inkPerGlyph`, `rows`
+  and `chars`. Those come out of `composeTarget`, which runs once per geometry and never
+  sees a painted pixel — the wall could not have moved them. What it did was sit outside
+  their subject entirely, and **§10 runs at the context default of dpr 1, where the defect
+  does not exist.** The gate was not blind to the wall; it was measuring a device that never
+  had one.
+  **NEW §10e READS THE CANVAS BACK, AND IT IS THREE STAGES BECAUSE THE WIDE CONTROL AT
+  dpr 1 IS GREEN ON THE BROKEN TREE.** Ten evenly spaced strips through the splash's own
+  canvas every 100ms for the whole decrypt. Last frame before the handoff, pre-release
+  against shipping: **390x844 dpr2 46.4/41.6 -> 0.0/0.0 · 320x568 dpr2 45.7/41.9 -> 0.0/0.0
+  · 1440x900 dpr2 42.5/35.0 -> 0.0/0.0 · 1440x900 dpr1 0.0/0.0 -> 0.0/0.0, which always
+  passed.** A phone-only assertion cannot separate "the phone is right" from "everything is
+  right"; a phone-and-wide-at-dpr-1 pair cannot separate a viewport defect from a
+  device-pixel-ratio one. The same viewport is broken at one ratio and clean at the other on
+  one build.
+  **THE TAIL AND NOT A FIXED T, and the reason is that T is not readable from outside** —
+  the loop's accumulator is clamped per frame and can be overridden by the wall ceiling, so
+  a gate computing T from wall time asserts against its own arithmetic. The last frame
+  before the phase flips is the same claim anchored on something the page states itself, and
+  it is stronger: at T=1 the field is empty by construction. Zero-variance at 0.0 across 15
+  runs and 5 stages. The T≈0.9 sample is PRINTED beside it and not asserted.
+  **THE SAMPLER IS STRIPS BECAUSE THE FULL FRAME CHANGED WHAT IT MEASURED** — 5.2M pixels
+  and ~40ms per sample at 1440x900 dpr2 pushed the run from ~5,950ms to ~7,990ms, past the
+  page's own wall ceiling. Ten 48px strips cost ~10ms and read within 1.4 points of the full
+  frame. An instrument that moves its subject is not measuring it.
+  **EIGHT BREAK TESTS, and the two that did not simply go red taught the most.**
+  M1 the clear reverted → **7** reds, and the quadrant assertion printed the operator's own
+  report as a failure message: `[0, 47.41, 60.29, 55.95]% lit, spread 60.3` — the cleared
+  quadrant at zero and the other three holding the whole run · M2 the margin reserve to 0 →
+  6, naming mark AND block at all three widths · M3 the ambient field flattened → 3 · M4 the
+  raster never reports itself settled → 4, including `360x800: the wordmark rasters at 38
+  cells per glyph (floor 40)`, which is the fallback face measurably failing the existing
+  floor · M6 the ladder fitted to the visible width → 4, `"???  ·· NOT ENCODED IN THE
+  PROTOCO"` · M7 the narrow ambient applied to the wide stage → 1 · M8 the stacked mark
+  reverted to one line → **12**, with `colsPerGlyph` reading 4.4/4.9/5.4 exactly as that
+  floor's own comment predicts.
+  **M5 REFUSED TO GO RED AND WAS PREDICTED TO.** Reverting the narrow top-to-bottom sweep to
+  the wide left-to-right one leaves all 213 green. The vertical beat is UNGATED, deliberately
+  and stated: the composition is top-weighted at every breakpoint, so a sweep-direction
+  assertion built on quadrant coverage would be confounded by the layout rather than
+  measuring the beat. Recorded as a blind spot rather than papered over with an assertion
+  that would pass for the wrong reason.
+  **AND M4 FOUND A DEFECT IN THIS RELEASE'S OWN GATE.** Waiting for the SETTLED report and
+  taking `publishedAt` from that instant quietly redefined `loopMs`: the comment beside it
+  says "this instant is the loop's own start" and had stopped being true, so §10b measured
+  the loop MINUS the settle delay and its ceiling got more permissive with nothing red.
+  Measured on the corrected anchor the loop runs **3,492ms** where the polluted one read
+  **3,108ms** — a 384ms silent weakening of an assertion that already existed. The flip is
+  now timed by a promise started BEFORE the settle wait.
+  **BUDGETS: ONE TERM, RESIDUAL ZERO, 75 OF 76 FILES SIZE-IDENTICAL.** Paired per chunk STEM
+  against an ISOLATED `git worktree` build of `5854cbd` with its own dist/ and node_modules,
+  served on its own port with the holder confirmed by `lsof` + `/proc/<pid>/cwd`:
+  **`ColdBoot` 33,632 -> 35,613 = +1,981**, and +1,981 IS `totalJsRaw`'s whole delta too,
+  which is what proves the eager half did not move. `eagerJsRaw` **BYTE-IDENTICAL at
+  264,448** and `cssGz` **BYTE-IDENTICAL at 18,184** — no stylesheet rule at all.
+  `eagerJsGz` moves **−1 B** from compressibility. `SITE_PR` 199 -> 200 contributed
+  **exactly 0**, three digits at identical length, reproducing p4·01's own measurement.
+  `CHUNK_COUNT` **76 = 76, nothing minted**. `lazyJsRaw` 978,000 → **982,000** (built
+  979,150, margin 2,850) and `totalJsRaw` 1,243,000 → **1,247,000** (built 1,243,598, margin
+  3,402), moved together so the gap is UNCHANGED at 265,000. **NO ROUTE ROW MOVES, and that
+  is structural rather than lucky**: `ColdBoot` is `React.lazy`, so it is a DYNAMIC import,
+  and `staticClosure` reads `.imports` and never `.dynamicImports`.
+  Census RECOUNTED, never incremented, with the instrument CONTROLLED against THREE commits
+  first — `0f00d26` 87/83/22/37/73/6, `e0c87ad` 88/84/22/38/74/6 and this PR's base
+  `5854cbd` 88/84/22/38/74/6 — all reproduced EXACTLY including the invocation arithmetic
+  and the six orphans by name. Measured: **88 / 84 / 22 / 38 / 74 / 6, UNCHANGED**, which is
+  the correct outcome for a release that extends an e2e member in place and adds no gate
+  file. `verify-coldboot` **177 → 213**.
+  **NOT FIXED, and named**: the deliberate audit of the other 30 canvas clear sites (above —
+  no second instance found, but inspection is weaker than assertion); the narrow sweep
+  direction, ungated per M5; at 1440x900 **dpr 2** the loop is slow enough in this sandbox
+  that the wall ceiling engages — measured base **7,482ms** against head **7,616ms**, a 1.8 %
+  difference inside the run-to-run spread of either, so it is PRE-EXISTING and not this
+  release's; `markFontSettled` can arrive after the decrypt has ended on a device at 10x CPU
+  (measured 9.4s), leaving that reader the fallback raster; CLAUDE.md's own `ci.yml` figure
+  of "30 `run:` lines" measures **31**, and its shared-module importer counts of 31/11/1
+  measure **49/25/3**; `:130`'s "12 individually-named offline gates" still measures 14, as
+  p4·07 flagged. **No human has seen the rendered result in a browser** — read from
+  screenshots of the REAL page at 390, 320 and 1440, at 1,200/2,200/3,100ms, before and
+  after, plus the probe's own exact-T frames and the composed grid read back as ASCII.
 
 - **2026-08-18**: p4·M4 "THE LAST TWO BEFORE v6 LAUNCH" (app/) — the mobile terminal
   sequence, and the missing orb. Launch-blocking; #196 fixed the CONSOLE and never touched

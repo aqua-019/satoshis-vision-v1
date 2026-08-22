@@ -660,3 +660,48 @@
   against three commits, all reproduced exactly: 88 / 84 / 22 / 38 / 74 / 6 — UNCHANGED, the
   correct outcome for a release that extends an e2e member rather than adding a gate file.
   · https://github.com/aqua-019/satoshis-vision-v1/pull/199
+- XMRIRISH-20260822-M7 · done · p4·M7 "THE PHONE GETS ITS OWN TERMINAL SEQUENCE"
+  **The wall of static is ONE LINE and it was never about phones.** `drawField` cleared
+  `(0, 0, w, h)` in CSS pixels while blitting every glyph at `c * cw * dpr` in backing-store
+  pixels, so at dpr 2 it repainted the top-left QUARTER of the store and the other three
+  accumulated every frame. Measured on ONE 1440x900 build, only dpr differing: at T=0.90,
+  lit 4.6 % / bright 0.0 % at dpr 1 against 32.6 % / 15.0 % at dpr 2. The desktop retina
+  screenshot is the artifact — the correct composition in the top-left quarter and a solid
+  wall in the other three, boundary exactly at (1440, 900) of a 2880x1800 store.
+  **The brief's numbers were real and misattributed**: 15.3 % vs 0.7 % was read at t≈1000ms,
+  which is T=0.30 on a phone and T=0.18 on a desktop, and the rest was accumulation. At
+  MATCHED T the two stages sit within ~3 points at every beat. The operator confirmed the
+  diagnosis mid-flight and withdrew §3b; nothing here thins the phone's live field, because
+  after the clear fix it already matches the desktop's (peak lit 22.6 % vs 20.0 %).
+  **What the narrow stage gains** is an ambient WEIGHT field — a chamfer distance to the
+  nearest content cell, in CSS pixels so it is isotropic across a 7.2 x 17 cell — shaped as
+  a clearing near the message, the full ring in between and a fade far out; a proportional
+  margin reserve (a flat 4 columns took 320x844 below the gate's own floor, so it is
+  `round(visibleCols * 0.075)`); the closing-line ladder measured against the MARGINED width,
+  which drops the phone to the wrapped rung with every word verbatim; and a top-to-bottom
+  sweep. §3a (12 -> 15px cells) is DECLINED on a measured table: the mark's size is bound by
+  the width fit, so bigger cells make it coarser, and at the brief's numbers the raster falls
+  to 32 cells per glyph — below the existing floor of 40.
+  **The wordmark raster was font-race dependent**, which makes a band unassertable: Geist
+  ships 400-700 and the mark asks for 800, so nothing had fetched the face it resolves to
+  (ink 237 -> 268 at 390, mark rows 6 -> 8 at 1440 between first publish and settled).
+  `document.fonts.ready` is the wrong signal — a face nobody asked for is not pending.
+  **New §10e reads the canvas back**, and it is three stages because the wide control at
+  dpr 1 is GREEN on the broken tree: last frame before the handoff, pre-release -> shipping,
+  390 dpr2 46.4/41.6 -> 0.0/0.0 · 1440 dpr2 42.5/35.0 -> 0.0/0.0 · 1440 dpr1 0.0/0.0 both.
+  The sampler is strips because a full-frame read pushed 1440 dpr2 from ~5,950 to ~7,990ms,
+  past the page's own wall ceiling — an instrument that moves its subject is not measuring it.
+  **Eight break tests.** M1 the clear reverted -> 7 reds, the quadrant assertion printing the
+  operator's own report as a failure: `[0, 47.41, 60.29, 55.95]% lit`. M5 REFUSED to go red
+  and was predicted to — the sweep direction is ungated, deliberately and stated. And M4
+  found a defect in this release's own gate: the settled-raster wait was inside the timed
+  window, so §10b measured the loop MINUS the settle delay (3,108ms where the corrected
+  anchor reads 3,492ms) and its ceiling got more permissive with nothing red.
+  Budgets: the simplest attribution this repo has recorded — ONE term, `ColdBoot` +1,981,
+  75 of 76 files size-identical, residual ZERO on both halves, eager and cssGz BYTE-IDENTICAL,
+  chunk count 76 = 76. lazyJsRaw 978,000 -> 982,000 and totalJsRaw 1,243,000 -> 1,247,000,
+  moved together so the gap is unchanged. No route row moves, structurally: ColdBoot is a
+  DYNAMIC import and `staticClosure` never reads `.dynamicImports`. Census RECOUNTED with
+  the instrument controlled against three commits: 88 / 84 / 22 / 38 / 74 / 6, UNCHANGED.
+  `verify-coldboot` 177 -> 213.
+  · https://github.com/aqua-019/satoshis-vision-v1/pull/200
