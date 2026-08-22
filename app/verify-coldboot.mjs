@@ -1121,6 +1121,70 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
      5.7 before it, against a 1440 control of 43.8. */
   const MIN_INK_PER_GLYPH = 15;
 
+  /* ══ p4·M7 · WHY THE FOUR FIGURES ABOVE ARE FLOORS, AND WHAT THAT COST ══
+   *
+   * The brief that prompted this release put it exactly right about the SHAPE:
+   * every assertion guarding this field asks "is there enough?" and none asks
+   * "is there too much?" or "is there any background left?". It drew the wrong
+   * conclusion from it — it said "a field that degenerates into a wall of noise
+   * maximises all four", and that is not true of these four: `cellsPerGlyph`,
+   * `inkPerGlyph`, `rows` and `glyphs` all come out of `composeTarget`, which
+   * runs once per geometry and never sees a painted pixel. The wall could not
+   * have moved them.
+   *
+   * What the wall DID do is sit outside their subject entirely. The defect was
+   * `drawField` clearing `(0, 0, w, h)` in CSS pixels while blitting glyphs in
+   * BACKING-STORE pixels: at dpr 2 it repainted the top-left quarter and the
+   * other three accumulated every frame of the sequence. Nothing above reads a
+   * pixel, and §10 runs at the context default of dpr 1 where the two spaces
+   * coincide — so the gate was not merely blind to the wall, it was measuring
+   * a device on which the wall does not exist.
+   *
+   * So the answer is not to put a ceiling on each of the four. Two of them get
+   * a ceiling where a ceiling has content (below), and the real assertion is
+   * §10e, which reads the canvas back.
+   *
+   * ── THE CEILINGS THAT HAVE CONTENT, AND THE UNIT THEY ARE IN ────────────
+   * A raw ceiling on `cellsPerGlyph` cannot be written once for a band whose
+   * measured values run 40 (320x568) to 113 (550x1000) — it would either be so
+   * wide it asserts nothing or so tight it reds on an untested phone. The claim
+   * worth making is stage-relative: THE MARK IS A MARK, NOT THE FIELD. Measured
+   * across 144 stages (w 320-550 x h 560-1000) on the shipping tree:
+   *     mark box / grid     0.126 .. 0.347      (1440x900 control: 0.125)
+   *     mark rows / rows    0.167 .. 0.441      (1440x900 control: 0.174)
+   * The ceilings sit above the measured envelope with room, because their job
+   * is to catch a mark that has eaten the stage — the fit fraction restored to
+   * full width, the margin deleted, the stacked layout replaced by one huge
+   * line — not to re-litigate the tuning. */
+  const MARK_SHARE_MAX = 0.45;
+  const MARK_ROW_SHARE_MAX = 0.55;
+
+  /* THE HONEST PER-LINE RESOLUTION. `mark.cols` is the width of the WIDEST
+     LINE, so `cols / glyphs` charges one line's width to BOTH lines' letter
+     count on a stacked mark and under-reports by the stacking factor: at 390 it
+     reads 43/9 = 4.8 where "IRISH" really gets 43/5 = 8.6. field.ts publishes
+     `mark.colsPerGlyph` against `mark.lineGlyphs` instead. Measured 7.8 / 8.6 /
+     9.4 at 360 / 390 / 430, 7.2 at the 320 floor, 13.8 on the 1440 control —
+     and 4.2 if the WIDE one-line composition ever leaks onto a phone, which is
+     the failure this floor is really for. */
+  const MIN_COLS_PER_GLYPH = 6.5;
+
+  /* THE MARK IS NOT EDGE-TO-EDGE. In VISIBLE columns, because `layout.cols` is
+     one more than the reader sees by design and a margin measured against it is
+     inflated by a column nobody is shown. Measured min 4 across all 144 stages
+     (field.ts#narrowMarginCols reserves 3-6 by width and the raster's own side
+     bearing adds the rest); the pre-p4·M7 tree measures 3 at every width in the
+     band, so this floor discriminates with a column to spare. */
+  const MIN_MARK_MARGIN_COLS = 4;
+
+  /* THE AMBIENT WEIGHT FIELD, corroborating §10e from the composition side. A
+     narrow stage thins and dims ambient near the message and far from it;
+     a wide stage gets EXACTLY 1.0 in every cell, which is what makes the
+     desktop frame bit-identical. Measured 0.539 / 0.550 / 0.556 at 430 / 390 /
+     360 and 0.578 at 320. If this moves and §10e's pixels do not, one of the
+     two instruments is lying. */
+  const AMBIENT_MEAN_BAND = [0.40, 0.75];
+
   const PHONES = [
     ['360x800', { width: 360, height: 800 }],
     ['390x844', { width: PHONE.width, height: PHONE.height }],
@@ -1130,16 +1194,32 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
   /** Load `/` cold, read the published field report, and time the phase flip
    *  from `data-coldboot="decrypt"` to `"console"`. `cpu` throttles via CDP
    *  (Chromium only — this file already launches Chromium explicitly). */
-  const runStage = async (vp, cpu = 0) => {
-    const { ctx, page } = await cold({ viewport: vp });
+  const runStage = async (vp, cpu = 0, dpr = 0) => {
+    const { ctx, page } = await cold({ viewport: vp, ...(dpr ? { deviceScaleFactor: dpr } : {}) });
     if (cpu) {
       const cdp = await ctx.newCDPSession(page);
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpu });
     }
     const t0 = Date.now();
     await page.goto(BASE + '/', { waitUntil: 'load' });
-    const report = await page.waitForFunction(() => window.__XMR_FIELD__ || null, null, { timeout: 25_000 })
-      .then((h) => h.jsonValue()).catch(() => null);
+    /* WAIT FOR THE SETTLED RASTER, NOT THE FIRST PUBLISH.
+       `composeTarget` rasterises the wordmark through a canvas, and a canvas
+       substitutes a fallback face SILENTLY for a webfont that has not loaded.
+       Geist ships 400-700 and the mark asks for 800, so nothing on this route
+       had ever fetched the face it resolves to — measured on the pre-p4·M7
+       tree, the same stage published ink 237 at mount and 268 once the face
+       arrived, with mark rows 6 -> 8 at 1440. Reading the first publish is
+       reading a coin flip, which a floor survives and a BAND cannot.
+       `markFontSettled` means the raster is FINAL, not that the font arrived —
+       a load that fails is a settled outcome too, so this cannot hang on a
+       missing face. It falls back to the first publish after the timeout rather
+       than returning null, so a host that stopped publishing the flag reds on
+       the band below by NAME instead of on the precondition. */
+    const report = await page.waitForFunction(
+      () => (window.__XMR_FIELD__ && window.__XMR_FIELD__.markFontSettled ? window.__XMR_FIELD__ : null),
+      null, { timeout: 25_000 })
+      .then((h) => h.jsonValue())
+      .catch(() => page.evaluate(() => window.__XMR_FIELD__ || null).catch(() => null));
     /* The report is published in the decrypt effect's setup, BEFORE the first
        rAF, so this instant is the loop's own start. `flipMs` measures the whole
        navigation (bundle + hold + loop) and `loopMs` measures only the loop —
@@ -1215,6 +1295,46 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
       `${mark.rows} rows. A mark this short has no vertical structure to read — the independent axis to ` +
       'cells-per-glyph, so a very wide very short mark cannot satisfy one by failing the other.');
 
+    /* ── THE OTHER SIDE OF BOTH FLOORS (p4·M7) ──────────────────────────
+       Stage-relative, because the raw figures legitimately run 40..113 across
+       the phone band and no single raw ceiling can be both meaningful and safe
+       there. The claim is that the mark is a MARK: it may not eat the field. */
+    const boxShare = (mark.rows * mark.cols) / (layout.rows * layout.cols);
+    const rowShare = mark.rows / layout.rows;
+    R.ok(boxShare <= MARK_SHARE_MAX && rowShare <= MARK_ROW_SHARE_MAX,
+      `${label}: the mark occupies ${(boxShare * 100).toFixed(1)}% of the grid and ` +
+      `${(rowShare * 100).toFixed(1)}% of its rows (ceilings ${(MARK_SHARE_MAX * 100).toFixed(0)}% / ${(MARK_ROW_SHARE_MAX * 100).toFixed(0)}%)`,
+      `${(boxShare * 100).toFixed(1)}% of the grid / ${(rowShare * 100).toFixed(1)}% of the rows. The mark has ` +
+      'stopped being a mark and become the field — the fit fraction has been restored to the full stage width, ' +
+      'the margin reserve has been removed, or the stacked layout has been replaced by one very large line. ' +
+      'See field.ts#narrowMarginCols.');
+
+    R.ok(mark.colsPerGlyph >= MIN_COLS_PER_GLYPH,
+      `${label}: each letterform of the widest line gets ${mark.colsPerGlyph} cell columns ` +
+      `(${mark.cols} cols over ${mark.lineGlyphs} glyphs, floor ${MIN_COLS_PER_GLYPH})`,
+      `${mark.colsPerGlyph} columns per letterform. This is the HORIZONTAL resolution of the raster, measured ` +
+      'against the widest LINE rather than against every glyph in a stacked mark. Below ~5 a letterform is a ' +
+      'bar. A reading near 4 means the WIDE one-line composition is being drawn on a phone.');
+
+    /* THE MARK IS NOT EDGE-TO-EDGE. `min` of the two, so a mark that is
+       centred-but-overhanging on one side cannot be rescued by the other. */
+    const margin = Math.min(report.markMarginLeft, report.markMarginRight);
+    R.ok(margin >= MIN_MARK_MARGIN_COLS,
+      `${label}: the mark clears both edges — ${report.markMarginLeft} / ${report.markMarginRight} of ` +
+      `${report.visibleCols} visible columns (floor ${MIN_MARK_MARGIN_COLS})`,
+      `${report.markMarginLeft} / ${report.markMarginRight} visible columns of clearance. The message runs into ` +
+      'the edge of the stage with ambient scramble pressing on the letterforms at the same size and the same ' +
+      'tint. Measured at 3 on the pre-p4·M7 tree at every width in this band.');
+
+    R.ok(report.ambientMean >= AMBIENT_MEAN_BAND[0] && report.ambientMean <= AMBIENT_MEAN_BAND[1],
+      `${label}: the ambient weight field means ${report.ambientMean} ` +
+      `(band ${AMBIENT_MEAN_BAND[0]}-${AMBIENT_MEAN_BAND[1]} — a clearing round the message and a fade far from it)`,
+      report.ambientMean > AMBIENT_MEAN_BAND[1]
+        ? `${report.ambientMean} — the narrow stage is getting the wide stage's undifferentiated field. ` +
+          'There is no clearing round the message and no empty space under the cipher block.'
+        : `${report.ambientMean} — the field has been thinned past a texture. The clear fix already restored ` +
+          "density parity with the desktop; thinning on top of it corrects the same defect twice.");
+
     /* THE PAYOFF SENTENCE SURVIVES THE GRID.
        The line the whole sequence closes on is `signer_index ??? — NOT ENCODED
        IN THE PROTOCOL`, and on a 360px stage it was placed one character wider
@@ -1233,7 +1353,8 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
         : `the grid holds "${closing.trimEnd()}". The sequence's closing claim is cut off at the right edge: ` +
           'putLine drops any cell outside [0, cols) and layoutField returns one more column than the viewport ' +
           'shows, so a line that "fits in cols" can still lose its last characters. See ' +
-          'field.ts#SIGNER_LINE_NARROW.');
+          'field.ts#SIGNER_FORMS — the ladder of forms, widest first, and field.ts#narrowMarginCols, which is ' +
+          'what the ladder is measured against on a narrow stage.');
 
     /* THE SEQUENCE ENDS. `flipped` is the structural half — a sequence that
        never hands off is the fail-closed case, and it is asserted before the
@@ -1350,6 +1471,21 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
         `1440x900 control: the wide mark rasters at ${report.mark.cellsPerGlyph} cells per glyph ` +
         `(${report.mark.cols}x${report.mark.rows} over ${report.mark.glyphs})`,
         `${report.mark.cellsPerGlyph} — the desktop mark regressed`);
+      /* THE WIDE STAGE'S AMBIENT FIELD IS EXACTLY 1.0, and "exactly" is the
+         assertion. Every narrow-composition term in field.ts multiplies by this
+         value, so a wide field of 1.0 makes each one an exact float no-op and
+         the desktop frame bit-identical. A wide stage reading anything else
+         means the phone composition has reached the desktop through a door
+         `narrow === false` above does not cover. */
+      R.ok(report.ambientMean === 1,
+        `1440x900 control: the ambient weight field is exactly 1.0 — every narrow term is an exact no-op here`,
+        `ambientMean ${report.ambientMean} on a wide stage. The narrow composition is being applied to the ` +
+        'desktop, so the frame is no longer bit-identical to the one this file drew before p4·M7.');
+      R.ok(report.mark.colsPerGlyph >= MIN_COLS_PER_GLYPH &&
+           (report.mark.rows * report.mark.cols) / (report.layout.rows * report.layout.cols) <= MARK_SHARE_MAX,
+        `1440x900 control: the wide mark is ${report.mark.colsPerGlyph} columns per letterform and ` +
+        `${(((report.mark.rows * report.mark.cols) / (report.layout.rows * report.layout.cols)) * 100).toFixed(1)}% of the grid`,
+        'the wide mark has lost horizontal resolution or has eaten the stage');
       R.ok(flipped && flipMs >= WIDE_FLIP_MIN_MS && flipMs <= WIDE_FLIP_MAX_MS,
         `1440x900 control: decrypt -> console in ${flipMs}ms (band ${WIDE_FLIP_MIN_MS}-${WIDE_FLIP_MAX_MS}ms — ` +
         'the wide sequence is neither shortened nor stretched)',
@@ -1391,6 +1527,226 @@ R.group('── 10 · the phone decrypt: the mark reads, and the sequence is bou
         'animated decrypt');
     }
     await ctx.close();
+  }
+
+  /* ── §10e · THE FIELD CONVERGES — the canvas, read back ────────────────
+   *
+   * ── THE ASSERTION THAT WOULD HAVE CAUGHT THE BUG THAT SHIPPED ──────────
+   * `drawField` cleared `(0, 0, w, h)` in CSS pixels and blitted every glyph in
+   * BACKING-STORE pixels. At dpr 1 the two spaces coincide and the frame
+   * cleared correctly; at dpr 2 the clear covered the top-left QUARTER of the
+   * store and the other three kept every glyph ever drawn there. Phones are
+   * dpr 2-3, the desktops this was authored on are dpr 1, and every section
+   * above runs at the context default of 1 — so the field a phone renders had
+   * never been looked at by anything, and the sequence's own promise, that it
+   * CONVERGES and fades to black around the resolved message, was false on
+   * every retina device for the whole of its life.
+   *
+   * Nothing above could have seen it. The four figures §10 asserts come out of
+   * `composeTarget` and never touch a pixel. §2 compares two cold runs by
+   * `toDataURL` and both runs accumulate identically, so it stayed green. The
+   * only instrument that answers this reads the canvas.
+   *
+   * ── AND THE WIDE CONTROL AT dpr 1 IS GREEN ON THE BROKEN TREE ──────────
+   * Which is exactly why there are THREE stages and not two. Measured against
+   * a build of the pre-p4·M7 tree, coverage of the LAST frame before the
+   * handoff (lit = any channel > 24, bright = > 120):
+   *
+   *                        pre-p4·M7        shipping
+   *      390x844 dpr 2     46.4 / 41.6       0.0 / 0.0
+   *      320x568 dpr 2     45.7 / 41.9       0.0 / 0.0
+   *     1440x900 dpr 2     42.5 / 35.0       0.0 / 0.0
+   *     1440x900 dpr 1      0.0 /  0.0       0.0 / 0.0     <- always passed
+   *
+   * A phone-only assertion cannot tell "the phone is right" from "everything
+   * is right", so the wide dpr-1 stage is here as the control that says the
+   * suite is not simply reporting universal failure. And the wide dpr-2 stage
+   * is here because WITHOUT IT this section would read as a claim about phones,
+   * when the axis is the device pixel ratio: the same 1440x900 viewport is
+   * broken at one ratio and clean at the other, on one build.
+   *
+   * ── WHY THE TAIL AND NOT A FIXED T ─────────────────────────────────────
+   * The brief asks for "by T = 0.9 the field has faded to near-empty", which is
+   * the right claim. T is not directly readable from outside — the loop's own
+   * accumulator is clamped per frame and can be overridden by the wall ceiling
+   * — so a gate that computed T from wall time would be asserting against its
+   * own arithmetic rather than against the page's. The LAST FRAME BEFORE THE
+   * PHASE FLIPS is the same claim anchored on something the page states itself,
+   * and it is stronger: at T=1 the field is empty by construction (`fade` and
+   * every content alpha reach 0), so a tail that is not empty is a tail that
+   * did not converge. Measured zero-variance at 0.0 across 15 runs and 5
+   * stages on the shipping tree; the T≈0.9 sample is PRINTED beside it for
+   * context and is not asserted, because at dpr 2 on a slow stage the wall
+   * ceiling legitimately re-times the run and that index stops meaning what it
+   * says.
+   *
+   * ── THE SAMPLER IS STRIPS, AND THAT IS A MEASUREMENT NOT A SHORTCUT ────
+   * A full-frame `getImageData` at 1440x900 dpr 2 is 5.2M pixels and costs
+   * ~40ms per sample, which pushed the run from ~5,950ms to ~7,990ms — past the
+   * page's own wall ceiling. An instrument that changes what it measures is not
+   * measuring it. Ten evenly spaced strips of 48 store-px cost ~10ms and read
+   * within 1.4 points of the full frame at every stage. */
+  R.group('── 10e · the field converges: the canvas, read back at dpr 1 and dpr 2 ──');
+  {
+    /* Non-vacuity. Measured 32 samples on a phone and 50-54 at 1440. */
+    const MIN_SAMPLES = 12;
+    /* The field PAINTED. Without this every ceiling below is satisfied by a
+       canvas that drew nothing at all — which is precisely how an absence-only
+       section reports confidence about a blank page. Measured peak 17.2-21.0. */
+    const PEAK_LIT_MIN = 8;
+    /* Measured peak 17.2-21.0 shipping against 45.4-52.3 pre-fix. 32 sits in
+       the empty gap between the two populations, closer to neither. */
+    const PEAK_LIT_MAX = 32;
+    /* Measured peak 6.7-10.8 shipping against 36.4-45.8 pre-fix. */
+    const PEAK_BRIGHT_MAX = 18;
+    /* THE CONVERGENCE. Measured 0.0 on every shipping stage across 15 runs;
+       42.5-46.5 lit and 34.9-41.9 bright pre-fix on the three dpr-2 stages. */
+    const TAIL_LIT_MAX = 3;
+    const TAIL_BRIGHT_MAX = 1;
+    /* THE MECHANISM, NAMED. At the tail every quadrant is empty, so the spread
+       between the busiest and the quietest is ~0. Under the CSS-px clear the
+       top-left quadrant is the one being repainted and reads ~0 while the other
+       three hold the whole accumulated run — which is the "blank box top-left,
+       filled everywhere else" the operator described. This assertion cannot add
+       coverage the tail check does not already have; it exists so the failure
+       MESSAGE names the line rather than leaving the next reader to find it. */
+    const QUAD_SPREAD_MAX = 3;
+
+    const STAGES = [
+      ['390x844 dpr2', { width: PHONE.width, height: PHONE.height }, 2],
+      ['1440x900 dpr1', { width: 1440, height: 900 }, 1],
+      ['1440x900 dpr2', { width: 1440, height: 900 }, 2],
+    ];
+
+    const converged = [];
+    for (const [label, vp, dpr] of STAGES) {
+      const { ctx, page } = await cold({ viewport: vp, deviceScaleFactor: dpr });
+      await page.addInitScript(() => {
+        window.__cbCov = [];
+        const STRIPS = 10;
+        const SH = 48;
+        const arm = () => {
+          const root = document.querySelector('[data-coldboot]');
+          const cv = root && root.querySelector('canvas');
+          if (!cv || !cv.width) { setTimeout(arm, 16); return; }
+          /* Re-getting the 2d context returns the SAME context the page is
+             drawing with; the attribute bag is ignored on a second call, so
+             this neither creates a second context nor changes the first. */
+          const g = cv.getContext('2d');
+          const t0 = performance.now();
+          const count = (data) => {
+            let lit = 0; let bright = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              const m = Math.max(data[i], data[i + 1], data[i + 2]);
+              if (m > 24) lit++;
+              if (m > 120) bright++;
+            }
+            return [lit, bright, data.length / 4];
+          };
+          const quads = () => {
+            const W = cv.width; const H = cv.height;
+            const s = Math.max(16, Math.min(160, Math.floor(Math.min(W, H) / 6)));
+            const at = (x, y) => {
+              const [lit, , n] = count(g.getImageData(x, y, s, s).data);
+              return +(lit / n * 100).toFixed(2);
+            };
+            return [
+              at(Math.floor(W * 0.25 - s / 2), Math.floor(H * 0.25 - s / 2)),
+              at(Math.floor(W * 0.75 - s / 2), Math.floor(H * 0.25 - s / 2)),
+              at(Math.floor(W * 0.25 - s / 2), Math.floor(H * 0.75 - s / 2)),
+              at(Math.floor(W * 0.75 - s / 2), Math.floor(H * 0.75 - s / 2)),
+            ];
+          };
+          const iv = setInterval(() => {
+            const r = document.querySelector('[data-coldboot]');
+            if (!r || r.getAttribute('data-coldboot') !== 'decrypt') { clearInterval(iv); return; }
+            try {
+              let lit = 0; let bright = 0; let n = 0;
+              const step = Math.max(1, Math.floor((cv.height - SH) / (STRIPS - 1)));
+              for (let i = 0; i < STRIPS; i++) {
+                const y = Math.min(Math.max(0, cv.height - SH), i * step);
+                const [l, b, m] = count(g.getImageData(0, y, cv.width, Math.min(SH, cv.height)).data);
+                lit += l; bright += b; n += m;
+              }
+              const eff = (window.__XMR_FIELD__ && window.__XMR_FIELD__.effectiveMs) || 5556;
+              window.__cbCov.push({
+                T: +((performance.now() - t0) / eff).toFixed(3),
+                lit: +(lit / n * 100).toFixed(2),
+                bright: +(bright / n * 100).toFixed(2),
+                quads: quads(),
+              });
+            } catch { /* a sampler must never be able to blank the page */ }
+          }, 100);
+        };
+        arm();
+      });
+      await page.goto(BASE + '/', { waitUntil: 'load' });
+      await page.waitForFunction(
+        () => document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') === 'console',
+        null, { timeout: 30_000 }).catch(() => {});
+      const cov = await page.evaluate(() => window.__cbCov || []);
+      await ctx.close();
+
+      const enough = cov.length >= MIN_SAMPLES;
+      R.ok(enough, `${label}: precondition — ${cov.length} canvas samples through the decrypt ` +
+        `(floor ${MIN_SAMPLES})`,
+        `${cov.length} samples. The canvas was never found, or the phase never sat in "decrypt" long enough ` +
+        'to sample — nothing below has a subject.');
+      if (!enough) { converged.push(null); continue; }
+
+      const peakLit = Math.max(...cov.map((c) => c.lit));
+      const peakBright = Math.max(...cov.map((c) => c.bright));
+      const tail = cov[cov.length - 1];
+      const near90 = cov.reduce((a, c) => (Math.abs(c.T - 0.9) < Math.abs(a.T - 0.9) ? c : a));
+
+      R.ok(peakLit >= PEAK_LIT_MIN,
+        `${label}: positive control — the field actually paints (peak ${peakLit.toFixed(1)}% lit, ` +
+        `floor ${PEAK_LIT_MIN}%)`,
+        `peak ${peakLit.toFixed(1)}% lit. The ceilings below would all be satisfied by a canvas that drew ` +
+        'nothing, which is an absence reporting confidence about a blank stage.');
+
+      R.ok(peakLit <= PEAK_LIT_MAX && peakBright <= PEAK_BRIGHT_MAX,
+        `${label}: at its busiest the field is ${peakLit.toFixed(1)}% lit / ${peakBright.toFixed(1)}% bright ` +
+        `(ceilings ${PEAK_LIT_MAX}% / ${PEAK_BRIGHT_MAX}%)`,
+        `${peakLit.toFixed(1)}% lit and ${peakBright.toFixed(1)}% bright at peak. The field is a wall rather ` +
+        'than a texture, and a reader cannot tell the message from the background.');
+
+      /* THE ONE THAT MATTERS. */
+      R.ok(tail.lit <= TAIL_LIT_MAX && tail.bright <= TAIL_BRIGHT_MAX,
+        `${label}: the field CONVERGES — the last frame before the handoff is ${tail.lit.toFixed(1)}% lit / ` +
+        `${tail.bright.toFixed(1)}% bright (ceilings ${TAIL_LIT_MAX}% / ${TAIL_BRIGHT_MAX}%; T≈0.9 read ` +
+        `${near90.lit.toFixed(1)}% / ${near90.bright.toFixed(1)}%, peak ${peakLit.toFixed(1)}%)`,
+        `the last frame holds ${tail.lit.toFixed(1)}% lit / ${tail.bright.toFixed(1)}% bright against a peak of ` +
+        `${peakLit.toFixed(1)}%. THE FIELD NEVER FADES. field.ts#drawField clears its canvas once per frame; if ` +
+        'that clear is expressed in CSS pixels while the glyphs blit in backing-store pixels, then at any ' +
+        'devicePixelRatio above 1 it repaints only the top-left 1/dpr² of the store and the rest accumulates ' +
+        'every frame of the sequence. That is invisible at dpr 1, which is where this file runs every other ' +
+        'section. See field.ts#drawField and orb.ts:492 for the form that is correct.');
+
+      const spread = Math.max(...tail.quads) - Math.min(...tail.quads);
+      R.ok(spread <= QUAD_SPREAD_MAX,
+        `${label}: the four quadrants agree at the tail — [${tail.quads.join(', ')}]% lit, spread ` +
+        `${spread.toFixed(1)} (ceiling ${QUAD_SPREAD_MAX})`,
+        `quadrant coverage [${tail.quads.join(', ')}]% at the last frame, spread ${spread.toFixed(1)}. One ` +
+        'region of the canvas is being repainted and the others are not. If the quiet quadrant is the ' +
+        'TOP-LEFT one, the clear is expressed in CSS pixels and the draw in backing-store pixels — that is ' +
+        'the whole defect, and this is the shape a reader sees: a blank box in one corner and the entire ' +
+        'run of the sequence painted on top of itself everywhere else.');
+
+      converged.push({ label, dpr, tail, peakLit });
+    }
+
+    /* THE CROSS-STAGE CLAIM, which no single stage above can make: convergence
+       is a property of the SEQUENCE and not of a viewport. Stated as its own
+       assertion so a run in which only the phone converged reads as a defect
+       rather than as three quarters of a pass. */
+    const usable = converged.filter(Boolean);
+    R.ok(usable.length === STAGES.length && usable.every((c) => c.tail.lit <= TAIL_LIT_MAX),
+      `every stage converges at both device pixel ratios — ` +
+      usable.map((c) => `${c.label} ${c.tail.lit.toFixed(1)}%`).join(' · '),
+      'at least one stage did not converge. The three stages exist to separate three different failures: a ' +
+      'phone that is broken, a suite that is reporting universal failure, and a defect whose axis is the ' +
+      'device pixel ratio rather than the viewport width.');
   }
 }
 

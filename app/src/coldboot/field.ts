@@ -351,8 +351,31 @@ const BASE_DENSITY = 1.6;
  *  buys one more column for another 7-9 cells per glyph. The mark's resolution
  *  is what makes a letterform a letter; the margin is framing, and the ambient
  *  clearing below already does most of the framing job for free. So: the
- *  smallest reserve that meets the requirement, not the largest that fits. */
-export const NARROW_MARGIN_COLS = 4;
+ *  smallest reserve that meets the requirement, not the largest that fits.
+ *
+ *  SHIPPED AS A FRACTION rather than as the flat 4 this table was measured at —
+ *  see `narrowMarginCols` immediately below for the 320px measurement that
+ *  forced it. At 390 the fraction resolves to 4, so this table's 390 row is the
+ *  shipped one. */
+export const NARROW_MARGIN_FRAC = 0.075;
+
+/** The reserve for a stage with `visibleCols` fully visible columns.
+ *
+ *  ── WHY A FRACTION AND NOT THE CONSTANT 4 ────────────────────────────────
+ *  A flat reserve charges the narrowest stage the most: 8 columns of 44 at
+ *  320px is 18% of the field against 14% at 430, and the mark pays for it in
+ *  raster. Measured across 144 stages (w 320-550 x h 560-1000), a flat 4 takes
+ *  320x844 from 46 cells per glyph to 34 — BELOW `verify-coldboot`'s own floor
+ *  of 40, at the narrowest width this repo gates anywhere. The fraction spends
+ *  a proportional share instead, which is what "margin" means on a stage whose
+ *  width is the variable.
+ *
+ *  Clamped at 3 because two columns is not a margin, and the closing-line
+ *  ladder needs the block to stay wide enough to hold rung 3 (31 characters)
+ *  at 320's 44 visible columns. */
+export function narrowMarginCols(visibleCols: number): number {
+  return Math.max(3, Math.round(visibleCols * NARROW_MARGIN_FRAC));
+}
 
 /* ── THE AMBIENT WEIGHT FIELD ────────────────────────────────────────────
  * A per-cell multiplier on the ambient acceptance threshold and on ambient
@@ -841,7 +864,7 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
        390 and the fit resolves to ~108. */
     let px = narrow ? h * 0.26 : Math.min(w * 0.145, h * 0.26);
     /* Fit fraction. 0.74 wide — the mockup's, untouched.
-       NARROW: DERIVED from `NARROW_MARGIN_COLS` rather than written as a
+       NARROW: DERIVED from `narrowMarginCols` rather than written as a
        number. It was 0.92, chosen to buy raster resolution on a starved stage,
        and it bought the resolution by spending the margin: measured at 390x844
        the mark landed at column 3 of 54 visible, so the letterforms ran into
@@ -849,10 +872,10 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
        same tint. Deriving it means "how much air the message gets" is stated
        ONCE, in cells, and the pixel fraction follows — instead of a fit
        fraction here and a clamp two blocks down disagreeing about the answer.
-       At 390 this resolves to 0.815 (44 of 54 visible columns); the raster
-       cost is priced in NARROW_MARGIN_COLS' own docblock. */
+       At 390 this resolves to 0.849 (46 of 54 visible columns usable); the raster
+       cost is priced in `narrowMarginCols`' own docblock. */
     const fitFrac = narrow
-      ? Math.max(0.5, ((Math.floor(w / cw) - 2 * NARROW_MARGIN_COLS) * cw) / w)
+      ? Math.max(0.5, ((Math.floor(w / cw) - 2 * narrowMarginCols(Math.floor(w / cw))) * cw) / w)
       : 0.74;
     const sansFont = sans ?? resolveToken("--f-sans", SANS_FALLBACK);
     og.textAlign = "center";
@@ -956,8 +979,9 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
        single new word: the ladder already had the rung, and margining the block
        is what finally exercises it. Every word stays verbatim.
        WIDE is `cols - 6`, unchanged. */
+    const marginCols = narrow ? narrowMarginCols(Math.floor(w / cw)) : 0;
     const bodyW = narrow
-      ? Math.min(Math.floor(w / cw) - 2 * NARROW_MARGIN_COLS, 74)
+      ? Math.min(Math.floor(w / cw) - 2 * marginCols, 74)
       : Math.min(cols - 6, 74);
     /* ── CENTRE ON THE WIDEST LINE THE BLOCK WILL ACTUALLY DRAW ────────────
        `bodyW` is the body's own width, and every line is cut to it — except
@@ -998,8 +1022,8 @@ export function composeTarget({ cols, rows, cw, ch, w, h, sans }: ComposeParams)
            visible column); the lower one is new and is what stops the block
            starting at column 2 while the mark starts at column 5. */
         Math.min(
-          Math.max(NARROW_MARGIN_COLS, Math.floor((visibleCols - blockW) / 2)),
-          Math.max(NARROW_MARGIN_COLS, visibleCols - NARROW_MARGIN_COLS - blockW),
+          Math.max(marginCols, Math.floor((visibleCols - blockW) / 2)),
+          Math.max(marginCols, visibleCols - marginCols - blockW),
         )
       : Math.min(
           Math.max(0, Math.floor((cols - blockW) / 2)),
