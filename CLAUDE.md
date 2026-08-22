@@ -895,6 +895,15 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   Measured on the corrected anchor the loop runs **3,492ms** where the polluted one read
   **3,108ms** — a 384ms silent weakening of an assertion that already existed. The flip is
   now timed by a promise started BEFORE the settle wait.
+  **`pgrep -f` MATCHED THE WAITER ITSELF — SEVENTH RECORDED INSTANCE, committed twice in one
+  session by someone who had just read the other six.** `while pgrep -f 'break.py'; do :;
+  done` and `while pgrep -f 'verify:e2e'` are both unsatisfiable: the bash process running
+  the loop carries the pattern in its OWN command line, so the negation can never hold.
+  VERIFIED rather than assumed — with no harness running at all, `pgrep -f 'break.py'`
+  returns exactly **1** match and `/proc/<pid>/cmdline` on it is the waiting shell. The cost
+  here was two ten-minute timeouts and nothing else, because the completion signal that
+  actually worked was a marker line in the harness's own log. **Wait on an ARTIFACT the work
+  produces, not on the absence of a process whose name you are holding in your hand.**
   **BUDGETS: ONE TERM, RESIDUAL ZERO, 75 OF 76 FILES SIZE-IDENTICAL.** Paired per chunk STEM
   against an ISOLATED `git worktree` build of `5854cbd` with its own dist/ and node_modules,
   served on its own port with the holder confirmed by `lsof` + `/proc/<pid>/cwd`:
@@ -914,6 +923,17 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   and the six orphans by name. Measured: **88 / 84 / 22 / 38 / 74 / 6, UNCHANGED**, which is
   the correct outcome for a release that extends an e2e member in place and adds no gate
   file. `verify-coldboot` **177 → 213**.
+  **SUITE ON THE SHIPPING TREE**: `verify:static` exit 0 · **`verify:e2e` ran all 38 members
+  with ONE red — `verify-vitals`, at `/live/mempool · median LCP 4356ms ≤ 4350ms`, SIX
+  milliseconds over a route this PR cannot reach.** PAIRED rather than waved away, because
+  "implausible" is not "measured": the BASE build, in its own worktree on its own port,
+  reads **4,332ms** and two re-samples of the SHIPPING tree read **4,260** and **4,348**, both
+  green. One tree spanning 4,260-4,356 across a 4,350 ceiling is p4·07's recorded finding
+  reproduced — and the route is structurally unreachable from here anyway, since
+  `verify-vitals` bypasses the splash and `ColdBoot` is a dynamic import `/live/mempool`
+  never loads. The four inherited counts HOLD EXACTLY: `verify-peers` **44** · `verify-mobile`
+  **59** · `verify-site` **81** · `verify-protocol` **62**, and `verify-orb` is UNCHANGED at
+  **217 passed · 1 skipped** on both trees. `verify-coldboot` **177 → 213**.
   **NOT FIXED, and named**: the deliberate audit of the other 30 canvas clear sites (above —
   no second instance found, but inspection is weaker than assertion); the narrow sweep
   direction, ungated per M5; at 1440x900 **dpr 2** the loop is slow enough in this sandbox
