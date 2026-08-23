@@ -3546,8 +3546,18 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      not a reduced-motion one: the reduced-motion path at any width above 720
      still renders the full column set. */
   .mem-table { overflow-x: visible !important; overflow-y: visible !important; }
+  /* THE FIRST TRACK IS `auto`, NOT A FRACTION, AND THAT IS MEASURED RATHER THAN
+     PREFERRED. With four fractions the txid column resolved to 121.3px at 320
+     against a 125px `0087c3f9…e7b5d2` and all 60 rows ellipsised — and
+     narrowing the cell gutter did NOT fix it, because a fraction hands the
+     space back to every column proportionally: the content shrank 129 → 125 and
+     the track stayed at 121.3. `auto` sizes that track to what the hash
+     actually needs at whatever type size and face the reader has, and
+     `minmax(0, …)` keeps it able to shrink first if a future width cannot
+     afford it. The other three stay fractional because their content is short
+     and bounded. */
   .mem-tbl {
-    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.55fr) !important;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.55fr) !important;
   }
   .mem-tbl__c[data-col="size"],
   .mem-tbl__c[data-col="inout"],
@@ -3562,6 +3572,13 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   /* the empty-state cell spans every track and must survive the subset above */
   .mem-tbl__c[data-col="empty"] { display: block; }
   .mem-tbl__c { padding-inline: 6px; }
+  /* MEASURED at 320 with the 13px raise: the txid column resolved to 121.3px
+     against a 129px `0087c3f9…e7b5d2`, so all 60 of them ellipsised — 8px
+     short, and the four cells were spending 48px of a 296px box on gutters.
+     Four is enough to keep the columns apart at this width and hands back 16.
+     Scoped to 360 and below because 360 already measured 0 clipped at 6px, and
+     a narrower gutter is a cost the widths that do not need it should not pay. */
+  @media (max-width: 360px) { .mem-tbl__c { padding-inline: 4px; } }
 
   /* Scroller 4 exists only at 320 and it is `.main`'s own `overflow: auto`
      (classic.tsx's ClassicView root), driven by ONE element: the ribbon
