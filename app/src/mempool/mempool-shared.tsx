@@ -330,6 +330,7 @@ function useDetailReveal(active: boolean) {
     // detail mounts in a loading state and grows as the fetch lands, so
     // `block: "start"` on the panel's own top is the stable anchor — its
     // HEIGHT changes, its top does not.
+    // D0699-EXEMPT: one deferred scroll after layout, cancelled on cleanup — not a loop
     const id = requestAnimationFrame(() => node.scrollIntoView({ block: "start" }));
     return () => {
       cancelAnimationFrame(id);

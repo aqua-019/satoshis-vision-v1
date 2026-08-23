@@ -83,6 +83,7 @@ export function useLadderAnchor(
       // widths depend on font metrics, so measure after a frame rather than in
       // the same tick as the attach. Two attempts: one now, one next frame.
       if (anchor()) { done.current = true; return; }
+      // D0699-EXEMPT: one deferred measurement, not a loop — it never reschedules
       requestAnimationFrame(() => { if (!done.current && anchor()) done.current = true; });
     },
     [glideRef],
