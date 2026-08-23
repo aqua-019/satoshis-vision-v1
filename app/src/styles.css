@@ -3667,6 +3667,49 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      is the handle classic.tsx now emits; the ribbon had none before, which is
      why no gate could address it. */
   [data-mem-ladder] { overflow-x: auto; }
+
+  /* ── RECLAIMING THE NARROWEST LADDER, AND WHY NOT BY BLEEDING ──────────
+     Measured at 320: the ladder's viewport is 296px and the NOW divider is
+     25px, so the room either side is 135.5px against neighbouring block cards
+     of 127.6px and 135.8px. The RIGHT neighbour overran by -0.4px, and the
+     gate passed it only because its "fully visible" test allows 0.5px of slop
+     — a tolerance was the entire thing holding the claim up, which is this
+     file's own rule about what a tolerance is for. CI's Chromium (build 1223,
+     against 1194 in the development sandbox) landed the other side of it and
+     reported 0 cards either side at 320 and only at 320.
+
+     The cause is upstream of the arithmetic: p4·M8's own 13px type raise
+     widened the vertical NOW label, and the brief is explicit that .mp-block
+     is already the right size and must not shrink. So the width had to come
+     from the divider.
+
+     FULL-BLEED WAS TRIED FIRST AND IS REJECTED ON A MEASUREMENT. `width:100vw`
+     with `margin-inline: calc(50% - 50vw)` does return the 24px gutter and
+     does take the right margin to +11.6px — and it makes the view's own
+     `div.main` a SECOND horizontal scroller at every width (measured 308/296
+     at 320), which breaks the one requirement this composition is built
+     around. Note WHICH element: there are two `.main` on this page, and the
+     scroller is the DIV inside .mp-view (overflow auto, 296/296, zero slack),
+     not the <main class="main main--fluid"> shell, which computes visible and
+     sits at 320/320. A probe selecting `main.main` reads the wrong one and
+     concludes the page has no scroller to lose — measured both ways here. An earlier
+     attempt with `calc(-1 * var(--pad-main))` was worse still: --pad-main is
+     22px where the ribbon's real gutter is 12px, so the ladder spanned
+     -10..330 in a 320 viewport and a card could sit wholly inside the ladder's
+     BOX while wholly off-screen — passing the very assertion being repaired,
+     on a card no reader can see.
+
+     What ships instead costs the reader nothing: below 431px the divider keeps
+     its dashed rule (which IS the divider, and is what the gate asserts) and
+     drops the rotated NOW lettering, and the ladder's gap tightens 8px -> 4px.
+     Both are recovered width rather than lost information — the divider's
+     meaning is its position, not its caption, and the caption is aria-hidden
+     decoration at every width. */
+  @media (max-width: 430px) {
+    [data-mem-ladder] { gap: 4px !important; }
+    [data-now-divider] { padding-inline: 0 !important; }
+    [data-now-divider] .classic-now { display: none; }
+  }
   /* The NOW divider's label is decorative chrome beside a dashed rule; at this
      width it competes with the card it separates. */
   .classic-now { opacity: 0.75; }

@@ -249,8 +249,15 @@ const READ = () => {
     if (d) {
       const db = d.getBoundingClientRect();
       ladder.dividerFrac = +((db.left + db.width / 2 - lb.left) / lad.clientWidth).toFixed(4);
-      ladder.cardsLeft = tiles.filter((t) => { const b = t.getBoundingClientRect(); return b.right <= db.left + 0.5 && b.left >= lb.left - 0.5; }).length;
-      ladder.cardsRight = tiles.filter((t) => { const b = t.getBoundingClientRect(); return b.left >= db.right - 0.5 && b.right <= lb.right + 0.5; }).length;
+      // VISIBLE means visible to the READER, so it is bounded by the viewport
+      // as well as by the ladder's own box. Measuring against the box alone is
+      // a true statement about the wrong subject: the ladder is deliberately
+      // full-bleed, and an early version of that bleed put its edges at -10
+      // and 330 in a 320 viewport, where a card could sit wholly "inside the
+      // ladder" and wholly off-screen. Both bounds, always.
+      const visL = Math.max(lb.left, 0), visR = Math.min(lb.right, window.innerWidth);
+      ladder.cardsLeft = tiles.filter((t) => { const b = t.getBoundingClientRect(); return b.right <= db.left + 0.5 && b.left >= visL - 0.5 && b.right <= visR + 0.5; }).length;
+      ladder.cardsRight = tiles.filter((t) => { const b = t.getBoundingClientRect(); return b.left >= db.right - 0.5 && b.right <= visR + 0.5 && b.left >= visL - 0.5; }).length;
     }
   }
 
@@ -290,6 +297,52 @@ const READ = () => {
     });
   }
 
+  // §3's SECOND instrument. Getting here took three tries and each earlier
+  // version was green for a reason unrelated to its claim, so all three are
+  // recorded rather than quietly replaced.
+  //
+  // §3a asserts documentElement.scrollWidth === innerWidth. TWO break tests
+  // could not move it: M11 pushed a 900px panel into the page and reddened
+  // only §2; M11b also stripped html/body's clip and STILL reddened only §2.
+  // html and body carry `overflow-x: clip` below 769px, so §3a is
+  // structurally unfalsifiable at these widths — true, and true for a reason
+  // that is not the layout fitting.
+  //
+  // A bounding-rect sweep was tried next, as verify-mobile does. It reported
+  // four findings at every width and all four were FALSE: absolutely
+  // positioned decorations on the fee-tier cards carrying `transform:
+  // scaleX(50)`, boxes measuring [-234, 32], clipped to nothing by their own
+  // container. Making that sweep clip-aware then made it VACUOUS — every
+  // descendant is contained by an ancestor that fits — which is strictly
+  // worse than a false positive, because nothing can ever red it.
+  //
+  // What ships is the LOOSE overflow population: any element inside the view
+  // whose scrollWidth exceeds its clientWidth, WHATEVER its overflow value.
+  // That is precisely the gap §2a cannot see, and the gap is measured rather
+  // than theoretical — on this page `.ticker-strip` overflows 16px at 320
+  // with `overflow-x: visible`, which §2a skips (it requires auto|scroll) and
+  // §3a cannot see (html/body clip pin it). That element sits outside the
+  // view so it is not this gate's to fix; it is the proof the shape is real.
+  //
+  // The ladder is excluded BY ANCESTRY, not by class, because content inside
+  // it is SUPPOSED to exceed its box — that is what it is for. clientWidth
+  // <= 1 is excluded because that is the visually-hidden idiom (`.sr-only`
+  // measures 29/1 here): a 1px box overflows by construction rather than by
+  // defect, and including it would make this sweep permanently red for a
+  // reason no layout change can fix.
+  const past = [];
+  let swept = 0;
+  if (view) {
+    const ladder = q('[data-mem-ladder]');
+    view.querySelectorAll('*').forEach((e) => {
+      if (e === ladder || (ladder && ladder.contains(e))) return;
+      if (e.clientWidth <= 1) return;
+      swept++;
+      if (e.scrollWidth <= e.clientWidth + 1) return;
+      past.push({ cls: String(e.className || '').slice(0, 30), ox: getComputedStyle(e).overflowX, sw: e.scrollWidth, cw: e.clientWidth });
+    });
+  }
+
   const pills = [...document.querySelectorAll('.pill')].filter((e) => /updated/i.test(e.textContent || '') && e.getBoundingClientRect().width > 0);
 
   const det = q('[data-mem-detail]');
@@ -301,6 +354,7 @@ const READ = () => {
     docH: document.documentElement.scrollHeight,
     scrollY: Math.round(window.scrollY),
     scrollers, table, ladder, small, textNodes, tiny, targets, shattered, sbRows, headers, headersStacked,
+    past, swept,
     pills: pills.length,
     detail: det ? { kind: det.getAttribute('data-mem-detail'), topVp: Math.round(det.getBoundingClientRect().top), h: Math.round(det.getBoundingClientRect().height), doc: Math.round(det.getBoundingClientRect().top + window.scrollY) } : null,
     tableDoc: (() => { const t = q('.mem-table'); if (!t) return null; const b = t.getBoundingClientRect(); return (b.width === 0 && b.height === 0) ? null : Math.round(b.top + window.scrollY); })(),
@@ -447,16 +501,25 @@ for (const stage of STAGES) {
 
 /* ══ §3 · zero page overflow ══════════════════════════════════════════════
    `html, body { overflow-x: clip }` below 769px means the document CANNOT
-   scroll horizontally whatever a child does — so this assertion is one the
-   base tree already passed, and the brief's §1 premise that the page "scrolls
-   in two axes at once" was measured FALSE before a line was written. It is
-   kept because the clip is not permanent and §2's count is what has content. */
+   scroll horizontally whatever a child does — so §3a is one the base tree
+   already passed, and the brief's §1 premise that the page "scrolls in two
+   axes at once" was measured FALSE before a line was written. §3a is kept
+   because the clip is not permanent, and it is NOT the assertion with
+   content: two break tests aimed at it (M11, M11b) both reddened §2 instead
+   and left it green. §3b is the one that can red — see the census in READ. */
 R.group('§3 · zero page overflow');
 for (const stage of STAGES) {
   const { ctx, p } = await open(stage);
   const m = await p.evaluate(READ);
   R.ok(m.docSW === m.innerWidth,
-    `3 [${stage.tag}] · documentElement.scrollWidth ${m.docSW} === innerWidth ${m.innerWidth}`);
+    `3a [${stage.tag}] · documentElement.scrollWidth ${m.docSW} === innerWidth ${m.innerWidth}`);
+  // The floor for 3b: a sweep that looked at nothing reports zero findings and
+  // is indistinguishable from a view that fits.
+  R.ok(m.swept >= 60,
+    `3b-floor [${stage.tag}] · the loose overflow sweep looked at ${m.swept} laid-out elements`);
+  R.ok(m.past.length === 0,
+    `3b [${stage.tag}] · nothing inside the view overflows horizontally except the ladder (${m.past.length}) — the LOOSE population, which unlike §2a does not require overflow:auto`,
+    m.past.slice(0, 5).map((x) => `.${x.cls} ox=${x.ox} ${x.sw}/${x.cw}`).join(' | '));
   await ctx.close();
 }
 
