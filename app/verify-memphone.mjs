@@ -302,7 +302,9 @@ const READ = () => {
     scrollY: Math.round(window.scrollY),
     scrollers, table, ladder, small, textNodes, tiny, targets, shattered, sbRows, headers, headersStacked,
     pills: pills.length,
-    detail: det ? { kind: det.getAttribute('data-mem-detail'), topVp: Math.round(det.getBoundingClientRect().top), h: Math.round(det.getBoundingClientRect().height) } : null,
+    detail: det ? { kind: det.getAttribute('data-mem-detail'), topVp: Math.round(det.getBoundingClientRect().top), h: Math.round(det.getBoundingClientRect().height), doc: Math.round(det.getBoundingClientRect().top + window.scrollY) } : null,
+    tableDoc: (() => { const t = q('.mem-table'); if (!t) return null; const b = t.getBoundingClientRect(); return (b.width === 0 && b.height === 0) ? null : Math.round(b.top + window.scrollY); })(),
+    ladderDoc: (() => { const l = q('[data-mem-ladder]'); return l ? Math.round(l.getBoundingClientRect().top + window.scrollY) : null; })(),
     back: back ? { w: +back.getBoundingClientRect().width.toFixed(1), h: +back.getBoundingClientRect().height.toFixed(1), inVp: back.getBoundingClientRect().top >= 0 && back.getBoundingClientRect().bottom <= window.innerHeight, name: back.getAttribute('aria-label') } : null,
     landing: !!q('.classic-landing'),
     feedHidden: (() => { const f = q('.classic-txfeed'); return f ? getComputedStyle(f).display === 'none' : null; })(),
@@ -562,6 +564,30 @@ for (const stage of [STAGES[6], STAGES[7], STAGES[8], STAGES[0], STAGES[14]]) {
     `7i [${stage.tag}] · dismissing restores the landing page`);
   R.ok(Math.abs(back.scrollY - atTap) <= 80,
     `7j [${stage.tag}] · and puts the reader back where they were (${back.scrollY} against ${atTap})`);
+  /* 7k EXISTS BECAUSE M7 REFUSED TO GO RED, and that refusal was the finding.
+     Reverting `MemViewShell`'s child order — putting the 60-row table back
+     BETWEEN the view body and the detail — left all 396 assertions green, with
+     the mutation proven applied and the build proven good. The reason is that
+     `useDetailReveal` scrolls the panel into view either way, so §7c's
+     "it is IN the viewport" is satisfied by the reveal ALONE: the reorder and
+     the reveal are INDEPENDENTLY SUFFICIENT for what §7 was asserting, which is
+     p4·M3's two-defence result arriving in a different subsystem.
+
+     What the reorder actually buys is DISTANCE, and nothing was measuring it.
+     Measured at 390 with the reorder: ladder 705 → detail 932 → table 1324, so
+     the reader travels 932px. Without it the detail sits at ~3,094px — the same
+     end state, ~2,160px further to go, and the same distance for the restore to
+     bring them back. On a device where the effect never runs, that difference
+     is the whole reading.
+
+     So this asserts the ORDER, which the reveal cannot fake: the detail renders
+     above the transaction table in DOCUMENT order. It is deliberately not a
+     bound on the distance — that number is content-dependent — and a floor on
+     the table's own position keeps it from passing when the table is absent. */
+  R.ok(after.tableDoc !== null,
+    `7k [${stage.tag}] · the transaction table is rendered (doc ${after.tableDoc}) — 7l is not comparing against an absent element`);
+  R.ok(after.detail !== null && after.tableDoc !== null && after.detail.doc < after.tableDoc,
+    `7l [${stage.tag}] · the detail renders ABOVE the table in document order (detail ${after.detail ? after.detail.doc : '?'}, table ${after.tableDoc}) — the reveal scrolls to it either way, so only the ORDER catches a regression here`);
   await ctx.close();
 }
 

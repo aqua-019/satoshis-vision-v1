@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260823-M8
 branch: claude/mobile-mempool-prompt-p7ui2d
-status: in_progress
+status: done
 written_by: claude-code (manual mode — task arrived as a prompt)
 owner: claude-code
 ---
@@ -157,11 +157,77 @@ node verify-bundle.mjs
 ```
 
 ## 7 · REPORT
-_(filled at exit)_
+
+**Outcome: done.** Branch `claude/mobile-mempool-prompt-p7ui2d` pushed.
+
+### What the brief got wrong, and how that changed the work
+Six premises did not survive measurement. Its §1 headline — a fixed 1756px canvas panned
+through a keyhole, with two-axis scrolling as the root cause — is **false**: `.mp-view` is
+366px at 390 and `documentElement.scrollWidth === innerWidth` at all five gated phone widths.
+The brief's own §6 states that its §1 was measured at desktop width and "says nothing about
+what the ≤768px rules actually produce."
+
+The largest defect was one the brief did not name: **`MemTxTable` rendered transposed**, on all
+ten views, in both states it renders in (≤768px, and reduced motion at any width), invisible to
+every gate because `verify-memviews` counts columns off the inline style.
+
+### Shipped
+1. `.mem-tbl__r { display: contents }` — the transpose fix. One line, ten views, two states.
+2. A phone composition for the classic view: one horizontal scroller (the ladder), one gutter
+   instead of three, a four-column card-width table, stacked panel headers, 2×2 fee tiers,
+   one heartbeat, 44px tap targets.
+3. The ladder anchors on a NOW divider (`useLadderAnchor`) at frac 0.499, one card either side.
+4. The block panel reaches the reader: `MemViewShell` reordered, `useDetailReveal` scoped to
+   ≤720 in an effect, scroll restored on dismiss, a 79×44 named dismiss control.
+5. Block cards became real controls; queued cards stopped faking an affordance.
+6. A 13px type floor scoped to the classic view below 720.
+7. `verify-memphone.mjs` — 396 assertions, wired at `verify:e2e` 7 of 39, every stage at dpr 1/2/3.
+
+### Measured, base → shipping (five widths)
+scrollers 4/3 → **1** · sub-13px nodes 673 → **0** · sub-44 targets 2 → **0** · clipped cells
+60 → **0** · document height 5,092 → **3,971** at 390. Desktop unchanged.
+
+### Instruments
+- Census recounted, controlled against five commits, all exact: **89 / 85 / 22 / 39 / 75 / 6**.
+- Budgets paired per stem against an isolated worktree: **residual zero**, eager byte-identical,
+  nothing minted. Three ceilings raised while green (43 B / 77 B / 630 B margins), said out loud.
+- **Break tests: eleven.** Ten red where intended (61 · 42 · 45 · 12 · 20 · 15 · 8 · 36 · 3, with M4 and
+  M10 reddening at 320 ONLY, which proves they discriminate by width). **M7 refused**, and the
+  refusal earned §7k/§7l: the reorder and the reveal are independently sufficient for what §7
+  asserted, so only the document ORDER catches a regression. M7b then reds 5. 396 → 406.
+  Two non-vacuity floors fired in anger (§0g on §9, §0f on §6a). One round was correctly VOID.
+
+### What I got wrong
+1. **My view count was eight; a worker's ten was right.** My grep went through a `sed` blind to
+   two views' multiline props.
+2. **My break harness ran git with repo-root pathspecs from `app/`**, so a restore silently
+   no-opped and left the tree mutated — CLAUDE.md's own recorded rule, walked into. Caught only
+   because the next run's anchor guard reported 0 matches. A GUARD 0 now refuses to start unless
+   the tree is clean and marker-free.
+3. **Two of my gate's own assertions were wrong**, both caught by the gate: §1g's arithmetic, and
+   §0g's floor firing on a §9 that had become vacuous *because the fix removed its subject*.
+4. **My first shatter detector flagged every baseline-aligned flex row**, and my first heartbeat
+   counter matched `<html>` and a `<style>` tag — both instruments wider than their claim.
+5. I launched the break harness in the same command that printed `M src/styles.css`, and did not
+   read my own output before proceeding.
+
+### Not fixed, and named
+The phone block panel is still 2,725px in six sections. **Total fees and median fee for a mined
+block are not available from any endpoint this site has**, so §3.4's ask for them is declined
+rather than deferred. `ClassicBlockDetail`/`DetailItem` are dead code. `size`/`in/out`/`ring`/
+`fee` are absent from the phone list (one tap away). `styles.css:3058` says "Classic and
+Orbital" against five `reflow: true` entries. CLAUDE.md's `ci.yml` figure measures 31 not 30,
+and "12 individually-named offline gates" measures 14.
+
+**No human has seen the rendered result in a browser.**
 
 ## 8 · LOOP FEEDBACK
-- The brief's §1 measured at desktop and generalised to a phone. Its own §6 says so. Six
-  premises did not survive. **A brief that states its own instrument's limit should have
-  that limit read before its conclusions are.**
-- The brief asked for a table redesign; the table was structurally broken. Reading the
-  render found in one screenshot what the DOM census did not name.
+- The brief measured at desktop and generalised to a phone, and said so in its own §6. **A brief
+  that states its instrument's limit should have that limit read before its conclusions are.**
+- The brief asked for a table redesign; the table was structurally broken. Reading the render
+  found in one screenshot what a DOM census did not name.
+- A fix can remove its own gate's subject. Only a non-vacuity floor counting the SUBJECT rather
+  than the SYMPTOM catches it.
+- `PREFLIGHT`-style recon dispatched concurrently with editing measured a moving tree; both
+  affected agents detected it themselves and said so unprompted. Dispatch recon before editing,
+  or point it at a pinned worktree.

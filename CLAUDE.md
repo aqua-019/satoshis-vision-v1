@@ -896,7 +896,56 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   their gap is UNCHANGED at 265,000, which is the construction `totalJsRaw`'s own comment
   describes. The sum-of-the-two-real-budgets reconciliation is lapsed for a THIRTEENTH release
   and is still not this PR's to make.
-  **BREAK TESTS: <<<PENDING>>>**
+  **ELEVEN BREAK TESTS, and the two that did not simply go red taught the most.**
+  M1 the `display: contents` reverted → **61** reds, and the assertion prints the defect in its
+  own words: `the header cells occupy 1 distinct x of 4` · M2 the ladder anchor neutered → **42**,
+  `it lands in the middle third (frac 0.8909)` and `one block either side of NOW is fully visible
+  (2 left, 0 right)` · M3 the duplicate feed restored → **45**, `exactly ONE element scrolls
+  horizontally (2: div 1755/296 · table-scroll 560/266)` · M4 the three gutters restored → **12,
+  AND AT 320 ONLY** — `99 of 366` cells clip and `0 left, 0 right` — which is the assertion
+  discriminating by width rather than firing on everything · M5 the 13px tokens removed → **20**,
+  `185 of 463 visible text nodes below 13px` · M6 the tap floor removed → **15**, `2 of 12 targets
+  under 44px` at every stage · M8 the duplicate pill restored → **8** · M9 the cards stop being
+  controls → **36** · M10 the txid track back to a fraction → **3, at 320 ONLY**, the same
+  discrimination property as M4.
+  **M7 REFUSED TO GO RED, AND THE REFUSAL EARNED A REAL ASSERTION.** Reverting `MemViewShell`'s
+  child order — putting the 60-row table back BETWEEN the body and the detail — left all 396
+  green, with the mutation proven applied and the build proven good. The reason is that
+  `useDetailReveal` scrolls the panel into view EITHER WAY, so §7c's "it is in the viewport" was
+  satisfied by the reveal ALONE: **the reorder and the reveal are INDEPENDENTLY SUFFICIENT** for
+  what §7 asserted — p4·M3's two-defence result, in a different subsystem. What the reorder buys
+  is DISTANCE, and nothing was measuring it: with it, ladder 705 → detail 932 → table 1324, so the
+  reader travels 932px; without it the detail sits at 2,806 and the restore has to bring them all
+  the way back. New §7k/§7l assert the ORDER, which a scroll cannot fake, with a floor so they
+  cannot pass over an absent table. **M7b then reds 5**, `the detail renders ABOVE the table in
+  document order (detail 2806, table 932)`. 396 → **406** assertions.
+  **AND M9 FIRED §0f's NON-VACUITY FLOOR, the SECOND time a floor caught a check losing its
+  subject in this release.** With the cards no longer controls the tap-target selector finds
+  `2 tap targets` instead of 12, so §6a's absence check had lost five sixths of what it sweeps —
+  it would still have reported zero targets under 44px, truthfully and uselessly. §0g caught the
+  same shape in §9 during the gate's first run. Two floors, two saves, in one release.
+  **M8's RED WAS NOT WHERE I EXPECTED IT, AND THAT IS A FINDING ABOUT THE PAGE.** Restoring the
+  duplicate `LIVE · UPDATED` pill reds §7g — `the tracked state still has exactly one scroller
+  (2: main 529/366 · div 1755/366)` — as well as §8. The second pill was never merely cosmetic
+  duplication: inside `.mempool-search-bar` it widens that flex row enough to make `.main` a
+  horizontal scroller once a block is tracked. Removing it fixed two things and only one of them
+  was known.
+  **AND M10's FIRST RUN WAS VOID RATHER THAN A PASS — GUARD 3 CAUGHT IT.** The `serve-dist`
+  process on 4173 died between rounds, so the harness's pre-flight 200 check failed and the round
+  was recorded `VOID-NO-SERVER` instead of running the gate against nothing. p4·02 lost a whole
+  round of six mutations to exactly that, where every run produced `ERR_CONNECTION_REFUSED`, no
+  named red and no summary — and a grep for the red marker over a crash returns EMPTY, which
+  reads exactly like "no failures found". Re-run against a live server it reds 3.
+  **AND MY BREAK HARNESS LEFT THE TREE MUTATED ON ITS FIRST ATTEMPT — CLAUDE.md's OWN RECORDED
+  RULE, WALKED INTO.** Its git commands ran with `cwd=app/` against repo-root pathspecs, so
+  `git diff` matched nothing and the guard aborted on a mutation that HAD landed, while
+  `git checkout -- app/src/styles.css` silently failed. The NEXT run then measured a tree still
+  carrying `display: block` and reported M1's anchor as missing — the only reason it was caught.
+  Every touched file re-proven against the COMMITTED BLOB, marker-swept, rebuilt; and a GUARD 0
+  added that REFUSES TO START unless the tree is clean and marker-free, which makes the rule
+  structural rather than remembered. **The same pathspec mistake then bit a `git add` twice more
+  in the same session, from the same cause: this repo's commands run from `app/` and its paths
+  are written from the root.**
   **NOT FIXED, and named**: the phone block panel is still **2,725px in six sections** in a
   310px column — restructuring `LiveBlockDetail` into a phone form is its own change;
   **TOTAL FEES AND MEDIAN FEE FOR A MINED BLOCK ARE NOT AVAILABLE FROM ANY ENDPOINT THIS SITE
