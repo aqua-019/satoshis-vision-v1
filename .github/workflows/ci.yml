@@ -364,8 +364,54 @@ jobs:
       # nor CI. It was run FIRST against an untouched build before any change
       # was made to it, per v2·3b's rule that you never wire a red gate: it
       # reported 26 passed · 0 failed, exit 0. Nothing needed fixing. Orphans 7 → 6.
+      # ── p4·M8 · WHY THE E2E STEP NOW TEES ITS OUTPUT ──────────────────────
+      #
+      # This chain is 39 members joined by `&&`, so a red anywhere prints its
+      # own named assertion and then the step exits 1 — and the ONLY place that
+      # named assertion lands is the job log. A job log downloads from Azure
+      # blob storage, which the sandbox this repo is developed in answers with
+      # `403 to CONNECT`. So the one artifact that says WHICH gate failed is
+      # structurally unreadable from the machine that has to fix it, and two
+      # rounds of this PR were spent bounding the failure by which POSITION the
+      # `&&` chain had reached rather than by reading its name.
+      #
+      # The channel that IS readable is workflow ANNOTATIONS: `::error::` lines
+      # surface through the check-runs API, which the sandbox reaches fine.
+      # Confirmed by reading this job's existing two annotations (the Node 20
+      # deprecation warning and the bare "Process completed with exit code 1")
+      # through that API before writing this.
+      #
+      # So the run is teed to a file and a follow-up step, on failure only,
+      # re-emits the ❌ lines as annotations. It changes NOTHING about what the
+      # chain asserts or in what order — `set -o pipefail` is load-bearing so
+      # that `tee` cannot swallow the chain's exit code, which is p4·05's
+      # recorded trap (a wrapper's status read as the gate's).
+      #
+      # Bounded at 12 annotations because GitHub caps what it will render and a
+      # truncated list that does not say it was truncated is the same defect one
+      # level up. The count is printed either way.
       - name: 'E2E gates (39) — memviews · memphone · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · legality · mine · site · protocol · explorer · +22'
-        run: npm run verify:e2e
+        run: |
+          set -o pipefail
+          npm run verify:e2e 2>&1 | tee /tmp/e2e-chain.log
+
+      - name: 'E2E failure — re-emit the named reds as readable annotations'
+        if: failure()
+        run: |
+          LOG=/tmp/e2e-chain.log
+          if [ ! -f "$LOG" ]; then
+            echo "::error::the e2e chain produced no log at all — it died before its first gate"
+            exit 0
+          fi
+          TOTAL=$(grep -c '❌' "$LOG" || true)
+          LAST_OK=$(grep -o '✅ verify-[a-z-]*' "$LOG" | tail -1)
+          echo "::error::e2e chain failed · ${TOTAL} red lines · last gate to report GREEN was ${LAST_OK:-none} (so the red is the gate AFTER it)"
+          { grep '❌' "$LOG" | head -8; grep '❌' "$LOG" | tail -4; } | while IFS= read -r line; do
+            printf '::error::%s\n' "$(printf '%s' "$line" | tr -d '\r' | cut -c1-400)"
+          done
+          tail -3 "$LOG" | while IFS= read -r line; do
+            printf '::error::tail: %s\n' "$(printf '%s' "$line" | tr -d '\r' | cut -c1-400)"
+          done
 
       # ── v2·3b: four gates that existed, asserted real things, and ran in
       # NOTHING. No npm script, no CI step, so nobody had run them in months —
