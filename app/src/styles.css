@@ -3602,6 +3602,14 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   }
   .classic-depth-row > *:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
 
+  /* MEASURED AFTER THE 13px RAISE, and it is the one thing that raise cost:
+     at 320 in a 2-up card, `835,804` at 22px beside `pcn/B` at 13px is 139px of
+     content in a ~128px cell, and the unit ran 16.2px past `.main`'s edge —
+     enough to make `.main` a second horizontal scroller (312/296) where the
+     brief allows exactly one. The number and its unit may stack; nothing else
+     in the card can yield. Inert above this width, where the row never fills. */
+  .classic-tier-fig { flex-wrap: wrap; }
+
   /* Four fee cards stacked is ~1000px of one number each. 2x2 halves it and
      keeps the coloured top borders — which the brief correctly calls the
      fastest read on the page — at the same size. */

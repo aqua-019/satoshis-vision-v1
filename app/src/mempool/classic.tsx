@@ -401,7 +401,7 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
             onMouseEnter={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(0)"; }}>
             <div className="mono" style={{ fontSize: "var(--fs-mono)", fontWeight: 700, letterSpacing: "0.18em", color: tier.color, marginBottom: "var(--sp-2)" }}>{tier.label}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-1)", marginBottom: "var(--sp-1)" }}>
+            <div className="classic-tier-fig" style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-1)", marginBottom: "var(--sp-1)" }}>
               <span className="mono" style={{ fontSize: 22, fontWeight: 500, color: "var(--ink-100)" }}>{Math.round(med).toLocaleString()}</span>
               <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>pcn/B</span>
             </div>

@@ -361,5 +361,69 @@ button.proto-btn, a.proto-btn { font-size: 11.5px; }
      which is p4·03's subject. Recorded with numbers rather than
      half-fixed. */
   .main, .main * { overflow-wrap: break-word; }
+
+  /* ══ p4·M8 — THE CLASSIC MEMPOOL VIEW READS AT 13px ON A PHONE ═════════
+     A RAISE ABOVE THE FLOOR ABOVE, NOT A FIX FOR A VIOLATION OF IT. Measured
+     before this: 673 visible text nodes inside `[data-mem-view="classic"]` at
+     390, of which 532 are 12.00px and 141 are 12.50px, and NONE is below 12.
+     The block above is already satisfied on this view and stays the site-wide
+     minimum; this is one surface choosing to be more generous than it.
+
+     ── WHY THIS VIEW AND WHY NOW ──────────────────────────────────────────
+     `/live/mempool?v=classic` is the site's DEFAULT view on its flagship
+     surface — the page a phone lands on — and it is the densest: 673 text
+     nodes against, say, /about/site's low hundreds. Density is exactly where
+     a point of size is worth most.
+
+     AND THE ATTEMPT HAS BEEN MADE TWICE BEFORE AND RECORDED AS FAILED.
+     verify-memviews.mjs's scenario 4 comment says "two attempts at raising the
+     type (every atom, then just the `--fs-label`)" did not hold because "the
+     mempool phone layout has no slack". That was TRUE of the layout it was
+     written against — three nested horizontal gutters spending 120px of a
+     320px viewport, which left panel headers 174px wide. p4·M8's composition
+     block in styles.css removes them; content goes 174 → 264 at 320 and
+     174 → 334 at 390. The slack that was missing is what this release built.
+     Re-measured on the current tree at 320/360/390/430, base against 13px:
+     page overflow 0 in ALL EIGHT readings, ellipsis-clipped elements
+     UNCHANGED, new mid-word breaks ZERO, document height +2.5-3.2%.
+
+     ── WHY 13 IS NOT A NEW NUMBER ─────────────────────────────────────────
+     `--fs-chart-label` is already 13px below 768 (:183), pinned by
+     verify-legibility. This view adopts an existing rung rather than minting
+     one, which is what keeps the answer to "how many type sizes does a phone
+     have?" from growing.
+
+     ── WHY THREE DECLARATIONS AND NOT ONE ─────────────────────────────────
+     Measured stepwise, injecting each in turn and counting sub-13 nodes:
+       673 → 522 with `--fs-label` alone   (151 moved, ~22%)
+       522 → 381 with `--fs-mono` too      (292 moved, ~43%)
+       381 →   0 with the selector list    (the remaining ~57%)
+     `--fs-mono` needs naming because it has NO override in the block above at
+     all — `clamp(12.5px, 0.9vw, 14px)` resolves to 12.50px at 390, and that is
+     every one of the 141. The selector list is needed because the block above
+     sets `font-size: 12px` on 40 selectors as LITERALS, which a token cannot
+     reach; each is re-stated here scoped to this view and LATER in source, so
+     it wins at equal specificity with no `!important` anywhere in this block.
+
+     ── WHY IT IS HERE AND NOT IN styles.css ───────────────────────────────
+     Measured: the same declarations placed in `@layer components` LOSE — the
+     layer order statement puts `utilities` last, so a components rule cannot
+     beat a utilities one whatever its specificity or source position. This
+     sheet is `@layer utilities`, which is the only place the raise can live.
+     It must also sit AFTER `:root { --fs-label: 12px }` at :270 and INSIDE a
+     `max-width: 720px` media block: verify-legibility's assertion 1 blanks
+     media bodies before its exactly-once token check, so a declaration inside
+     any @media is invisible to it — and a declaration OUTSIDE one would red. */
+  [data-mem-view="classic"] { --fs-label: 13px; --fs-mono: 13px; }
+  [data-mem-view="classic"] .pill,
+  [data-mem-view="classic"] .prov,
+  [data-mem-view="classic"] .stat .lbl,
+  [data-mem-view="classic"] .stat .sub,
+  [data-mem-view="classic"] .kicker,
+  [data-mem-view="classic"] .mem-tbl__c,
+  [data-mem-view="classic"] .data-legend,
+  [data-mem-view="classic"] .data-legend__gloss,
+  [data-mem-view="classic"] button.proto-btn,
+  [data-mem-view="classic"] a.proto-btn { font-size: 13px; }
 }
 }
