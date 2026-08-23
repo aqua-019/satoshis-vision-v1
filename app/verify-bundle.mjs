@@ -322,7 +322,22 @@ const BUDGETS = {
   // `:root { --fs-label: 12px }` inside the media query reaches all of them for
   // the cost of one declaration. Comments are free here (Vite minifies the
   // production sheet), so the long argument in styles-legibility.css costs 0 B.
-  cssGz: 18_600,
+  /* p4·M8 RAISE, 18,600 -> 19,000, AND IT IS AN UNCROSSED ONE — said out loud,
+     on p4·02's own recorded precedent for this exact budget. Built 18,557, so
+     the margin was 43 B, or 0.23%. p4·02 raised this ceiling from 18,200 while
+     GREEN at 18,143 (margin 57 B, 0.3%) with the argument that "0.3% is not
+     strictness, it is a budget that has stopped working", against a budget
+     whose own comment two lines up says it deliberately runs ~2.5% where the
+     JS ceilings run ~10%. 0.23% is tighter than the case that argument was
+     written for. 18,557 × 1.025 = 19,021 -> 19,000, margin 443 — the same
+     method and almost exactly the ~447 p3·13 recorded.
+     THE +373 IS ONE BLOCK PLUS ONE LINE. p4·M8's phone composition is ~30
+     selectors in styles.css and 11 in styles-legibility.css; the single
+     `.mem-tbl__r { display: contents }` that fixes the transposed table on all
+     ten views, in both states it renders in, costs a handful of bytes. Comments
+     are free (Vite minifies the production sheet), so the long arguments in
+     both sheets cost 0 B. */
+  cssGz: 19_000,
   // Every JS chunk, counted once. The drift detector for "we shipped 200 kB of
   // lazy code nobody has opened yet". Successor to PERF-BASELINE.md:75's
   // 673.8 kB.
@@ -682,7 +697,16 @@ const BUDGETS = {
      eagerJsRaw 280,000 + lazyJsRaw 982,000 = 1,262,000 against this line's
      1,247,000, so the "sum of the two real budgets" construction this comment
      block records has now been lapsed for twelve releases. */
-  totalJsRaw: 1_247_000,  // p4·M7: built 1,244,003 on the FINAL tree, margin 2,997.
+  /* p4·M8 RAISE, 1,247,000 -> 1,251,000. Moves WITH `lazyJsRaw` by the same
+     4,000, so the gap between them is UNCHANGED at 265,000 — which is the
+     construction the paragraph above describes and the reason this backstop
+     exists. Built 1,246,370, margin 4,630, against a base of 1,244,003: the
+     same +2,367 the per-stem pairing attributes, twice over.
+     THE RECONCILIATION IS STILL NOT DONE and still is not this PR's to make:
+     eagerJsRaw 280,000 + lazyJsRaw 986,000 = 1,266,000 against this line's
+     1,251,000, so the "sum of the two real budgets" construction has now been
+     lapsed for thirteen releases. */
+  totalJsRaw: 1_251_000,  // p4·M8: built 1,246,370 on the FINAL tree, margin 4,630.
   //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
   //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
   //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
@@ -1349,7 +1373,19 @@ const BUDGETS = {
      `ColdBoot` is `React.lazy` in App.tsx, so it is a DYNAMIC import, and
      `staticClosure` reads `.imports` and never `.dynamicImports`. The splash is
      a second round-trip that no route's first load pays for. */
-  lazyJsRaw: 982_000,   // p4·M7: built 979,555 on the FINAL tree, margin 2,445 (base 977,169).
+  /* p4·M8 RAISE, 982,000 -> 986,000, ALSO UNCROSSED and for the same stated
+     reason: built 981,923 leaves 77 B, which is 0.008% — an identifier rename
+     would red it. The delta is +2,367 and it is ENTIRELY LAZY, paired per stem
+     against an ISOLATED `git worktree` build of 1ba3923 with its own dist/ and
+     node_modules: `classic` 19,163 -> 20,852 (+1,689) · `mempool` 7,054 ->
+     7,629 (+575) · `tx` 30,344 -> 30,447 (+103) = +2,367, which IS
+     `totalJsRaw`'s whole delta too. RESIDUAL ZERO on both halves.
+     72 of 75 stems SIZE-IDENTICAL. The EAGER entry is BYTE-IDENTICAL at 101,533
+     — this release adds no eager byte at all, which is what a change confined
+     to one lazy view and one lazy shared component should read as. Chunk count
+     76 = 76, nothing minted: `useLadderAnchor.ts` is a new module but every one
+     of its importers is already inside classic's chunk group. */
+  lazyJsRaw: 986_000,   // p4·M8: built 981,923 on the FINAL tree, margin 4,077 (base 979,556).
   //   RE-DERIVED after the LAST src commit, not after the last green run: the
   //   first measurement read 952,561 and three later commits (SITE_PR, a
   //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing
