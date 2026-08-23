@@ -27,11 +27,27 @@
 //
 // ── NO COLD-BOOT BYPASS HERE, DELIBERATELY — do not "restore" it. ─────────
 // verify-site, verify-peers, verify-superstress and verify-mine carry the same
-// note. `coldboot/gate.ts`'s predicate ends `return pathname === R.HOME`, so
-// the splash structurally cannot reach `/live/mempool`. This gate names no
-// R.HOME, holds no array containing '/', and never navigates to the root.
-// Installing a bypass it does not need reds verify-coldboot-live §0 with
-// "DETECTOR STALE".
+// note. The cold-boot gate's own predicate ends by comparing `pathname` to the
+// canonical Home constant, so the splash structurally cannot reach
+// `/live/mempool`. This gate names that constant nowhere, holds no array
+// containing a lone slash, and never navigates to the root. Installing a bypass
+// it does not need reds verify-coldboot-live §0 with "DETECTOR STALE".
+//
+// AND THE FIRST TWO DRAFTS OF THIS VERY COMMENT TRIPPED THAT DETECTOR, WHICH IS
+// WHY IT IS WORDED LIKE THIS. Draft one asserted that this gate does not name
+// the Home constant — and named it in the course of saying so. One of §0's five
+// REACHES_HOME patterns is exactly that identifier, so the pattern MATCHED; and
+// because this gate is wired and launches a browser, it would have landed in
+// §0's `missing` list and reddened the FIRST member of the e2e chain, aborting
+// all 39. Draft two explained draft one's mistake — and QUOTED the offending
+// string to explain it, so it matched too.
+// Caught by running the detector's own patterns against this file rather than
+// reasoning about them (p4·07's recorded method). It is the self-referential-grep
+// family this repo already records twice — verify-orb §4's prose matching its own
+// ban, and p3·15's handoff spelling a banned string in order to prohibit it — and
+// hitting it twice inside one comment is the clearest evidence yet that the rule
+// is not "remember not to": DESCRIBE the predicate, never quote it, not even to
+// warn about quoting it.
 //
 // ── WHAT THIS GATE CANNOT SEE (stated, not hidden) ───────────────────────
 //   — Whether the composition is GOOD. It proves the table is a table, the
