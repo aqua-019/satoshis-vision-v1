@@ -8,6 +8,7 @@ import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { BlockEta } from "@/mempool/mem-stats";
 import { NodeProvenance } from "@/design/primitives";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
+import { useLadderAnchor } from "@/mempool/useLadderAnchor";
 import { useReducedMotion } from "@/design/useReducedMotion";
 
 interface ViewProps {
@@ -39,17 +40,35 @@ interface ViewProps {
 
 export function ClassicBlock({ block, status, confLabel, tracked, tracking, data, onClick, glideKey, etaNode }: any) {
   const isQueued = status === "queued" || status === "next";
+  // A card is interactive exactly when a tap does something: it is confirmed AND
+  // a handler was supplied. `isQueued` is the same predicate ClassicRibbon's own
+  // `confirmed` uses, negated — kept derived here so the two cannot disagree.
+  const interactive = !isQueued && typeof onClick === "function";
   const trackedTxId = tracked && tracking?.kind === "tx" ? tracking.id : undefined;
   return (
+    // p4·M8 — a card that opens a panel is a CONTROL, and this one was a bare
+    // <div>: no role, no tabindex, no accessible name, so it was unreachable by
+    // keyboard and announced as nothing. It also showed `cursor: pointer` on the
+    // two QUEUED/NEXT cards and did nothing when they were tapped — the guard
+    // `confirmed && …` lives INSIDE the handler, so every card claimed to be
+    // interactive and two of twelve were not. `interactive` is now derived from
+    // the same fact the handler tests, so the cursor, the role, the tab stop and
+    // the label all agree with what a tap actually does.
     <div
-      onClick={onClick}
+      onClick={interactive ? onClick : undefined}
+      onKeyDown={interactive ? (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); }
+      } : undefined}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-label={interactive ? `Block ${block.height.toLocaleString()}, ${confLabel}` : undefined}
       data-glide-key={glideKey}
       data-tracked-block={tracked ? block.height : undefined}
       data-tracked-tx={trackedTxId}
       className={"mp-block" + (glideKey != null ? " glide-block" : "")}
       style={{
         display: "flex", flexDirection: "column", gap: "var(--sp-1)",
-        cursor: onClick ? "pointer" : "default", minWidth: 108,
+        cursor: interactive ? "pointer" : "default", minWidth: 108,
       }}
     >
       <div style={{ padding: "0 2px" }}>
@@ -129,6 +148,10 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   // drop a single vertical UNLOCK divider in the gap immediately before it.
   const dividerIndex = ribbon.findIndex((r) => r.status !== "queued" && r.status !== "next" && r.b.conf === CONF_UNLOCK);
 
+  // The pending/mined boundary — the first slot that is neither queued nor next.
+  // Derived rather than written as a literal 2 so it follows `queued` above.
+  const nowIndex = ribbon.findIndex((r) => r.status !== "queued" && r.status !== "next");
+
   // Glide the row when the tip advances (FLIP). Keyed to chainTip(data) — the
   // newest CONFIRMED block height (data.blocks[0].height), i.e. the exact value
   // the ribbon renders from — NOT data.height (get_info chain length), which
@@ -137,12 +160,23 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   // is a child of ClassicBlock, so it travels with its block automatically.
   const glideRef = useRibbonGlide(chainTip(data));
 
+  // p4·M8 — land the ladder on the NOW divider instead of on its far-left card.
+  // The ladder is the one element on the phone composition that still scrolls
+  // horizontally, and it opened at scrollLeft 0 — i.e. on `~QUEUED`, the card
+  // carrying an em-dash and no reading. See useLadderAnchor for why this is a
+  // one-shot and why it is instant at every motion preference.
+  const ladderRef = useLadderAnchor(glideRef);
+
   return (
-    <div style={{ position: "relative", padding: "var(--sp-4) 20px var(--sp-6)" }}>
+    <div className="classic-ribbon" style={{ position: "relative", padding: "var(--sp-4) 20px var(--sp-6)" }}>
       <div className="mono" style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", marginBottom: "var(--sp-2)", fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>
         Confirmations <NodeProvenance source="session" keys={["blocks"]} status={data.status} /> <span className="dim2">tip − block height</span>
       </div>
-      <div ref={glideRef} style={{ display: "flex", alignItems: "flex-start", gap: "var(--sp-2)", overflowX: "auto", paddingBottom: "var(--sp-3)" }}>
+      {/* `data-mem-ladder` is the ladder's only stable handle. It had none — an
+          unclassed div with an inline `overflowX: auto`, reachable only as the
+          parent of `[data-glide-key]` — so no gate could address the one
+          element the phone composition permits to scroll. */}
+      <div ref={ladderRef} data-mem-ladder style={{ display: "flex", alignItems: "flex-start", gap: "var(--sp-2)", overflowX: "auto", paddingBottom: "var(--sp-3)" }}>
         {ribbon.map((r, i) => {
           const confirmed = r.status !== "queued" && r.status !== "next";
           // Live next-block countdown on the QUEUED/NEXT cards, via the shared
@@ -161,6 +195,26 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
             // keep an index key and do not glide. The UNLOCK divider is a static
             // flex sibling with no data-glide-key, so it's invisible to the glide.
             <React.Fragment key={confirmed ? "b" + r.b.height : "q" + i}>
+              {/* p4·M8 — the NOW divider. The Bitcoin block explorer this view
+                  was forked from in v4 keeps a dashed rule at the pending/mined
+                  boundary, and it is what makes a two-card phone viewport
+                  legible: one block either side says "this is the present".
+                  (Named by description rather than by domain: that domain is one
+                  of verify-future §15's embargoed strings, and §15 walks the
+                  whole tree over .tsx — see this file's sibling note in
+                  verify-memphone.mjs.)
+                  `nowIndex` is the first CONFIRMED slot, derived
+                  from the same `status` the cards read rather than from a
+                  literal 2, so a change to the queued-card count moves it.
+                  It is also the anchor useLadderAnchor scrolls to. */}
+              {i === nowIndex ? (
+                <div data-now-divider aria-hidden style={{ alignSelf: "stretch", flex: "0 0 auto", display: "flex",
+                     flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--sp-1)", padding: "0 var(--sp-1)" }}>
+                  <div style={{ width: 0, flex: 1, borderLeft: "1px dashed var(--ink-40)" }} />
+                  <div className="mono classic-now" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", color: "var(--ink-60)",
+                       writingMode: "vertical-rl", transform: "rotate(180deg)" }}>NOW</div>
+                </div>
+              ) : null}
               {i === dividerIndex ? (
                 <div aria-hidden style={{ alignSelf: "stretch", flex: "0 0 auto", display: "flex",
                      flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--sp-1)", padding: "0 var(--sp-1)" }}>
@@ -226,7 +280,7 @@ export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
 
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <div style={{ padding: "var(--sp-3) 20px 0" }}>
+      <div className="classic-shell" style={{ padding: "var(--sp-3) 20px 0" }}>
         {/* MemViewShell (mempool-shared.tsx) supplies the search bar, heartbeat,
             tracked-chip and stat strip shared by all six mempool views. The
             ribbon stays mounted while tracking (keepBodyWhileTracking, default
@@ -335,7 +389,7 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
   );
 
   return (
-    <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--sp-2)" }}>
+    <section className="classic-tiers" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--sp-2)" }}>
       {tierStats.map(({ tier, tx, med, sampleTx }) => {
         const costXmr = sampleTx.fee;
         const costUsd = costXmr * xmrUsd;
@@ -352,7 +406,7 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
             onMouseEnter={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(0)"; }}>
             <div className="mono" style={{ fontSize: "var(--fs-mono)", fontWeight: 700, letterSpacing: "0.18em", color: tier.color, marginBottom: "var(--sp-2)" }}>{tier.label}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-1)", marginBottom: "var(--sp-1)" }}>
+            <div className="classic-tier-fig" style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-1)", marginBottom: "var(--sp-1)" }}>
               <span className="mono" style={{ fontSize: 22, fontWeight: 500, color: "var(--ink-100)" }}>{Math.round(med).toLocaleString()}</span>
               <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>pcn/B</span>
             </div>
@@ -371,7 +425,7 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
 
 function ClassicCaption() {
   return (
-    <div className="mono" style={{
+    <div className="mono classic-caption" style={{
       fontSize: "var(--fs-body)", color: "var(--ink-60)", lineHeight: 1.55,
       padding: "var(--sp-2) var(--sp-3)", borderLeft: "2px solid color-mix(in srgb, var(--accent-structural) 50%, transparent)",
       background: "color-mix(in srgb, var(--accent-structural) 4%, transparent)", borderRadius: "0 4px 4px 0",
@@ -396,11 +450,11 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
   const weightLimit = data.blockWeightLimit || 0;
   const fill = weightLimit > 0 ? Math.min(1, totalBytes / weightLimit) : null;
   return (
-    <div style={{
+    <div className="classic-panel" style={{
       background: "var(--surface-raised)", border: "1px solid var(--rule)",
       borderRadius: 8, padding: "var(--sp-3) var(--sp-4)",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-2)" }}>
+      <div className="classic-hd" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-2)" }}>
         <span className="mono" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)" }}>Projected next block · #{(height + 1).toLocaleString()}</span>
         <span className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", letterSpacing: "0.06em" }}>ETA ~<BlockEta data={data} /></span>
       </div>
@@ -451,7 +505,7 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
           });
         })()}
       </div>
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", color: "var(--ink-60)", marginTop: "var(--sp-2)" }}>
+      <div className="mono classic-hd" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", color: "var(--ink-60)", marginTop: "var(--sp-2)" }}>
         <span>{fill != null ? Math.round(fill * 100) + "% of block capacity" : "— capacity"}</span>
         <span>{total} tx · {fmtBytes(totalBytes)}</span>
       </div>
@@ -473,11 +527,11 @@ export function ClassicFeeDepth({ buckets }: any) {
   const reduceMotion = useReducedMotion();
   const total = CLASSIC_TIERS.reduce((a, tier) => a + buckets[tier.id].reduce((s: number, t: any) => s + t.size, 0), 0) || 1;
   return (
-    <div style={{
+    <div className="classic-panel" style={{
       background: "var(--surface-raised)", border: "1px solid var(--rule)",
       borderRadius: 8, padding: "var(--sp-3) var(--sp-4)",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--sp-3)" }}>
+      <div className="classic-hd" style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--sp-3)" }}>
         <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)" }}>Fee depth</span>
         <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>by tier · % of mempool weight</span>
       </div>
@@ -492,7 +546,7 @@ export function ClassicFeeDepth({ buckets }: any) {
           // old 2% intent closely enough that the bars measure the same.
           const barScale = Math.max(0.02, pct);
           return (
-            <div key={tier.id} style={{ display: "grid", gridTemplateColumns: "84px 1fr 80px 60px", gap: "var(--sp-3)", alignItems: "center" }}>
+            <div key={tier.id} className="classic-depth-row" style={{ display: "grid", gridTemplateColumns: "84px 1fr 80px 60px", gap: "var(--sp-3)", alignItems: "center" }}>
               <span className="mono" style={{ fontSize: "var(--fs-label)", color: tier.color, letterSpacing: "0.12em", fontWeight: 600 }}>{tier.label}</span>
               <div style={{ position: "relative", height: 18, background: "var(--line-d)", borderRadius: 3, overflow: "hidden" }}>
                 {/* D0673: scaleX rather than width. The element is laid out at full
@@ -577,12 +631,12 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
   }, [mempool]);
 
   return (
-    <div style={{
+    <div className="classic-panel classic-txfeed" style={{
       background: "var(--surface-raised)", border: "1px solid var(--rule)",
       borderRadius: 8, padding: "var(--sp-3) var(--sp-3)",
     }}>
       <style>{CLASSIC_TX_ENTER_CSS}</style>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--sp-2)" }}>
+      <div className="classic-hd" style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--sp-2)" }}>
         <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)", display: "flex", alignItems: "center", gap: "var(--sp-2)" }}><NodeProvenance source="node" keys={["mempool"]} status={status} inline /> last {rows.length} tx in mempool</span>
         <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
           <span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> streaming
@@ -633,7 +687,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
 export function ClassicLanding({ data, onPickTx, trackedTxId }: any) {
   const buckets = React.useMemo(() => classicBucketByTier(data.mempool), [data.mempool]);
   return (
-    <div style={{ padding: "20px var(--sp-5) var(--sp-7)", display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
+    <div className="classic-landing" style={{ padding: "20px var(--sp-5) var(--sp-7)", display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
       <ClassicFeeHero buckets={buckets} xmrUsd={data.price || 0} />
       <ClassicCaption />
       <ClassicProjBlock buckets={buckets} mempool={data.mempool} height={data.height} data={data} />

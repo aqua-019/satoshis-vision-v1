@@ -79,8 +79,14 @@ function PrivacyBadges() {
   ));
 }
 
+// p4·M8 — `mp-backbtn` is a hook for the touch band, not a style. On a phone
+// this is the ONLY dismiss control the reader can reach: TrackChip's `×` renders
+// at x=511.6 in a 390px viewport (measured — 121.6px off the right edge) at
+// 7.3 × 12.5px, so it is neither visible nor tappable there. The inline style
+// sets padding and font-size and never `min-height`, which is why a plain class
+// rule can floor the box without `!important`.
 const BackBtn = ({ onBack }: { onBack?: () => void }) => onBack ? (
-  <button type="button" onClick={onBack}
+  <button type="button" onClick={onBack} className="mp-backbtn" aria-label="Close detail and return to the mempool"
     style={{ appearance: "none", cursor: "pointer", background: "transparent",
       border: "1px solid var(--ink-20)", color: "var(--ink-60)",
       padding: "var(--sp-1) var(--sp-3)", borderRadius: 3,
@@ -503,7 +509,7 @@ export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
             Mined by <b style={{ color: "var(--ink-100)" }}>{block.pool}</b> · {block.timestampIso} · {fmtAge(block.ageSeconds)} ago
           </div>
         </div>
-        <span className="pill live"><span className="led pulse" />{block.confirmations} confirmations</span>
+        <span className="pill live"><span className="led pulse" />{block.confirmations} confirmation{block.confirmations === 1 ? "" : "s"}</span>
       </div>
 
       {/* KPI tiles */}

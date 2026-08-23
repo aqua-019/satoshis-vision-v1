@@ -1767,6 +1767,39 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 .mem-table { display: none; border-top: 1px solid var(--rule); }
 @media (prefers-reduced-motion: reduce) { .mem-table { display: block; } }
 .mem-tbl { width: 100%; display: grid; font: var(--fs-mono)/1.5 var(--f-mono); font-variant-numeric: tabular-nums; }
+/* ── p4·M8 — THE ROW WRAPPERS MUST NOT BE GRID ITEMS ────────────────────────
+   `.mem-tbl` is the grid and its COLUMN TRACKS describe the fields. But its
+   children in the DOM are `.mem-tbl__r` ROW WRAPPERS (mempool-shared.tsx:500,
+   :509), and until this line nothing gave them `display: contents` — so each
+   ROW became one grid item. Row 1 landed in column 1, row 2 in column 2, row 7
+   wrapped to column 1 of the next grid row, and each row's cells stacked
+   VERTICALLY inside it. THE TABLE RENDERED TRANSPOSED, and had since it was
+   written.
+
+   MEASURED at 390×844 before this line, on the fixture's 60 rows: the six
+   header cells `txid / fee/B / tier / size / age / in/out` all sat at x=32 with
+   six DIFFERENT y values, and transactions ran across at x=160/248/322/402/470.
+   After: six DIFFERENT x values (32/52/140/214/294/362) on ONE y. `role="row"`
+   stays 61 and `role="cell"` stays 360 either way — `display: contents` keeps an
+   element with an explicit ARIA role in the accessibility tree, so the semantics
+   the transpose was mangling visually were never lost to a screen reader.
+
+   ── WHY NOBODY SAW IT, AND WHY IT IS NOT A PHONE BUG ──────────────────────
+   `.mem-table` is `display: none` above 768px (:1767), so this component's ONLY
+   rendered states are (a) ≤768px and (b) `prefers-reduced-motion: reduce` at any
+   width (:1768). Both were broken. Measured at 1440×900 under reduce: 2,008px
+   tall, header labels stacked in a 1,154px column. The static table that exists
+   SPECIFICALLY to serve reduced-motion and small-screen readers was the one
+   surface rendering scrambled, on EIGHT of the ten views (abyss · bridge ·
+   circuit · classic · constellation · orbital · pulse · reactor).
+
+   ── WHY NO GATE CAUGHT IT ─────────────────────────────────────────────────
+   `verify-memviews` scenario 3 item 10 counts columns off
+   `.mem-tbl.style.gridTemplateColumns` — the INLINE STYLE. That reads a correct
+   6 for a table that renders nothing like six columns. A declaration is not a
+   layout; count distinct rendered x positions, which is what verify-memphone
+   §1 now does in both directions. */
+.mem-tbl__r { display: contents; }
 .mem-tbl__c { padding: 5px 10px; border-bottom: 1px solid var(--ink-10); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mem-tbl__h .mem-tbl__c {
   color: var(--ink-40); letter-spacing: 0.12em; text-transform: uppercase;
@@ -3077,8 +3110,17 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      which is five short figures rather than content that wants a full row each.
      Collapsed it ran 352px tall, which is most of a phone screen to show five
      numbers. */
-  /* `:not(.mem-tbl)` added in p2·7 — see the note below the .table-scroll rule. */
-  .mp-view--reflow [style*="grid-template-columns"]:not(.mem-stat-strip):not(.mem-tbl) { grid-template-columns: 1fr !important; }
+  /* `:not(.mem-tbl)` added in p2·7 — see the note below the .table-scroll rule.
+     `:not(.classic-depth-row):not(.classic-tiers)` added in p4·M8, for the same
+     reason and by the same remedy p2·7 recorded: this selector is (0,4,0) and
+     carries !important, so a later block CANNOT reshape one of these grids by
+     writing a rule against its own class — measured, `.classic-depth-row` stayed
+     at a single 266px track with a `!important` three-track rule sitting later
+     in the same layer. Both are TABULAR layouts (a tier's label/bar/bytes/pct,
+     and the four fee cards), not panel layouts that want a full row each, so
+     they take the same escape hatch `.mem-stat-strip` and `.mem-tbl` already do
+     and the p4·M8 block below states what they become. */
+  .mp-view--reflow [style*="grid-template-columns"]:not(.mem-stat-strip):not(.mem-tbl):not(.classic-depth-row):not(.classic-tiers) { grid-template-columns: 1fr !important; }
   /* …except the tx feed, which stays a table and swipes inside its own box */
   .mp-view--reflow .table-scroll { overflow-x: auto !important; }
   /* ── p2·7: and except MemTxTable, which is a TABLE, not a panel layout ──
@@ -3411,5 +3453,265 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
    specificity, by source order alone. */
 @media (max-width: 720px) {
   .main, .main--fluid { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+}
+
+/* ══ p4·M8 — THE PHONE GETS A CLASSIC MEMPOOL IT CAN READ ═══════════════════
+   `/live/mempool` is the flagship surface and `?v=classic` is its DEFAULT, so
+   this is the composition a phone lands on. What was there was not a squeeze of
+   the desktop layout — it was the desktop layout with three independent
+   horizontal scrollers inside it and a transposed table.
+
+   ── WHAT WAS ACTUALLY WRONG, MEASURED AT 390x844 dpr3 BEFORE ANY OF THIS ──
+   The brief this work came from opened on a fixed 1756px canvas panned through
+   a keyhole, and that is NOT what a phone renders: `.mp-view--reflow` measures
+   **366px** and `documentElement.scrollWidth === innerWidth` at 320, 360, 390,
+   414 and 430. ZERO page overflow. The v6.0.4 block above has done that job
+   since it was written. The brief measured at desktop and says so in its own §6.
+   Five more of its asks were already satisfied: the stat strip is 2-up (:3047),
+   the telemetry rail is display:none, the footer does not render below 720, the
+   view switcher is already 304x44 in flow, and the bottom edge is BottomTabBar's.
+
+   What WAS wrong, and what this block fixes:
+     1. THREE horizontal scrollers (four at 320) where the brief asks for one.
+     2. Three NESTED horizontal gutters — 20px + var(--sp-5) + var(--sp-4) per
+        side — spending **120px of a 320px viewport**, which left panel headers
+        174px wide at BOTH 320 and 390 and shattered four of them into
+        interleaved columns ("FEE / DEPTH" beside "BY TIER · % OF / MEMPOOL
+        WEIGHT"). The headers were never the defect; the gutters were.
+     3. `LIVE · UPDATED Ns AGO` rendered TWICE, 234px apart — once in
+        `.mp-chrome__right` and again inside `.mempool-search-bar`.
+     4. Two tap targets under 44px: the search field (195x39) and SEARCH (83x30.5).
+
+   ── WHY 720 AND NOT 768 ────────────────────────────────────────────────────
+   768 is styles.css's inherited phone band and carries no claim about touch.
+   720 is D1207's threshold — the width at which BottomTabBar replaces the
+   dropdown nav — and styles-legibility.css:194 already ties the 12px type floor
+   to it for exactly this reason: it makes ONE checkable rule, "the tab bar is
+   visible if and only if the touch composition applies". This block is the
+   second consumer of that threshold and the reason is the same one. The ONE
+   rule below that sits at 768 instead is flagged there, because it must be the
+   exact complement of a 768 rule rather than agree with this one.
+
+   ORDER MATTERS, same as the v6.0.4 block above: several rules here are
+   equal-specificity `!important` against the ≤768 block, so they win by SOURCE
+   ORDER alone. This block must stay after it. ────────────────────────────── */
+
+/* ── 1 · ONE SCROLLER, AND IT IS THE LADDER ───────────────────────────────
+   Scroller 2 is `.table-scroll` inside ClassicTxFeed. It is not shrunk, it is
+   RETIRED on the phone — because `.mem-table` already exists to be the
+   small-screen representation of the same data and was rendering directly
+   beneath it. Measured: all 14 of ClassicTxFeed's txids appear among
+   `.mem-table`'s 60 rows — 100% overlap, five of six columns the same quantity
+   under a different label. Two tables of one truth is the defect this repo
+   records against itself repeatedly; the phone showed both, for ~700px.
+
+   SHRINKING IT WAS TRIED AND MEASURED AND DOES NOT WORK: `.mp-txbody`'s
+   `min-width: 560px !important` (:3119) looks like the cause, but with it
+   removed `.mp-txgrid`'s own min-content is still 371px against a 252px box, so
+   it scrolls 119px anyway. The panel has to go, not get narrower.
+
+   THIS ONE RULE IS AT 768, NOT 720, DELIBERATELY. It must be the exact
+   complement of `.mem-table { display: block }` at :3049 — above 768 the feed
+   shows and the table is hidden; at 768 and below the table shows and the feed
+   is hidden. Setting it at 720 would leave a 721-768 band rendering BOTH, which
+   is the duplication this rule exists to remove. Reduced motion at desktop is
+   untouched: `.mem-table` shows there via :1768 and the feed shows too, which
+   is correct at 1538px and is the state verify-memviews scenario 3 measures. */
+@media (max-width: 768px) {
+  [data-mem-view="classic"] .classic-txfeed { display: none; }
+}
+
+@media (max-width: 720px) {
+  /* Scroller 3 is `.mem-table`. The 512px is NOT the `min-width: max-content` at
+     :3050 — that rule is INERT, already beaten by `.mp-canvas-scroll * {
+     min-width: revert !important }` (:2880) — it is the GRID TRACK SUM of
+     MemTxTable's inline `gridTemplateColumns`. So the fix has to change the
+     TRACKS, and it needs `!important` to beat an inline declaration.
+
+     SIX COLUMNS DO NOT FIT IN ~326px AND NO TYPE SIZE MAKES THEM. Measured
+     before this block: 100 of 366 cells were clipping their own content by
+     `text-overflow: ellipsis` — a txid needs 128px and had 74. The phone
+     therefore shows FOUR fields — txid, fee/B, tier, age — selected BY FIELD
+     through `data-col` rather than by position, because the ten views order
+     their columns differently (pulse is `txid, age, perB, …` where classic is
+     `txid, perB, tier, …`), so an nth-child rule would hide a different
+     quantity on each one. Every view's list starts with `txid`, which is what
+     lets one track list serve all ten.
+
+     WHAT THIS COSTS, SAID PLAINLY: `size`, `in/out`, `ring` and `fee` are not
+     rendered in the phone list. They are one tap away — a row click calls
+     `onPickTx`, which opens the transaction detail carrying every field — and
+     the alternative was a fifth and sixth column at ~54px each, which is
+     narrower than the ellipsis they would render. This is a viewport decision,
+     not a reduced-motion one: the reduced-motion path at any width above 720
+     still renders the full column set. */
+  .mem-table { overflow-x: visible !important; overflow-y: visible !important; }
+  /* THE FIRST TRACK IS `auto`, NOT A FRACTION, AND THAT IS MEASURED RATHER THAN
+     PREFERRED. With four fractions the txid column resolved to 121.3px at 320
+     against a 125px `0087c3f9…e7b5d2` and all 60 rows ellipsised — and
+     narrowing the cell gutter did NOT fix it, because a fraction hands the
+     space back to every column proportionally: the content shrank 129 → 125 and
+     the track stayed at 121.3. `auto` sizes that track to what the hash
+     actually needs at whatever type size and face the reader has, and
+     `minmax(0, …)` keeps it able to shrink first if a future width cannot
+     afford it. The other three stay fractional because their content is short
+     and bounded. */
+  .mem-tbl {
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.55fr) !important;
+  }
+  .mem-tbl__c[data-col="size"],
+  .mem-tbl__c[data-col="inout"],
+  .mem-tbl__c[data-col="ring"],
+  .mem-tbl__c[data-col="fee"] { display: none; }
+  /* MEASURED: with four columns at 320 the fee cell got 71.3px and needed ~106,
+     so all 60 of them clipped — and the 40px it was short of is almost exactly
+     the width of the unit it repeats 60 times. `pcn/B` is already the column's
+     heading (`FEE/B`), so the phone drops the per-cell restatement rather than
+     the reading. The number itself is never abbreviated. */
+  .mem-tbl__u { display: none; }
+  /* the empty-state cell spans every track and must survive the subset above */
+  .mem-tbl__c[data-col="empty"] { display: block; }
+  .mem-tbl__c { padding-inline: 6px; }
+  /* MEASURED at 320 with the 13px raise: the txid column resolved to 121.3px
+     against a 129px `0087c3f9…e7b5d2`, so all 60 of them ellipsised — 8px
+     short, and the four cells were spending 48px of a 296px box on gutters.
+     Four is enough to keep the columns apart at this width and hands back 16.
+     Scoped to 360 and below because 360 already measured 0 clipped at 6px, and
+     a narrower gutter is a cost the widths that do not need it should not pay. */
+  @media (max-width: 360px) { .mem-tbl__c { padding-inline: 4px; } }
+
+  /* Scroller 4 exists only at 320 and it is `.main`'s own `overflow: auto`
+     (classic.tsx's ClassicView root), driven by ONE element: the ribbon
+     caption's `tip − block height`, in a flex row with no wrap. Letting that
+     row wrap is the whole fix — measured 319 -> 296 at 320px, i.e. exactly the
+     23px that span contributed. */
+  .classic-ribbon > .mono:first-child { flex-wrap: wrap; }
+
+  /* ── 2 · ONE GUTTER, NOT THREE ──────────────────────────────────────────
+     The three paddings nest, so they compound: 20 + 24 + 16 per side. Zeroing
+     the outer two leaves each panel its own 16px and hands the content back
+     90px at every width — measured 174 -> 264 at 320 and 174 -> 334 at 390.
+     This is what un-shatters the four panel headers; nothing below restates a
+     type size to make them fit. */
+  [data-mem-view="classic"] .classic-shell,
+  .classic-shell { padding-inline: 0 !important; }
+  .classic-landing { padding-inline: 0 !important; }
+  .classic-ribbon { padding-inline: 0 !important; }
+
+  /* ── 3 · A HEADER IS A HEADER AND ITS CAPTION IS A CAPTION ───────────────
+     `justify-content: space-between` with two children is right on a desktop
+     row and wrong the moment BOTH children wrap: the reader sees a 2x2 block
+     and cannot tell which half is the heading. Measured at 320 before the
+     gutter fix: "Fee depth" on 2 lines beside "by tier · % of mempool weight"
+     on 2 lines, in 174px. Stacking them is unambiguous at any width, and it is
+     applied here rather than relied upon from the gutter fix alone because the
+     gutter fix is a SIZE change and this is a STRUCTURAL one — a longer caption
+     would re-shatter a merely-wider row. */
+  .classic-hd { flex-direction: column; align-items: flex-start !important; gap: 2px; }
+
+  /* The fee-depth row is `84px 1fr 80px 60px` — 224px of fixed track in a box
+     that has 264px at 320. It becomes two rows: the tier label and its two
+     figures on one line, the bar full width beneath. */
+  .classic-depth-row {
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    gap: 2px var(--sp-2) !important;
+    align-items: baseline !important;
+  }
+  .classic-depth-row > *:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+
+  /* MEASURED AFTER THE 13px RAISE, and it is the one thing that raise cost:
+     at 320 in a 2-up card, `835,804` at 22px beside `pcn/B` at 13px is 139px of
+     content in a ~128px cell, and the unit ran 16.2px past `.main`'s edge —
+     enough to make `.main` a second horizontal scroller (312/296) where the
+     brief allows exactly one. The number and its unit may stack; nothing else
+     in the card can yield. Inert above this width, where the row never fills. */
+  .classic-tier-fig { flex-wrap: wrap; }
+
+  /* Four fee cards stacked is ~1000px of one number each. 2x2 halves it and
+     keeps the coloured top borders — which the brief correctly calls the
+     fastest read on the page — at the same size. */
+  .classic-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+  /* ── 4 · SAY IT ONCE ────────────────────────────────────────────────────
+     Two `LIVE · UPDATED Ns AGO` pills, 234px apart, both pulsing. The one
+     inside `.mempool-search-bar` is the one that goes: it is the second
+     occurrence in reading order, and removing it also un-wraps that flex row
+     (measured: SEARCH at y=316 with the pill pushed to its own line at y=369).
+     The `.mp-chrome__right` instance stays because it sits with the crumbs,
+     above the fold, and is shared with every other view's chrome.
+     This is MemViewShell's markup, so it reaches all ten views — which is
+     correct: every one of them rendered the same two pills on a phone. */
+  .mempool-search-bar .pill { display: none; }
+  .mp-chrome__right .pill { display: inline-flex; }
+
+  /* ── 5 · TAP TARGETS ────────────────────────────────────────────────────
+     WCAG 2.2 AA 2.5.8 is 24px and this repo runs 44 (verify-mobile's TAP_MIN).
+     The search field measured 195x39 and its button 83x30.5 — both are the
+     primary control on the surface, and a near-miss on the button submits
+     nothing while a near-miss on the field does not focus it. */
+  .mempool-search-bar input[type="text"],
+  .mempool-search-bar .proto-btn { min-height: 44px; }
+  .mempool-search-bar .proto-btn { padding-inline: var(--sp-4); }
+
+  /* ── 5b · THE DISMISS CONTROL ──────────────────────────────────────────
+     `← Back` at the top of the detail panel is the ONLY dismiss a phone reader
+     can reach: TrackChip's `×` renders at x=511.6 in a 390px viewport, i.e.
+     121.6px past the right edge, at 7.3 x 12.5px — measured, and it is off-screen
+     on desktop too. The panel is now the first thing under the ladder (see
+     MemViewShell), so this button is the first thing in it. */
+  .mp-backbtn { min-height: 44px; padding-inline: var(--sp-4) !important; }
+
+  /* ── 6 · THE LADDER IS THE ONE THING THAT SCROLLS ───────────────────────
+     Stated positively so the intent survives a future edit: everything above
+     removes an overflow, and this is the one that keeps it. `data-mem-ladder`
+     is the handle classic.tsx now emits; the ribbon had none before, which is
+     why no gate could address it. */
+  [data-mem-ladder] { overflow-x: auto; }
+
+  /* ── RECLAIMING THE NARROWEST LADDER, AND WHY NOT BY BLEEDING ──────────
+     Measured at 320: the ladder's viewport is 296px and the NOW divider is
+     25px, so the room either side is 135.5px against neighbouring block cards
+     of 127.6px and 135.8px. The RIGHT neighbour overran by -0.4px, and the
+     gate passed it only because its "fully visible" test allows 0.5px of slop
+     — a tolerance was the entire thing holding the claim up, which is this
+     file's own rule about what a tolerance is for. CI's Chromium (build 1223,
+     against 1194 in the development sandbox) landed the other side of it and
+     reported 0 cards either side at 320 and only at 320.
+
+     The cause is upstream of the arithmetic: p4·M8's own 13px type raise
+     widened the vertical NOW label, and the brief is explicit that .mp-block
+     is already the right size and must not shrink. So the width had to come
+     from the divider.
+
+     FULL-BLEED WAS TRIED FIRST AND IS REJECTED ON A MEASUREMENT. `width:100vw`
+     with `margin-inline: calc(50% - 50vw)` does return the 24px gutter and
+     does take the right margin to +11.6px — and it makes the view's own
+     `div.main` a SECOND horizontal scroller at every width (measured 308/296
+     at 320), which breaks the one requirement this composition is built
+     around. Note WHICH element: there are two `.main` on this page, and the
+     scroller is the DIV inside .mp-view (overflow auto, 296/296, zero slack),
+     not the <main class="main main--fluid"> shell, which computes visible and
+     sits at 320/320. A probe selecting `main.main` reads the wrong one and
+     concludes the page has no scroller to lose — measured both ways here. An earlier
+     attempt with `calc(-1 * var(--pad-main))` was worse still: --pad-main is
+     22px where the ribbon's real gutter is 12px, so the ladder spanned
+     -10..330 in a 320 viewport and a card could sit wholly inside the ladder's
+     BOX while wholly off-screen — passing the very assertion being repaired,
+     on a card no reader can see.
+
+     What ships instead costs the reader nothing: below 431px the divider keeps
+     its dashed rule (which IS the divider, and is what the gate asserts) and
+     drops the rotated NOW lettering, and the ladder's gap tightens 8px -> 4px.
+     Both are recovered width rather than lost information — the divider's
+     meaning is its position, not its caption, and the caption is aria-hidden
+     decoration at every width. */
+  @media (max-width: 430px) {
+    [data-mem-ladder] { gap: 4px !important; }
+    [data-now-divider] { padding-inline: 0 !important; }
+    [data-now-divider] .classic-now { display: none; }
+  }
+  /* The NOW divider's label is decorative chrome beside a dashed rule; at this
+     width it competes with the card it separates. */
+  .classic-now { opacity: 0.75; }
 }
 }
