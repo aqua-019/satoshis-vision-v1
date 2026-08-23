@@ -286,24 +286,88 @@ export function TrackChip({ tracking, data, onClear }: TrackChipProps): JSX.Elem
 // derive from confOf fed the real height the node reports (re-polled while a tx is
 // pending, frozen once mined), so the ribbon label, the tracked arrow, and this
 // panel can never disagree.
+/**
+ * p4·M8 — bring the panel to the reader on a phone, and put them back after.
+ *
+ * MEASURED at 390×844 before this: tapping a block opened its panel at document
+ * offset 2,870px — 3.35 viewports below the fold — and the page did not move, so
+ * NOTHING VISIBLE CHANGED and the tap read as broken. Reordering the shell's
+ * children (see MemViewShell above) closed 1,915px of that; this closes the rest.
+ *
+ * ── WHY A WIDTH BRANCH IS SAFE HERE AND IS NOT SAFE IN RENDER ──────────────
+ * This is an EFFECT. It runs only in the browser, after mount, so
+ * `scripts/prerender.mjs`'s `renderToString` never reaches it and the JS-off
+ * document is byte-identical either way. A width branch in RENDER would emit one
+ * viewport's composition into every prerendered file — which is why the rest of
+ * the phone composition is CSS.
+ *
+ * ── WHY IT IS SCOPED TO ≤720 RATHER THAN RUN EVERYWHERE ────────────────────
+ * On desktop the panel is already the tallest thing on screen when it opens and
+ * three gates (verify-memdetail, verify-tracking, verify-glide) drive tracking at
+ * 1440 and measure geometry afterwards. Moving the desktop viewport would change
+ * what they measure for a reader who did not need it. 720 is the same threshold
+ * the rest of this release uses — the width at which BottomTabBar appears.
+ *
+ * ── WHY THE SCROLL IS RESTORED ────────────────────────────────────────────
+ * Dismissing used to strand the reader: `← Back` clears tracking, the document
+ * shrinks by ~900px, and they are left in the middle of the transaction table
+ * with no idea where the ladder went. The position is captured before the jump
+ * and restored on unmount, so open-then-dismiss is a round trip.
+ *
+ * Both moves are INSTANT (`behavior` is left at its default `auto`). A smooth
+ * scroll here would be motion carrying no information, and the reduced-motion
+ * path and the default path are therefore one path.
+ */
+function useDetailReveal(active: boolean) {
+  const ref = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    if (!active || typeof window === "undefined") return;
+    if (!window.matchMedia || !window.matchMedia("(max-width: 720px)").matches) return;
+    const node = ref.current;
+    if (!node) return;
+    const from = window.scrollY;
+    // One frame, so the panel has been laid out before we measure it. The
+    // detail mounts in a loading state and grows as the fetch lands, so
+    // `block: "start"` on the panel's own top is the stable anchor — its
+    // HEIGHT changes, its top does not.
+    const id = requestAnimationFrame(() => node.scrollIntoView({ block: "start" }));
+    return () => {
+      cancelAnimationFrame(id);
+      window.scrollTo(0, from);
+    };
+  }, [active]);
+  return ref;
+}
+
 export function MempoolTrackingDetail({ tracking, data, onBack, onPickTx }: {
   tracking: Tracking;
   data: MoneroLive;
   onBack: () => void;
   onPickTx?: (id: string, blockHeight?: number | null) => void;
 }) {
+  // The hook is called UNCONDITIONALLY and takes `active` as a parameter — the
+  // early `return null` below used to be the first statement, and a hook after
+  // it would be called on some renders and not others. `useDetailReveal` is a
+  // no-op when inactive.
+  const revealRef = useDetailReveal(Boolean(tracking));
   if (!tracking) return null;
-  if (tracking.kind === "tx") {
-    return <LiveTxDetail txid={tracking.id} data={data} onBack={onBack} />;
-  }
-  // Clicking a tx inside the block pins it to THIS block height (no hash hop).
   return (
-    <LiveBlockDetail
-      height={tracking.height}
-      data={data}
-      onBack={onBack}
-      onPickTx={(id, h) => onPickTx?.(id, h)}
-    />
+    // `data-mem-detail` is the panel's handle — it had none, so no gate could
+    // say where the detail renders or whether a tap reached it. The wrapper is
+    // a plain block box that adds no geometry of its own.
+    <div ref={revealRef} data-mem-detail={tracking.kind}>
+      {tracking.kind === "tx" ? (
+        <LiveTxDetail txid={tracking.id} data={data} onBack={onBack} />
+      ) : (
+        // Clicking a tx inside the block pins it to THIS block height (no hash hop).
+        <LiveBlockDetail
+          height={tracking.height}
+          data={data}
+          onBack={onBack}
+          onPickTx={(id, h) => onPickTx?.(id, h)}
+        />
+      )}
+    </div>
   );
 }
 
@@ -412,10 +476,22 @@ export function MemViewShell({
           `tracking && !keepBodyWhileTracking`. */}
       {stats !== false || !showBody ? <MemStatStrip data={data} compact={stats === "compact"} /> : null}
       {showBody ? <div className="mem-body" data-mem-body>{children}</div> : null}
-      {/* Always in the DOM, CSS-gated to the states that need it (reduced
-          motion and ≤768px) so it costs desktop no height — Reactor has only
-          ~116px of headroom before verify-fit.mjs's bound. */}
-      {table ? <div className="mem-table" data-mem-table>{table}</div> : null}
+      {/* p4·M8 — THE DETAIL NOW PRECEDES THE TABLE, and the reason is measured
+          rather than aesthetic. `.mem-table` is `display: block` at ≤768px, so on
+          a phone a 60-row transaction table sat PHYSICALLY BETWEEN the view body
+          and the detail a reader had just opened. Tapping a block put its panel
+          at document offset 2,870px — 3.35 viewports down — and the page did not
+          scroll, so nothing visible changed and the tap read as broken.
+          Measured: 1,915px of that 1,971px gap was this table.
+
+          Swapping the two closes it without moving a pixel of layout in any
+          state where both are visible at once, because they are siblings in a
+          plain block flow: the tracked state renders the detail, the untracked
+          state renders neither. Desktop is unaffected — `.mem-table` is
+          `display: none` above 768px, so above that width this reorder changes
+          the DOM order of one rendered element and one unrendered one.
+          Reduced motion at desktop DOES render both, and there the detail
+          moving above the table is the same improvement for the same reason. */}
       {tracking ? (
         <MempoolTrackingDetail
           tracking={tracking}
@@ -424,6 +500,10 @@ export function MemViewShell({
           onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })}
         />
       ) : null}
+      {/* Always in the DOM, CSS-gated to the states that need it (reduced
+          motion and ≤768px) so it costs desktop no height — Reactor has only
+          ~116px of headroom before verify-fit.mjs's bound. */}
+      {table ? <div className="mem-table" data-mem-table>{table}</div> : null}
     </div>
   );
 }
@@ -482,7 +562,13 @@ export function MemTxTable({ data, tracking, viewId, columns, cap = 60, onPickTx
   const cell = (t: (typeof rows)[number], c: MemTxColumn): React.ReactNode => {
     switch (c) {
       case "txid": return shortHash(t.id);
-      case "perB": return `${Math.round(t.perB)} pcn/B`;
+      // p4·M8 — the unit is its own element so the phone can drop it. It is the
+      // column's own heading (`FEE/B`) restated on every row, and at four columns
+      // in a 320px viewport it was the difference between a fee that reads and a
+      // fee that ellipsises: the cell had 71.3px and needed ~106. Split here
+      // rather than branched on viewport in JS, because a width branch would
+      // emit the wrong one into the prerendered HTML.
+      case "perB": return <>{Math.round(t.perB)}<span className="mem-tbl__u">{" pcn/B"}</span></>;
       case "tier": {
         const i = feeTierIndex(t.perB, data.feeTiers);
         return i >= 0 ? FEE_TIER_LABELS[i] : "—";
@@ -497,8 +583,17 @@ export function MemTxTable({ data, tracking, viewId, columns, cap = 60, onPickTx
 
   return (
     <div className="mem-tbl" style={{ gridTemplateColumns: grid }} role="table">
+      {/* p4·M8 — `data-col` is the field id and `data-label` its heading, emitted
+          on EVERY cell including the header's. Below 720px the table has no room
+          for six columns in ~326px, so the phone composition selects a subset BY
+          FIELD (styles.css's p4·M8 block) rather than by position — position
+          differs between views (pulse orders `txid, age, perB, …` where classic
+          orders `txid, perB, tier, …`), so an nth-child rule would hide a
+          different quantity on each view. The label rides along so a phone form
+          that needs an inline heading can read it from the same source as the
+          header row rather than restating COL_LABEL in CSS. */}
       <div className="mem-tbl__r mem-tbl__h" role="row">
-        {columns.map((c) => <div key={c} className="mem-tbl__c" role="columnheader">{COL_LABEL[c]}</div>)}
+        {columns.map((c) => <div key={c} className="mem-tbl__c" data-col={c} data-label={COL_LABEL[c]} role="columnheader">{COL_LABEL[c]}</div>)}
       </div>
       {rows.length ? rows.map((t) => {
         const isTracked = trackedId != null && t.id.toLowerCase() === trackedId;
@@ -511,12 +606,12 @@ export function MemTxTable({ data, tracking, viewId, columns, cap = 60, onPickTx
             onClick={onPickTx ? () => onPickTx(t.id) : undefined}
             style={onPickTx ? { cursor: "pointer" } : undefined}
           >
-            {columns.map((c) => <div key={c} className="mem-tbl__c" role="cell">{cell(t, c)}</div>)}
+            {columns.map((c) => <div key={c} className="mem-tbl__c" data-col={c} data-label={COL_LABEL[c]} role="cell">{cell(t, c)}</div>)}
           </div>
         );
       }) : (
         <div className="mem-tbl__r" role="row">
-          <div className="mem-tbl__c dim" style={{ gridColumn: "1 / -1" }} role="cell">
+          <div className="mem-tbl__c dim" data-col="empty" style={{ gridColumn: "1 / -1" }} role="cell">
             {hasData(data.status.network) ? "mempool is empty" : "awaiting the first node snapshot…"}
           </div>
         </div>
