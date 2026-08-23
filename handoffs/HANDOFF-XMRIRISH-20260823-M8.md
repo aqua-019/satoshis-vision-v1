@@ -158,7 +158,8 @@ node verify-bundle.mjs
 
 ## 7 · REPORT
 
-**Outcome: done.** Branch `claude/mobile-mempool-prompt-p7ui2d` pushed.
+**Outcome: done.** Branch `claude/mobile-mempool-prompt-p7ui2d` pushed; draft PR
+https://github.com/aqua-019/satoshis-vision-v1/pull/201 opened and subscribed.
 
 ### What the brief got wrong, and how that changed the work
 Six premises did not survive measurement. Its §1 headline — a fixed 1756px canvas panned

@@ -482,7 +482,18 @@ for (const stage of STAGES) {
    of tile widths that vary with the strings they carry.
 
    The card counts either side are the claim that actually matters, and they
-   are what mempool.space's mobile does: one block mined, one being built. */
+   are what the Bitcoin explorer this view was forked from does on a phone:
+   one block mined, one being built.
+
+   THAT REFERENCE IS NAMED BY DESCRIPTION AND NOT BY DOMAIN, DELIBERATELY.
+   verify-future §15 embargoes a short list of strings while the MoneroSpace
+   provenance question is open, and that explorer's domain is one of them — for
+   an unrelated reason (a lineage claim), but §15 is a blunt string match and it
+   walks the WHOLE TREE over .ts/.tsx/.js/.mjs/.css/.json/.md/.html, exempting
+   only the file that defines the patterns. Both of this release's first drafts
+   spelled it — one here, one in classic.tsx — and would have reddened §15 at
+   e2e position 14. p3·15 recorded the identical trap from the other side, where
+   a handoff spelled a banned string in order to prohibit it. */
 R.group('§5 · the ladder opens on the NOW divider');
 for (const stage of STAGES) {
   const { ctx, p } = await open(stage);

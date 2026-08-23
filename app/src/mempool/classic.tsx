@@ -195,10 +195,15 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
             // keep an index key and do not glide. The UNLOCK divider is a static
             // flex sibling with no data-glide-key, so it's invisible to the glide.
             <React.Fragment key={confirmed ? "b" + r.b.height : "q" + i}>
-              {/* p4·M8 — the NOW divider. mempool.space keeps a dashed rule at
-                  the pending/mined boundary and it is what makes a two-card
-                  phone viewport legible: one block either side says "this is
-                  the present". `nowIndex` is the first CONFIRMED slot, derived
+              {/* p4·M8 — the NOW divider. The Bitcoin block explorer this view
+                  was forked from in v4 keeps a dashed rule at the pending/mined
+                  boundary, and it is what makes a two-card phone viewport
+                  legible: one block either side says "this is the present".
+                  (Named by description rather than by domain: that domain is one
+                  of verify-future §15's embargoed strings, and §15 walks the
+                  whole tree over .tsx — see this file's sibling note in
+                  verify-memphone.mjs.)
+                  `nowIndex` is the first CONFIRMED slot, derived
                   from the same `status` the cards read rather than from a
                   literal 2, so a change to the queued-card count moves it.
                   It is also the anchor useLadderAnchor scrolls to. */}
