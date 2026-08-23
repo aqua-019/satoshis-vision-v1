@@ -28,7 +28,22 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **88** `verify-*.mjs` files (`app/` ×79, `app/scripts/` ×1, `api/_tests/` ×8) — **84 gates**
+- Verification: **89** `verify-*.mjs` files (`app/` ×80, `app/scripts/` ×1, `api/_tests/` ×8) — **85 gates**
+  (p4·M8 added `verify-memphone.mjs` — the classic mempool as a PHONE renders it — and wired
+  it MID-CHAIN at `verify:e2e` **7 of 39**, inside the existing mempool cluster (memviews ·
+  memdetail · glide) rather than at the tail, which carries `verify-vitals`. Recounted, never
+  incremented, with the script CONTROLLED against FIVE commits — `768ba13` 85/81/22/35/71/6,
+  `74bc561` 86/82/22/36/72/6, `0f00d26` 87/83/22/37/73/6, and `e0c87ad` and `5854cbd` both
+  88/84/22/38/74/6 — all reproduced EXACTLY including the invocation arithmetic and the six
+  orphans by name. Measured: **89 / 85 / 22 / 39 / 75 / 6**, i.e. 81 invocations − 6 duplicates.
+  FOUR figures move and `verify:static` and the orphan count do NOT, which is the correct
+  outcome for a gate added and wired in one release. **AND THE COUNTING SCRIPT'S FIRST VERSION
+  WAS WRONG IN A WAY ONLY THE CONTROLS COULD SHOW, AGAIN**: its filename lookbehind excluded
+  `/`, so it could not match `node ../api/_tests/verify-*.mjs` and reported CI 66 / orphans 14
+  at `e0c87ad` against a recorded 74 / 6. An uncontrolled recount would have published those.
+  This is the SECOND recorded time this instrument has been wrong on its first run and the
+  controls have caught it — p4·05's anchored on `^` or `/` and missed a SPACE. Control it,
+  then trust it.)
   (p4·07 added `verify-explorer.mjs` for the EIGHTEENTH route and wired it MID-CHAIN at
   `verify:e2e` 16 of 38, beside `verify-superstress` whose child the page is. Recounted, never
   incremented, with the script CONTROLLED against THREE commits — `768ba13`, `74bc561` and
@@ -496,7 +511,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **74 of the 84** gates on every PR to `main` and on every push to `main`
+- CI runs **75 of the 85** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **6**
   are wired to nothing (p3·18 wired `verify-legality`, an orphan since v6.0.10). This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -755,6 +770,149 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-23**: p4·M8 "THE PHONE GETS A CLASSIC MEMPOOL IT CAN READ" (app/ + .github/) —
+  `/live/mempool?v=classic` is the site's DEFAULT view on its flagship surface, so it is the
+  page a phone lands on.
+  **SIX OF THE BRIEF'S PREMISES DID NOT SURVIVE MEASUREMENT, AND THE BRIEF'S OWN §6 SAYS WHY**:
+  everything in its §1 was measured at DESKTOP width, and it states plainly that this "says
+  nothing about what the ≤768px rules actually produce." Its headline — a fixed 1756px canvas
+  "panned through a keyhole" on a phone, with two-axis scrolling as "what makes it feel broken"
+  — is FALSE. Measured at 390×844 dpr3 on a build of the base: `.mp-view--reflow` is **366px**
+  and `documentElement.scrollWidth === innerWidth` at 320, 360, 390, 414 AND 430. **ZERO page
+  overflow.** The v6.0.4 "Classic reflows on phones" block has done that job since it was
+  written. Five more asks were already satisfied or stale: the stat strip is 2-up, the
+  telemetry rail is `display:none`, the footer does not render below 720, the switcher is
+  already 304×44 in flow, and the bottom edge is BottomTabBar's — `.tabbar-anchor` is the ONLY
+  `position:fixed; bottom:0` element in the app, so a second bottom control would collide.
+  **THE LARGEST DEFECT IS ONE THE BRIEF DID NOT NAME, AND IT IS NOT A PHONE BUG.**
+  `MemTxTable` rendered **TRANSPOSED**. `.mem-tbl` is a grid whose COLUMN TRACKS are the
+  fields; its DOM children are `.mem-tbl__r` ROW WRAPPERS; and nothing anywhere gave them
+  `display: contents`. So each ROW was one grid item — row 1 in column 1, row 2 in column 2,
+  row 7 wrapping to column 1 of the next grid row — with its cells stacked VERTICALLY inside
+  it. Measured at 390: the six header labels `txid / fee/B / tier / size / age / in/out` all at
+  **x=32 with six different y values**, transactions running across at x=160/248/322/402/470.
+  After ONE LINE: **six x values on ONE y**, with `role="row"` at 61 and `role="cell"` at 360
+  either way — `display: contents` keeps an element with an explicit ARIA role in the
+  accessibility tree, so the semantics the transpose mangled visually were never lost.
+  **IT RENDERS IN EXACTLY TWO STATES AND BOTH WERE BROKEN, ON ALL TEN VIEWS.** `.mem-table` is
+  `display:none` above 768px, so this component's only rendered states are (a) ≤768px and
+  (b) `prefers-reduced-motion: reduce` at ANY width. Measured at 1440×900 under reduce:
+  **2,008px tall with the labels stacked in a 1,154px column.** The static table that exists
+  SPECIFICALLY to serve reduced-motion and small-screen readers was the one surface rendering
+  scrambled. **NO GATE COULD SEE IT**: `verify-memviews` scenario 3 counts columns off
+  `.mem-tbl.style.gridTemplateColumns` — the INLINE STYLE — which reads a correct 6 for a table
+  laid out as one column of stacked rows. **A DECLARATION IS NOT A LAYOUT**; the new gate counts
+  distinct rendered x positions, in both directions on one instrument.
+  **AND MY OWN COUNT OF THE AFFECTED VIEWS WAS WRONG BEFORE A WORKER'S WAS RIGHT.** I measured
+  EIGHT by piping a grep through a `sed` that could not see the two views putting the `table=`
+  prop on a following line; the answer is **TEN**, and a worker's independent read said so. The
+  lead's instrument was the defective one — which is why this file's rule about reproducing a
+  worker's count has to run BOTH ways.
+  **THE GUTTERS WERE THE REAL CAUSE OF THE SHATTERED HEADERS, AND THE HEADERS WERE NEVER THE
+  DEFECT.** Three horizontal paddings NEST, so they compound: `20px` (the view's own wrapper)
+  + `var(--sp-5)` (ClassicLanding) + `var(--sp-4)` (each panel) = **120px of a 320px viewport**.
+  Panel headers measured **174px wide at BOTH 320 and 390** — the same number at two widths,
+  which is the tell — and four of them interleaved into 2×2 blocks a reader cannot parse
+  ("FEE / DEPTH" beside "BY TIER · % OF / MEMPOOL WEIGHT"). One gutter now: content 174 → 264
+  at 320 and 174 → 334 at 390. The stacking rule is applied AS WELL, because the gutter fix is
+  a SIZE change and a longer caption would re-shatter a merely-wider row.
+  **TAPPING A BLOCK DID NOTHING VISIBLE, AND THAT WAS THE DEFECT RATHER THAN A MISSING PANEL.**
+  The panel opened at document offset **2,870px — 3.35 viewports below the fold** — and the page
+  did not scroll. **1,915px of that 1,971px gap was `.mem-table`**, because `MemViewShell`
+  rendered `{table}` BEFORE `{tracking ? <MempoolTrackingDetail/>}` and the table is
+  `display:block` at ≤768px. Swapping the two closes it and moves no pixel in any state where
+  both are visible; `useDetailReveal` closes the rest, scoped to ≤720 and done in an EFFECT so
+  `renderToString` never reaches it and the prerendered document is byte-identical either way.
+  **A WIDTH BRANCH IN AN EFFECT IS SAFE AND ONE IN RENDER IS NOT** — that is the distinction,
+  and it is the house rule: a render-time branch emits ONE viewport's composition into all 18
+  prerendered files. The scroll position is captured at open and restored on unmount, because
+  dismissing used to strand the reader in the middle of the table in a document that had just
+  shrunk by ~900px.
+  **THE DISMISS CONTROL A PHONE COULD REACH DID NOT EXIST.** `TrackChip`'s `×` renders at
+  x=511.6 in a 390px viewport — **121.6px off the right edge** — at 7.3 × 12.5px, and it is
+  off-screen on desktop too. `← Back` is the phone's dismiss now, floored at 44px and carrying
+  an accessible name; measured 79×44 and in the viewport.
+  **BLOCK CARDS WERE NOT CONTROLS.** All twelve were `<div>` with no role, no tabindex and no
+  accessible name — so unreachable by keyboard and announced as nothing — and the `confirmed &&`
+  guard lives INSIDE the handler, so every card showed `cursor: pointer` while two of twelve did
+  nothing when tapped. `interactive` is derived from the same fact the handler tests, so the
+  cursor, the role, the tab stop and the label cannot disagree with what a tap does.
+  **13px IS A RAISE ABOVE THE FLOOR, NOT A FIX FOR A VIOLATION OF IT — and the brief asked for
+  it as though it were the latter.** Measured before: 673 visible text nodes in the classic view
+  at 390, 532 at 12.00px and 141 at 12.50px, and **NONE below 12**. p4·02's site-wide minimum
+  was already satisfied here. **AND `verify-memviews` RECORDS TWO PRIOR ATTEMPTS AT THIS EXACT
+  RAISE AS HAVING FAILED** — "two attempts at raising the type (every atom, then just the
+  `--fs-label`)" did not hold because "the mempool phone layout has no slack". That was TRUE of
+  the layout it was written against. The gutter fix is what built the slack, which is why this
+  release could take a raise two releases could not. THREE declarations, their reach measured by
+  injecting each in turn: **673 → 522** (`--fs-label`) **→ 381** (`--fs-mono`, which had NO
+  ≤720 override at all and is every one of the 141) **→ 0** (the literal-selector list, because
+  the touch block sets `font-size: 12px` on 40 selectors as LITERALS a token cannot reach).
+  ZERO `!important`. It lives in `styles-legibility.css` because the same declarations in
+  `@layer components` **LOSE** — measured — the layer order statement puts `utilities` last.
+  13 is not a new number: `--fs-chart-label` is already 13px below 768.
+  **THE RAISE COST EXACTLY ONE THING AND IT WAS MEASURED, NOT REASONED**: at 320 in a 2-up tier
+  card, `835,804` at 22px beside `pcn/B` at 13px is 139px of content in a ~128px cell, and the
+  unit ran 16.2px past `.main`'s edge — enough to make `.main` a SECOND horizontal scroller
+  (312/296) where the brief allows exactly one.
+  **AND FIXING THE FEE COLUMN TAUGHT SOMETHING ABOUT GRID TRACKS.** At 320 with 13px type the
+  txid column resolved to 121.3px against a 125px `0087c3f9…e7b5d2` and all 60 rows ellipsised.
+  Narrowing the cell gutter did NOT fix it: **a FRACTION hands the space back to every column
+  proportionally**, so the content shrank 129 → 125 and the track stayed at 121.3. The first
+  track is `minmax(0, auto)` now — sized to what the hash actually needs at whatever type size
+  and face the reader has — and clipped cells go **60 → 0** at all five widths.
+  **BASE → SHIPPING, measured at five widths**: horizontal scrollers **4 (at 320) / 3 → 1**, and
+  the one left IS the ladder · sub-13px text nodes **673 → 0** · tap targets under 44 **2 → 0** ·
+  clipped table cells **60 → 0** · document height **5,092 → 3,971 at 390 (−22%)**, DOWN despite
+  larger type, because the duplicate table and the duplicate feed are gone. The ladder lands on
+  a NOW divider at frac **0.499** with one card either side, at every width and at dpr 1, 2 AND 3.
+  **THE GATE: `verify-memphone.mjs`, 396 assertions in eleven sections, wired MID-CHAIN at
+  `verify:e2e` 7 of 39** — inside the mempool cluster, never the tail. **EVERY PHONE STAGE RUNS
+  AT dpr 1, 2 AND 3**, 15 contexts where 5 would do, because p4·M7's root cause did not exist at
+  dpr 1 and shipped past 84 gates for exactly that reason. It installs NO cold-boot bypass and
+  that is structural: `coldboot/gate.ts`'s predicate ends `pathname === R.HOME`.
+  **TWO OF ITS OWN ASSERTIONS WERE WRONG ON THE FIRST RUN AND IT CAUGHT BOTH.** §1g asserted
+  `roleCells === cells` and read 360 against 366 on a CORRECT tree — the header's six cells carry
+  `role="columnheader"`, not `role="cell"`. And **§0g's NON-VACUITY FLOOR FIRED**: it counted
+  space-between rows in the ROW direction and read 0, because the fix makes every panel header a
+  COLUMN below 720 — so §9 was asserting an absence over an empty set on all fifteen phone
+  stages and **would have gone green if the headers had been deleted outright**. The floor now
+  counts the SUBJECT, which exists in both states. A fix that removes its own gate's subject is
+  a new shape of vacuity and only a floor finds it.
+  **BUDGETS: RESIDUAL ZERO, EAGER BYTE-IDENTICAL, NOTHING MINTED.** Paired per chunk STEM against
+  an ISOLATED `git worktree` build of `1ba3923` with its own dist/ and node_modules: **72 of 75
+  stems SIZE-IDENTICAL**, and the three that moved are `classic` 19,163 → 20,852 (+1,689) ·
+  `mempool` 7,054 → 7,629 (+575) · `tx` 30,344 → 30,447 (+103) = **+2,367, which IS
+  `totalJsRaw`'s whole delta**. The EAGER entry is **BYTE-IDENTICAL at 101,533** — this release
+  adds no eager byte at all. `CHUNK_COUNT` **76 = 76**: `useLadderAnchor.ts` is a new module but
+  every importer of it already sits in classic's chunk group.
+  **THREE CEILINGS RAISED WHILE GREEN, AND THAT IS SAID OUT LOUD.** `cssGz` built 18,557 of
+  18,600 — margin **43 B, 0.23%** · `lazyJsRaw` 981,923 of 982,000 — **77 B, 0.008%** ·
+  `totalJsRaw` 1,246,370 of 1,247,000 — **630 B, 0.05%**. All inside the noise of a single
+  declaration. p4·02's precedent for `cssGz` is direct and cited in the file: it raised that same
+  ceiling from 18,200 while GREEN at 18,143 (57 B, 0.3%) on the ground that "0.3% is not
+  strictness, it is a budget that has stopped working". Lazy and total move together by 4,000 so
+  their gap is UNCHANGED at 265,000, which is the construction `totalJsRaw`'s own comment
+  describes. The sum-of-the-two-real-budgets reconciliation is lapsed for a THIRTEENTH release
+  and is still not this PR's to make.
+  **BREAK TESTS: <<<PENDING>>>**
+  **NOT FIXED, and named**: the phone block panel is still **2,725px in six sections** in a
+  310px column — restructuring `LiveBlockDetail` into a phone form is its own change;
+  **TOTAL FEES AND MEDIAN FEE FOR A MINED BLOCK ARE NOT AVAILABLE FROM ANY ENDPOINT THIS SITE
+  HAS** (`api/xmr.js` computes them for the PROJECTED next block from the mempool, never for a
+  mined one), so the panel does not print them and the brief's §3.4 ask for them is DECLINED on
+  that ground rather than deferred — deriving them would mean one RPC per transaction in the
+  block, or synthesis; `ClassicBlockDetail` and `DetailItem` in `classic.tsx` are DEAD CODE with
+  zero call sites, traced and left; `size`, `in/out`, `ring` and `fee` are not rendered in the
+  phone transaction list (they are one tap away, and a fifth column at ~54px is narrower than
+  the ellipsis it would render); `styles.css:3058`'s reflow comment still says "Classic and
+  Orbital" against a measured FIVE entries carrying `reflow: true`; and `CLAUDE.md`'s own side
+  figures remain stale in the same direction p4·07 and p4·M7 both flagged — `ci.yml` measures
+  **31** `run:` lines against the "30" recorded above, and "12 individually-named offline gates"
+  measures **14**.
+  **No human has seen the rendered result in a browser** — read from screenshots at 390 and 320,
+  before and after, top and scrolled through, plus the tap flow and the 1440 control.
 
 - **2026-08-22**: p4·M7 "THE PHONE GETS ITS OWN TERMINAL SEQUENCE" (app/) — the decrypt
   read as a wall of static on a phone. **IT IS ONE LINE, IT IS NOT A COMPOSITION PROBLEM,
