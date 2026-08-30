@@ -29,6 +29,24 @@ chain and market data.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
 - Verification: **89** `verify-*.mjs` files (`app/` ×80, `app/scripts/` ×1, `api/_tests/` ×8) — **85 gates**
+  (p4·M6b RECOUNTED and every figure is UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6**, i.e. 81
+  invocations − 6 duplicates — the correct outcome for a release that EDITS four existing
+  gates, adds two SECTIONS to one of them, and adds no gate FILE. **THE HEAD FIGURE ~100
+  LINES BELOW READ 74 AND WAS STALE AT THE BASE COMMIT**, disagreeing with p4·M5's own note
+  that already recorded 75 — the two-figures-disagreeing defect this file records against
+  itself repeatedly, recurring because a recount updated one place and not the other.
+  **AND THE COUNTING SCRIPT'S FIRST RUN WAS WRONG IN A WAY ONLY THE CONTROLS COULD SHOW,
+  FOR THE THIRD RECORDED TIME — and this one is a NEW mechanism.** Five historical commits
+  reproduced EXACTLY (`768ba13` 85/81/22/35/71/6, `74bc561` 86/82/22/36/72/6, `0f00d26`
+  87/83/22/37/73/6, `e0c87ad` and `5854cbd` both 88/84/22/38/74/6) and the SIXTH — the base
+  itself — reported CI **37** against a recorded 75. p4·M8 converted the e2e step from a
+  one-line `run:` to a BLOCK SCALAR (`run: |` plus indented lines), and a lazy `[\s\S]*?`
+  capture under the `/m` flag terminates on `$` at the first LINE END, so the script read
+  the `|` and nothing after it. Every commit before p4·M8 has single-line `run:` steps,
+  which is exactly why all five historical controls passed and only the commit that
+  mattered failed — a control set drawn entirely from the past cannot exercise a shape the
+  present introduced. An uncontrolled recount would have published 37. Walk the lines and
+  consume the indented block; then all six reproduce.)
   (p4·M8 added `verify-memphone.mjs` — the classic mempool as a PHONE renders it — and wired
   it MID-CHAIN at `verify:e2e` **7 of 39**, inside the existing mempool cluster (memviews ·
   memdetail · glide) rather than at the tail, which carries `verify-vitals`. Recounted, never
@@ -125,7 +143,7 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **74 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **75 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
   `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
@@ -750,6 +768,89 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   name the project and link the repo and assert **neither** provenance.
   `verify-future.mjs` fails the build if a lineage claim reappears anywhere in the tree —
   do not "restore" one without an answer from the maintainer.
+- **THE MONO FACE IS A GEOMETRY INPUT AND NOTHING INVALIDATES ON IT — and the number
+  recorded as proof of it does not reconstruct.** `field.ts#layoutField` derives
+  `cw = max(6, measureText("M").width)`, and `cw` sizes the ENTIRE grid: `cols`, the narrow
+  margin reserve, and which rung the closing-line ladder selects. `invalidateGeometry()` has
+  exactly ONE caller — `ColdBoot.tsx`, inside `ensureMarkFont().then(…)` — and
+  `ensureMarkFont` asks only for the **sans** face. **A late MONO arrival invalidates
+  nothing.** That is p4·M7's wordmark race one level up, and it decides more, because the
+  sans race moves only the raster while this moves the grid every glyph sits in.
+  **THE ARITHMETIC IN THE PREVIOUS RECORD IS WRONG AND IS CORRECTED HERE RATHER THAN
+  CARRIED.** The claim was that a fallback `cw` of 7.22 flips `cols` 56 → 55 **at 390**.
+  Computed: `ceil(390/7.2000579833984375)+1 = 56` and `ceil(390/7.22)+1 = 56` — the SAME
+  figure. The boundary is `390/54 = 7.222…` (repeating), and `cw = 7.2222222` is still 56.
+  A `cw` recorded to two decimals as "7.22" spans `[7.215, 7.225)`, of which only
+  `[7.222…, 7.225)` — about **28%** — produces the flip, so the recorded number neither
+  establishes it nor rules it out. Swept 300-2560px, the two `cw` values disagree at 1,254
+  widths and **the nearest to 390 is 389**, where `cols` does go 56 → 55; 390 is not among
+  them, and neither are the gated stages 320/360/430/550. **AND THE OTHER TWO HALVES OF THE
+  OLD CLAIM ARE REFUTABLE EVEN GRANTING THE FLIP**: `narrowMarginCols` returns 4 for both 54
+  and 53 visible columns, so the margin does not move, and `bodyW` 46 → 45 against ladder
+  rungs of 51/49/32 selects the same wrapped rung. Of three recorded consequences, one does
+  not reconstruct at 390 and two do not follow.
+  **NOT CURRENTLY FIRING, AND THE REASON IS A PRELOAD RATHER THAN A GUARANTEE**:
+  `index.html:45` fetches `jetbrains-mono-400.woff2` early, which removes a round-trip — it
+  BLOCKS NOTHING and nothing orders it against `layoutField`'s `measureText`. A cold Slow-4G
+  first paint is unmeasured here, and that is exactly the condition p4·M7 measured for the
+  sans face and found `document.fonts.ready` resolving without it. The gate reads `cw`
+  **7.2000579833984375**, the real face, on a warm load. Classified PRE-EXISTING on
+  INHERITED AUTHORITY, not on history read here: the clone is SHALLOW (428 commits) and
+  `git log -S'invalidateGeometry'` returns a single commit which is p4·M7's own — the graft
+  artefact p3·18 recorded by name.
+- **`MARK_SHARE_MAX` / `MARK_ROW_SHARE_MAX` ARE IN THE GATE, NOT THE SOURCE, AND THEY HAVE
+  ALREADY MISSED ONCE.** Correcting the record: a sweep of `app/src` returns **zero**
+  occurrences of either name. They are gate constants in `verify-coldboot.mjs` (0.45 and
+  0.55). The distinction is load-bearing rather than pedantic — a ceiling in the SOURCE
+  bounds what the composition can produce, a ceiling in the GATE bounds only what CI will
+  accept, so nothing in `field.ts` is bounded by these at RUNTIME.
+  **NEITHER HAS EVER BEEN DRIVEN RED, AND ON THE RECORD ONE MUTATION SHOULD HAVE DONE IT.**
+  The ceilings' own comment and failure message both name "the stacked layout replaced by
+  one very large line" as the scenario they exist to catch — and CLAUDE.md records p4·M7's
+  M8 as precisely that mutation, reddening 12 assertions with these two not among them.
+  That is a demonstrated MISS on the ceiling's own named scenario, not merely an undriven
+  ceiling. **CARRIED, not re-run**: the break-test transcripts were not re-read here, and
+  re-running M8 and reading `boxShare`/`rowShare` off the printed message is what settles it.
+  The gate's comment RECORDS a 144-stage envelope of `box 0.126..0.347` and
+  `rows 0.167..0.441` — a figure nothing re-derives, so it ages like every other comment in
+  this tree. Taken at its word, the worst recorded stage sits 0.103 under the box ceiling.
+  **0.347 → 0.45 IS A DEAD ZONE, NOT A MARGIN**: a mark that grows past every stage this
+  repo has ever measured, but not past 0.45, passes in silence.
+- **`verify-site`'s OVERFLOW ASSERTION IS SOUND — the three claims made against it are each
+  false, and correcting them is what identifies the real gap.** (1) It is not §3; §3 is the
+  CLOVER PIXEL CENSUS. Overflow is **§11 · 390px**. (2) It does not read `scrollWidth` —
+  `grep -c scrollWidth verify-site.mjs` is **0**; §11 measures BOUNDING RECTS
+  (`getBoundingClientRect().right > innerWidth + 0.5` over `main.main *`), which is exactly
+  the instrument p4·02 switched to BECAUSE a clip defeats `scrollWidth` and does not defeat a
+  rect. (3) `.main` carries `overflow-x: **hidden**`, not `auto` (`styles.css:728`). So a
+  clipped-but-overflowing child still reports a rect past the viewport and still reds.
+  **THE REAL BLIND SPOT IS AN ABSENCE, AND IT IS TOTAL RATHER THAN PARTIAL.** A bounding rect
+  is the BORDER BOX, so §11 cannot see content truncated INSIDE a box whose own edge is
+  within the viewport — a label ellipsised at 390 passes all three of its assertions. **And
+  no other gate covers it on this route**: `verify-mobile`'s only `scrollWidth > clientWidth`
+  check sits inside `R.group('§9 · /operate/peers')`, scoped to `[data-peer-brief]` — the
+  peers cards, never a route sweep. Its route sweep DOES reach `/about/site` but carries only
+  a type floor, a bounding-rect overflow and a 320px pass. **The clipped-content class on
+  this route is gated by NOTHING.** (A first draft of this entry said `verify-mobile` owned
+  it, which would have retired a total gap as partial coverage; caught by an adversarial
+  pass and reproduced by the lead before it was written down.) NOT FIXED: the property has no
+  owner across any of the 18 routes, and picking one is a coverage decision rather than this
+  page's.
+- **THE 13px MEMPOOL TYPE FLOOR IS STILL SHIPPING, AND THE SITE-WIDE MINIMUM IS STILL 12 —
+  two numbers that are both correct and are routinely quoted at each other.** Verified
+  present, NOT reverted: `styles-legibility.css:417` declares
+  `[data-mem-view="classic"] { --fs-label: 13px; --fs-mono: 13px; }` with a literal-selector
+  list at `:418-427`, inside the `@media (max-width: 720px)` block. The settled minimum sits
+  **seven lines away in the same block** — `:270` declares `:root { --fs-label: 12px }` under
+  p4·02's adjudication ("BELOW 720px, NOTHING RENDERS UNDER 12px"). So **13 is a RAISE ABOVE
+  the floor on ONE view, not a new site minimum**, and not a new rung either: `--fs-chart-label`
+  is already 13px below 768. **THE LEAK CHECK IS A PROXY, SAID OUT LOUD**: `verify-memphone`
+  pins `CLASSIC_FLOOR = 13`, and its no-leak assertion's PREDICATE is `m.small.length > 50`
+  — more than fifty desktop nodes still under 13px — so a partial leak that moved the count
+  without crossing 50 would pass. **And the header carrying the adjudication is itself stale
+  by four**: it says `verify-mobile` walks "all fourteen canonical routes" against a measured
+  **18**. Nothing here is broken; the entry exists because a reader meeting 13 first will take
+  it for the floor.
 
 ## Architecture Notes
 
@@ -774,6 +875,162 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-30**: p4·M6b "THE PEERS PAGE GETS ADDRESSES, AND THE PLACEHOLDERS GO" (app/ +
+  README + CLAUDE.md) — a card that opened somebody else's site on first click now opens our
+  brief, every brief has a URL a reader can post, and the reservation mechanism that rendered
+  empty captioned boxes is deleted rather than gated.
+  **FOUR OF THE BRIEF'S PREMISES DID NOT SURVIVE MEASUREMENT, AND ONE OF THEM DISSOLVED THE
+  WORK IT WAS BLOCKING.** The brief records as a HARD DEPENDENCY that "kyc.rip has NO
+  EcoPopup, and Superbrain + XMRHUB are blank placeholders", and offers three options
+  branching on it. Measured before a line was written: all **7** ECOSYSTEM entries carry a
+  non-empty `body[]`, and 7 of 7 carry a dated `shot` — popup coverage is **7/7, not 4/7**.
+  The blocker does not exist, so the click changes uniformly and no brief had to be written
+  to unblock it. The other three: **all three delivered assets are absent** (the
+  `xmr-club-grade-a.svg` badge, the medallion, `peer-kathie` artwork — none in the tree, the
+  history, or this session's uploads, so §1, §1b and the seventh peer's picture are
+  BLOCKED and reported rather than guessed); **`INDEX-AND-ORDER.md` does not exist** in any
+  branch, and three sections cite it as the authority for open items; and
+  **`claude/mockups/peers-grid-3x3.html` does not exist** — the same absence p4·06 already
+  recorded against the same filename, which is the second release running that a brief has
+  cited an approved artifact that was never carried into the repo.
+  **THE BIGGEST RISK WAS A GATE THAT WOULD HAVE HUNG RATHER THAN FAILED, and eight parallel
+  readers missed it before a completeness critic found it.** `verify-future.mjs` §8 asserted
+  that each partner card opens the partner's site IN A NEW TAB, through
+  `Promise.all([ctx.waitForEvent('page'), card.click()])` — the only `waitForEvent('page')`
+  in the tree. A card that no longer calls `window.open` fires no page event, so that promise
+  NEVER RESOLVES: the gate would have burned its timeout and died with no named red, which
+  reads as a broken harness rather than as a behaviour change. The eight readers missed it
+  because the one that enumerated "gates depending on the current click semantics" scoped its
+  grep to `peer-brief|our brief` and §8 contains NEITHER string — an absence reported without
+  its scope, which is this file's own standing rule. §8 now asserts the stronger property:
+  the card opens ITS OWN brief (by `data-eco-brief`, not by rendered title text), the URL
+  gains that brief's address, and closing clears it. 6 assertions → 12.
+  **`?p=` COSTS NO NEW ROUTE AND ALMOST NO NEW CODE**, because `useUrlState` (D0746) already
+  distinguishes ABSENT from PRESENT-BUT-UNRECOGNISED — the exact distinction an unknown slug
+  needs, and the one whose collapse was the v6.0.9 defect. The fallback is the empty string,
+  deliberately NOT a member of `PEER_IDS`, so a bare `?p=` behaves like no parameter and
+  `clearAtFallback` turns the close into a DELETE rather than a pinned empty value. PUSH per
+  that hook's own documented policy (a parameter naming primary shareable content gets a
+  history entry), so Back closes the brief. The seven slugs are `EcoEntry.id` verbatim and
+  are now an INTERFACE: `xmrhub · kycrip · xmrclub · superbrain · monerica · privacygateway ·
+  kathie`.
+  **THE RESERVATION MECHANISM IS DELETED, NOT EMPTIED, and the rule was already written in
+  this repo's own words one release ago.** p4·M5 retired the stressnet reservations while
+  stating in `data.ts` that "a screenshot slot with an image ships and carries its capture
+  date; a slot with no image does not exist" — and did not apply it to the Superbrain entry
+  ~200 lines below, which went on rendering two empty captioned boxes. So the type, the
+  field, the markup and all seven literals are gone: there is no longer a type in which a
+  pending slot can be expressed. **THE SWEEP FOUND SEVEN, NOT TWO**, and the count is
+  reported rather than the two the brief named: **2 in the popup (deleted)** and **5 on
+  `/operate/superstress`**, a DIFFERENT component (`EmptySlot`) on a different route.
+  Those five are **NOT FIXED and the reason is named**: `verify-superstress` §6b asserts
+  `shotSlots >= 1` on them AS A PAIRED POSITIVE CONTROL proving `EmptySlot` still renders,
+  so deleting them reds a gate whose control is deliberate, orphans the component, and
+  changes another page's composition inside a peers PR. Also found: ONE `links[]` row with a
+  null href, rendered as a dashed "link pending — send it over" chip — a different shape
+  (a chip, not a captioned box) and left, with the distinction stated.
+  **THE GATE IS ON THE RENDER, NOT THE SOURCE, AND THAT IS THE POINT**: the type is gone, so
+  a source check would assert against a mechanism that no longer exists and pass forever
+  without reading a page. New `verify-peers` §11 opens all seven briefs and sweeps for any
+  element whose own text is a screenshot caption and which contains no `<img>`, PAIRED with
+  a floor counting the real dated captions — because "zero placeholders" is true of a page
+  that renders no captions at all.
+  **verify-origins AND verify-peers §9 BOTH ASSUMED A UNIFORM ROSTER.** `shotsSeen ===
+  ids.length` and `shown.every(o => o.n === 1)` were true statements about the roster that
+  happened to hold; `EcoShot` has been OPTIONAL since p4·M3, and the seventh peer is the
+  first entry to falsify them. Both now DERIVE the expectation from `data.ts` and assert both
+  directions — an entry declaring a shot renders exactly one, an entry declaring none renders
+  ZERO — which also catches an image appearing where the data declares none, i.e. a borrowed
+  or hotlinked capture. **AND THE OBVIOUS PARSER FOR IT WAS WRONG, CAUGHT BY TESTING IT
+  AGAINST A SECOND ONE**: a bounded lookahead (`id:` … within 4000 chars … `shot:`) MISSES
+  `stressnet`, whose entry carries ~50 lines of comment between the two. Harmless today
+  (stressnet is not a PARTNER) and exactly the defect `verify-peers` §9 already records
+  against its own earlier regex — a comment changes what the parser can see. Segmenting the
+  file at every `id:` is exact at any comment length.
+  **KATHIE IS WRITTEN FROM TWO SOURCES AND AN ADVERSARIAL PASS REFUSED THE FIRST DRAFT.**
+  Verified: her XMR Bazaar seller page (bio, verbatim, three words — "i sell art" — and
+  sticker listings) and her xmrchat tipping page (only heading "Recent Tips", no
+  self-description). `x.com/kathiful` is authentication-walled, so **the link ships and no
+  sentence describes what is on it**. The refusal caught thirteen clauses asserting more than
+  the sources support, of which the sharpest three: a word-count flourish that was
+  **arithmetically false at ship** and that no gate computes; "priced in monero" on the CARD
+  FACE, which is a PLATFORM INFERENCE nobody read a price to confirm; and a catalogue
+  sentence — "Monero drawn as objects rather than as a logo" — **refuted by the entry's own
+  evidence block**, which lists plain Monero stickers sold in lots. Also cut: an invented
+  supply chain ("printing", "posting"), an unattributed superlative, a live COUNT of the
+  page's own roster in rendered copy, and "the first individual person listed here", which is
+  ungated and has a counterexample two cards away. The operator's "Physical Art, Stickers,
+  Merchandise" ships as **stickers** — the one third of it that is measurable.
+  **THE ACCENT IS MEASURED, AND MY INSTRUMENT MISSED AN ACCENT UNTIL A REVIEWER'S CENSUS
+  CAUGHT IT.** `#5eead4`, min CIEDE2000 **16.91** against the eleven accents already carrying
+  meaning, contrast **11.10:1** worst-case across all three themes' grounds and their bg-2s.
+  The calibration is what makes 16.91 mean something: **the smallest gap between two accents
+  ALREADY SHIPPING is 4.36** (superbrain `#22d3ee` against carrot `#5ed3f4`), so the new one
+  is nearly four times as separable as a pair already in production. Carrot's `#5ed3f4` was
+  ABSENT from my first in-use list and a reviewer's independent hue census supplied it;
+  re-run with it included the pick was unchanged and carrot sits at 19.50, further than the
+  two already measured. A first pass also ranked pale desaturated tans top — distinctness
+  bought by WASHING OUT rather than by hue — so a chroma floor taken from the existing
+  accents' own range was added before the answer meant anything.
+  **BUDGETS: RESIDUAL ZERO ON BOTH HALVES, cssGz BYTE-IDENTICAL, NOTHING MINTED.** Paired per
+  chunk STEM against a frozen build of `ce87559`: **73 of 77 slots SIZE-IDENTICAL**, four
+  moved — `repoPulse` **+1,391** (the chunk `data.ts` lands in) · `EcoPopup` **−456** (the
+  deleted slot markup paying for part of it) · `TrustedPeersPage` **+106** · the EAGER entry
+  **+3**, identified by reading `dist/index.html`'s own `<script src>` rather than by
+  basename, since the `index` stem holds two chunks and its lazy member is byte-identical at
+  2,253. Lazy 1,391 − 456 + 106 = **+1,041 = `lazyJsRaw`'s whole delta**; +1,041 + 3 =
+  **+1,044 = `totalJsRaw`'s whole delta**. `cssGz` **BYTE-IDENTICAL at 18,586** against a 414 B
+  margin — the release adds no stylesheet rule at all, which was the design constraint rather
+  than the outcome. `CHUNK_COUNT` **76 = 76**. **NO CEILING RAISED, because none was crossed —
+  and the margin is said out loud: `/operate/peers` is now 105,227 of 106,000, a margin of
+  773 B, the tightest this file has recorded** (p4·M4's 831 is the previous). That is where
+  the eighth peer reds.
+  **MY OWN "DEFECT FOUND BY LOOKING" WAS HALF WRONG, AND MEASURING IT IS WHAT CORRECTED ME.**
+  Kathie's brief rendered with a wide empty band down its right side and I recorded it as
+  "~40% dead space caused by the reserved second grid track". Measured at 1440 in both
+  states: with a shot the paragraph is 598px, without it 639px, and the cap is
+  `max-width: 638.948px` — the HOUSE PROSE MEASURE p4·07 already measured at 639 across three
+  siblings. So the band is the prose cap meeting a fixed-width dialog; removing the track is
+  worth 598 → 639, about **7%**, and the band remains. The change is kept on the narrower
+  claim it can support — a track reserved for a thing that does not exist is worth removing —
+  and the comment says so rather than the version I first believed.
+  **FIVE BREAK TESTS, AND M4 FOUND A DEFECT IN THIS RELEASE'S OWN GATE.** M1 the card click
+  reverted to `window.open` → **3** reds naming `dialogs 0, brief null` · M2 `clearAtFallback`
+  removed → 2, `(/operate/peers?p=)` · M3 one screenshot reservation reintroduced → 2, `2 found
+  across 7 briefs` (§4e's required test) · M5 an unknown slug falling back to the first peer →
+  2, `no dialog (1)`.
+  **M4 — the `?p=` state ignored — went red for the RIGHT REASON AND EXPOSED A WRONG ONE.**
+  It reported `Test crashed: waitForSelector timeout` with **1 generic red at 8 assertions**:
+  a bare `waitForSelector` on a dialog that never opens THROWS, and the throw killed the run
+  before §10 — the section that exists precisely to catch a dead brief — printed a word. Three
+  waits and one click now report instead of aborting, and M4b reds **16 named assertions
+  across five sections with the full run completing**. The crash site was PRE-EXISTING, at
+  `:175`; the consequence was mine. This is p4·M5's "a wait that hangs reports nothing" in a
+  new file, and the transferable half is that only running the mutation found it — reviewing
+  the assertion would not have.
+  **CENSUS RECOUNTED AND UNCHANGED — 89 / 85 / 22 / 39 / 75 / 6.** See the verification block
+  for the instrument defect the controls caught: a BLOCK SCALAR `run: |` step that a lazy
+  capture under `/m` truncates at the first line end, which five historical controls could not
+  exercise because only p4·M8 introduced that shape. `verify-peers` **44 → 59**,
+  `verify-future` §8 **6 → 12**, `verify-origins` **+2**.
+  **AND I READ A `tee` PIPELINE'S EXIT AS THE CHAIN'S — p4·05's recorded trap, walked into by
+  someone who had read it.** The first full `verify:e2e` run reported success to the harness
+  because the last command in the pipeline was `tee`; the log's own `E2E_EXIT=1` said
+  otherwise, and the failure was `verify-coldboot-live` §0a refusing a dist built before the
+  last commit. The run was VOID, not a pass. `set -o pipefail`, and read the recorded exit.
+  **NOT FIXED, and named**: the five `EmptySlot` reservations on `/operate/superstress`
+  (above); `/operate/peers`' 773 B margin; the three undelivered assets; `LICENSE` item 3,
+  which names exchange widgets that no longer exist — quoted in the PR with two drafted
+  replacements and **the file untouched**, because a licence is not a feature PR's to change;
+  and the X handle, which stays the honest `X · handle pending` null because the operator has
+  not confirmed one and `AquaticXCP` has **zero** occurrences repo-wide. **There is no
+  `<link rel="canonical">` anywhere in the tree** and both `xmr.irish` and `www.xmr.irish`
+  answer, so every peer address is postable at two hosts; the sitemap uses the apex. That is
+  reported, not decided — picking a canonical host is the operator's call.
+  **No human has seen the rendered result in a browser** — read from screenshots at 1440, 390
+  (dpr 2) and 320 (dpr 3): the seven-card grid, Kathie's brief with and without the column
+  fix, a brief with a screenshot, the unknown-slug state and reduced motion.
 
 - **2026-08-30**: p4·M5 "THE FUTURE PAGE, CURRENT AND REORGANISED" (app/) — every dated claim
   on `/future` was stale, and one of them was stale in TEN PLACES AT ONCE.

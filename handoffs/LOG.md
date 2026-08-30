@@ -796,3 +796,42 @@
   counters, five historical controls reproducing exactly, the delta explained by #201 wiring
   verify-memphone). verify-future **69 → 110 `ok()` call sites**, measured statically in both trees; runtime assertions on the shipping tree **152** (the base runtime figure is measured separately against its own build rather than inferred).
   · https://github.com/aqua-019/satoshis-vision-v1/pull/202
+- XMRIRISH-20260830-M6b · done — p4·M6b "the peers page gets addresses, and the placeholders
+  go". **FOUR of the brief's premises did not survive measurement, and one dissolved the work
+  it was blocking**: popup coverage is **7/7, not 4/7** (all seven ECOSYSTEM entries carry a
+  non-empty `body[]` and a dated `shot`), so §4b's hard dependency does not exist and the
+  click changed uniformly; all three delivered ASSETS are absent from the tree, the history
+  and this session's uploads (badge, medallion, peer artwork — reported, not guessed); and
+  neither `INDEX-AND-ORDER.md` nor `claude/mockups/peers-grid-3x3.html` exists in any branch.
+  A partner card called `window.open(partner.url)` on body click and every PARTNER carries a
+  `url`, so the whole card unconditionally sent readers off-site before they knew where they
+  were going; it opens our brief now, and the partner's site is a deliberate second click on
+  the `VISIT ↗` anchor already in the dialog. **`?p=<id>` through the existing `useUrlState`
+  hook gives every brief a postable address** — a query param, so no route registration; PUSH
+  per that hook's own policy; `clearAtFallback` so closing DELETES the key; and an unknown
+  slug costs no code because the hook already separates absent from unrecognised. **The
+  reservation mechanism is DELETED, not emptied** — type, field, markup and all seven
+  literals — after p4·M5 stated the rule in `data.ts`'s own words and did not apply it to the
+  entry 200 lines below. The sweep found **SEVEN** reservations, not the two named: 2 in the
+  popup (deleted) and **5 `EmptySlot`s on /operate/superstress, NOT fixed** because
+  verify-superstress §6b asserts `shotSlots >= 1` on them as a deliberate paired control.
+  **verify-future §8 would have HUNG rather than failed** — it waited on a new tab per card
+  via the tree's only `waitForEvent('page')` — and eight parallel readers missed it because
+  the one enumerating click-dependent gates scoped its grep to strings §8 does not contain;
+  a completeness critic found it. verify-origins and verify-peers §9 both assumed a uniform
+  roster and now DERIVE which entries declare a shot, asserting both directions. Kathie joins
+  as the seventh partner, written from the two reachable sources only, with her X link
+  shipped and never described; an adversarial pass **refused the first draft** over thirteen
+  overclaiming clauses, including one arithmetically false at ship and one refuted by the
+  entry's own evidence. Accent measured at min ΔE **16.91** against a shipping-pair bar of
+  **4.36**. Budgets paired per stem: **73 of 77 slots size-identical**, four moved,
+  **residual ZERO on both halves** (+1,041 lazy, +3 eager, +1,044 total), `cssGz`
+  BYTE-IDENTICAL at 18,586, **76 = 76 chunks**; no ceiling raised because none was crossed,
+  and `/operate/peers`' margin is now **773 B**, the tightest recorded. Census RECOUNTED and
+  UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6** — with the instrument controlled against six
+  commits, the sixth of which caught a NEW defect class: a block-scalar `run: |` step that a
+  lazy capture under `/m` truncates at the first line end, which no historical control could
+  exercise because only p4·M8 introduced that shape. Five break tests, and **M4 exposed a
+  defect in this release's own gate** — a bare wait threw and killed the run at 8 assertions
+  before §10 could speak; after the fix it reds 16 across five sections.
+  verify-peers **44 → 59**.
