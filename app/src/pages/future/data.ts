@@ -1217,8 +1217,14 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
        4.36 (superbrain #22d3ee against carrot #5ed3f4). So it is roughly four
        times as separable as a pair already in production. Contrast is 11.10:1
        at worst across all three themes' grounds and their bg-2s. It sits in
-       the 142→188 hue gap, the widest this palette has left; #ff5cf0 (hue
-       305.5) was excluded by name, being p4·07's reserved betanet accent. */
+       the 142→188 hue gap, the widest this palette has left. The betanet accent
+       reserved by p4·07 (hue 305.5) was excluded by name — and its HEX IS
+       DELIBERATELY NOT WRITTEN HERE, because `verify-explorer` asserts that
+       literal appears in exactly one file and reds if any other names it. The
+       first version of this comment quoted it while explaining that it was
+       excluded, and the full chain caught it at position 17 of 39: a gate that
+       checks a string's uniqueness cannot tell a mention from a use, which is
+       `verify-orb` §4's recorded shape. */
     id: "kathie", name: "Kathie", head: "stickers, on XMR Bazaar.",
     kind: "Collaborator · artist", status: "PARTNER", c: "#5eead4",
     url: "https://xmrbazaar.com/user/kafi",
