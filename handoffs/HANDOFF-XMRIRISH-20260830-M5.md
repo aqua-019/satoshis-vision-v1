@@ -164,7 +164,11 @@ and the repo pulse stating the age of its own reading instead of a refresh polic
 production runs a pre-`pulls` build so it would be inert; ledgered in CLAUDE.md). No repo
 joined the pulse allowlist: that costs six literals across two files and two hard-waits that
 HANG rather than red, and inherits `/api/feeds`'s current production failure. No PR or issue
-STATE is printed anywhere, because `api.github.com` and `github.com` both answer 403 here.
+STATE is printed anywhere: `api.github.com` answers 403 for `monero-project/monero` and
+`seraphis-migration/monero`, anonymously and with a token, and `github.com` is 403 throughout.
+The 403 is REPO-SCOPED, not host-wide — the same host answers 200 for this repo — and an
+earlier draft of this report said "api.github.com answers 403 here", which is the
+scope-of-a-premise defect stated one section above.
 
 **M6b constraints honoured:** `EcoEntry.id` values are untouched; the only shape change is
 two optional additive fields (`ctaLink`/`ctaLabel`), ledgered in the PR body; slot deletion
@@ -188,3 +192,7 @@ no placeholder added anywhere; no seventh peer.
   Extending the scenario to the width where the subject is NOT inert found a real defect.
 - **A plausible mechanism is not a measurement, even inside a correction.** I explained a
   gate defect with "two dialogs are mounted", which measurement refutes (max is one).
+- **A reachability result is scoped to what it was measured on.** I wrote "api.github.com
+  answers 403 here" from two third-party repo probes, in a session that was itself opening a
+  PR through that host. Measured properly: 200 for this repo, 403 for the two source repos,
+  anonymously and authenticated alike. The conclusion survived; the premise did not.

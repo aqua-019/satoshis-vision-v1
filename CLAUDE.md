@@ -945,8 +945,15 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   of its own reading rather than a policy. `xmr.irish` answers **000** here, so I could
   neither confirm nor refute the production staleness myself.
   **ALSO NOT FIXED, and named**: `/future` and `/operate/peers` route margins (above); the
-  Seraphis/Jamtis schedule (above); PR and issue STATES are printed NOWHERE because
-  `api.github.com` and `github.com` both answer 403 here; the GitHub MCP server returned
+  Seraphis/Jamtis schedule (above); PR and issue STATES are printed NOWHERE — and the reason
+  is REPO-SCOPED rather than host-wide, a claim this note first wrote too broadly and then
+  MEASURED. `api.github.com` answers **200** for `aqua-019/satoshis-vision-v1` — this session
+  opened PR #202 and read its check runs through it, and it answers 200 anonymously too — and
+  **403** for `monero-project/monero` and `seraphis-migration/monero`, both anonymously and
+  with a token. So the source repos really are unreachable and the conclusion stands; the
+  sentence carrying it did not. `github.com` is 403 throughout. **State the SCOPE beside the
+  result** — this file's own standing rule, arriving inside the paragraph whose whole job is
+  listing what this release could not check. The GitHub MCP server returned
   `Bad credentials` for the second recorded time; a pre-existing 8px scroller
   (`div./span. 315/307`) survives on `/future` at every width and is not this release's.
   **No human has seen the rendered result in a browser** — read from screenshots at 1440, 390
