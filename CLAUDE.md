@@ -975,16 +975,21 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   accents' own range was added before the answer meant anything.
   **BUDGETS: RESIDUAL ZERO ON BOTH HALVES, cssGz BYTE-IDENTICAL, NOTHING MINTED.** Paired per
   chunk STEM against a frozen build of `ce87559`: **73 of 77 slots SIZE-IDENTICAL**, four
-  moved — `repoPulse` **+1,391** (the chunk `data.ts` lands in) · `EcoPopup` **−456** (the
+  moved — `repoPulse` **+1,391** (the chunk `data.ts` lands in) · `EcoPopup` **−416** (the
   deleted slot markup paying for part of it) · `TrustedPeersPage` **+106** · the EAGER entry
   **+3**, identified by reading `dist/index.html`'s own `<script src>` rather than by
   basename, since the `index` stem holds two chunks and its lazy member is byte-identical at
-  2,253. Lazy 1,391 − 456 + 106 = **+1,041 = `lazyJsRaw`'s whole delta**; +1,041 + 3 =
-  **+1,044 = `totalJsRaw`'s whole delta**. `cssGz` **BYTE-IDENTICAL at 18,586** against a 414 B
+  2,253. Lazy 1,391 − 416 + 106 = **+1,081 = `lazyJsRaw`'s whole delta**; +1,081 + 3 =
+  **+1,084 = `totalJsRaw`'s whole delta**. **THE RE-MEASURE RULE FIRED**: an earlier reading
+  was −456 / +1,041 / +1,044, and two later COMMENT edits moved `EcoPopup` by 40 B with every
+  ceiling GREEN throughout — which is the entire content of the rule, a budget comment not
+  being gated by the budget it annotates. `SITE_PR` 202 → 203 contributed **exactly 0** to
+  `eagerJsRaw` (264,457 either side), reproducing p4·01's and p4·M7's own measurement that
+  three digits at identical length cost nothing. `cssGz` **BYTE-IDENTICAL at 18,586** against a 414 B
   margin — the release adds no stylesheet rule at all, which was the design constraint rather
   than the outcome. `CHUNK_COUNT` **76 = 76**. **NO CEILING RAISED, because none was crossed —
-  and the margin is said out loud: `/operate/peers` is now 105,227 of 106,000, a margin of
-  773 B, the tightest this file has recorded** (p4·M4's 831 is the previous). That is where
+  and the margin is said out loud: `/operate/peers` is now 105,249 of 106,000, a margin of
+  751 B, the tightest this file has recorded** (p4·M4's 831 is the previous). That is where
   the eighth peer reds.
   **MY OWN "DEFECT FOUND BY LOOKING" WAS HALF WRONG, AND MEASURING IT IS WHAT CORRECTED ME.**
   Kathie's brief rendered with a wide empty band down its right side and I recorded it as
@@ -1020,7 +1025,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   otherwise, and the failure was `verify-coldboot-live` §0a refusing a dist built before the
   last commit. The run was VOID, not a pass. `set -o pipefail`, and read the recorded exit.
   **NOT FIXED, and named**: the five `EmptySlot` reservations on `/operate/superstress`
-  (above); `/operate/peers`' 773 B margin; the three undelivered assets; `LICENSE` item 3,
+  (above); `/operate/peers`' 751 B margin; the three undelivered assets; `LICENSE` item 3,
   which names exchange widgets that no longer exist — quoted in the PR with two drafted
   replacements and **the file untouched**, because a licence is not a feature PR's to change;
   and the X handle, which stays the honest `X · handle pending` null because the operator has
