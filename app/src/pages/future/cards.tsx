@@ -105,7 +105,25 @@ export function ProtocolCard({ p, onOpen, morphed }: ProtocolCardProps) {
           >
             {p.tag}
           </h3>
-          <div className="kicker" style={{ marginBottom: 10 }}>{p.sub} · ETA {p.eta}</div>
+          {/* p4·M5 — the label is data now. One of the five has SHIPPED, and
+              "ETA released" is a contradiction; see FutureProtocol.etaLabel.
+              Defaulting here rather than in data.ts keeps the other four
+              rows untouched. */}
+          <div className="kicker" style={{ marginBottom: 10 }}>{p.sub} · {p.etaLabel ?? "ETA"} {p.eta}</div>
+          {/* p4·M5 — the card carries the EXISTENCE of a review and its date;
+              the finding itself is one click away in ProtocolDetail. A card
+              is ~240px and a three-sentence finding does not fit one without
+              crowding out the lede — but a reader who never opens the popup
+              should still learn that the thing was independently reviewed and
+              when. It prints no verdict, deliberately: "reviewed" is a fact
+              about a process, and a one-word verdict on a card is exactly the
+              reassurance this release exists to replace with a finding. */}
+          {p.review ? (
+            <div data-proto-review-badge className="mono" style={{ marginBottom: 10, fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-40)" }}>
+              <span className="led" style={{ background: p.c, boxShadow: `0 0 6px ${p.c}`, marginRight: 6 }} />
+              Reviewed · {p.review.by} · {p.review.dated}
+            </div>
+          ) : null}
           <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{p.lede}</p>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
@@ -171,7 +189,7 @@ export function MoneroNewsCard() {
   return (
     <Card style={{ padding: 22 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
-        <div className="kicker">Fork status · ETAs · dev labs — refreshed every 24h</div>
+        <div className="kicker">Fork status · ETAs · dev labs — each row stamped with its own age</div>
         <span className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>getmonero.org · monero-project/research-lab</span>
       </div>
 

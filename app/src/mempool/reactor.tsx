@@ -684,7 +684,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                   <div style={{ marginTop: "var(--sp-2)" }}>
                     <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
                     <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Decoys</span><span className="v">gamma</span></div>
-                    <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++</span><span className="v p">Q3 2026</span></div>
+                    <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++</span><span className="v p">Mar 2027</span></div>
                     {/* Three rows the mockup's Ring panel ships that this one
                         didn't — protocol constants, not live figures, so
                         nothing here is fabricated (no Math.random, no

@@ -54,7 +54,7 @@ const DEMAND_DRIVERS = [
     n: "V", t: "Technical upgrades making XMR stronger",
     h: "FCMP++, Cuprate, Seraphis, Jamtis",
     c: "var(--g-50)",
-    b: "FCMP++ (mid-2026, tentative) replaces 16-decoy rings with proofs over the entire 150M+ UTXO set, making chain analysis computationally impractical. Cuprate (Rust node) cuts sync times sharply, supporting decentralization under political pressure. Seraphis & Jamtis modernize the transaction structure and add human-readable addresses — currently in beta/audit.",
+    b: "FCMP++ (March 2027 per the working plan for the fork, non-binding) replaces 16-decoy rings with proofs over the entire 150M+ UTXO set, making chain analysis computationally impractical. Cuprate (Rust node) cuts sync times sharply, supporting decentralization under political pressure. Seraphis & Jamtis modernize the transaction structure and add human-readable addresses — currently in beta/audit.",
   },
   {
     n: "VI", t: "The meta-thesis",

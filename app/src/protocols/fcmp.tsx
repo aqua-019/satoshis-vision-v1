@@ -213,13 +213,13 @@ export function FcmpView({ data, bg }: ViewProps) {
   return (
     <ProtoArtboard
       label="P6 · FCMP++"
-      kicker="MONERO PROTOCOL · 06 · FULL-CHAIN MEMBERSHIP PROOFS · Q3 2026"
+      kicker="MONERO PROTOCOL · 06 · FULL-CHAIN MEMBERSHIP PROOFS · MAR 2027"
       title='FCMP++ — when the anonymity set becomes <em>everything</em>'
       sub="Today: a transaction hides among 16 ring members. With FCMP++ it hides among every output that has ever existed. The statistical attacks that bound ring-signature privacy to 1/16 no longer apply — they require finite, addressable candidate sets."
       badges={[
         { label: "Curve Trees", tone: "priv" },
         { label: "Helios + Selene", tone: "priv" },
-        { label: "Eligible ETA Q3 2026", tone: "acc" },
+        { label: "Eligible ETA Mar 2027", tone: "acc" },
       ]}
       bg={bg}
       stage={
@@ -297,7 +297,7 @@ export function FcmpView({ data, bg }: ViewProps) {
           </div>
 
           <div className="body" style={{ borderTop: "1px dashed var(--ink-10)", paddingTop: 12 }}>
-            <em>Why the wait:</em> the math is correct; the audit surface is enormous. MRL is being careful — this is the largest privacy upgrade since RingCT in 2017. Expected hardfork Q3 2026.
+            <em>Why the wait:</em> the math is correct; the audit surface is enormous. MRL is being careful — this is the largest privacy upgrade since RingCT in 2017. The working plan for the fork targets activation in March 2027, and says of itself that it guarantees nothing.
           </div>
         </>
       }

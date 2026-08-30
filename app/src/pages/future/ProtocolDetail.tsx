@@ -57,7 +57,7 @@ export interface ProtocolDetailProps {
 
 export function ProtocolDetail({ p, onNavigate }: ProtocolDetailProps) {
   const navigate = useNavigate();
-  const { pulse, state: pulseState } = useRepoPulse(p.repo);
+  const { pulse, at: pulseAt, state: pulseState } = useRepoPulse(p.repo);
   const hasSim = p.sim !== null && SIM_IDS.has(p.sim);
   const stale = pulse ? isStale(pulse.pushed) : false;
   const leave = onNavigate ?? (() => {});
@@ -66,9 +66,62 @@ export function ProtocolDetail({ p, onNavigate }: ProtocolDetailProps) {
     <div className="v6-modal-body">
       <div className="col-2" style={{ gridTemplateColumns: "1.25fr 1fr", gap: 26, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* p4·M5 — "you can run this today", when that is true. It leads
+              because it is the only thing on a protocol card a reader can act
+              on now; everything below it is about a thing that does not exist
+              yet. Rendered from `p.live`, whose PRESENCE is also what puts
+              this card in /future's "live to try" band — one field, so the
+              band and the sentence cannot disagree. */}
+          {p.live ? (
+            <div
+              data-proto-live
+              className="mono"
+              style={{
+                fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--ink-80)",
+                borderLeft: `2px solid ${p.c}`, paddingLeft: 12,
+              }}
+            >
+              <div className="kicker" style={{ color: p.c, marginBottom: 6 }}>Runnable today</div>
+              {p.live}
+            </div>
+          ) : null}
           {p.deep.map((par, i) => (
             <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
           ))}
+          {/* p4·M5 — THE REVIEW, AS CONTENT. Both audit links already shipped
+              in `resources` below; a filename is not a finding, and a reader
+              should not have to open a PDF to learn the result.
+
+              Three things are structural rather than styling:
+              · the SCOPE renders directly under the heading, because the
+                defect this block guards against is "audited" being read as a
+                claim about the whole protocol or about the network;
+              · the DATE renders beside the reviewer, never omitted — the
+                whole value of a finding is which artifact, when;
+              · the link is to the REPORT, so every sentence above is
+                checkable. It carries no "↗ audit" kind label because it is
+                not one of `resources`' chips — it is the citation for the
+                block it sits in. */}
+          {p.review ? (
+            <div
+              data-proto-review
+              style={{ borderTop: "1px solid var(--rule)", paddingTop: 14, display: "flex", flexDirection: "column", gap: 10 }}
+            >
+              <div className="kicker">
+                Independent review · <span style={{ color: p.c }}>{p.review.by}</span> · {p.review.dated}
+              </div>
+              <p className="mono dim2" style={{ margin: 0, fontSize: "var(--fs-label)", lineHeight: 1.7, letterSpacing: "0.02em" }}>
+                <span data-review-scope>Scope: {p.review.scope}</span>
+              </p>
+              {p.review.lines.map((line, i) => (
+                <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>{line}</p>
+              ))}
+              <a className="v6-res" href={p.review.href} target="_blank" rel="noopener noreferrer" style={{ alignSelf: "flex-start" }}>
+                <span className="led" style={{ background: p.c, boxShadow: `0 0 6px ${p.c}` }} />
+                Read the report ↗
+              </a>
+            </div>
+          ) : null}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <FutureMini mode={p.mini} height={224} />
@@ -139,7 +192,19 @@ export function ProtocolDetail({ p, onNavigate }: ProtocolDetailProps) {
                 last push <b style={{ color: stale ? "var(--y-50)" : "var(--g-50)" }}>{agoStr(pulse.pushed)}</b>
                 {/* "push quiet", not "repo quiet": pushed_at is all this
                     measures, and a push-quiet repo can still be busy. */}
-                {stale ? " · push quiet" : ""} · refreshed every 24h via /api/feeds
+                {stale ? " · push quiet" : ""}
+                {/* p4·M5 — THE AGE OF THE READING, MEASURED, replacing the
+                    claim "refreshed every 24h via /api/feeds". That sentence
+                    described a policy, and the policy was not what the reader
+                    was looking at: the edge cached this payload for up to a
+                    day before the browser cached it for another, so a figure
+                    presented as fresh-within-24h could be twice that. `at` is
+                    the moment THIS cache entry was written and has been
+                    returned by useCachedFeed all along — this surface was
+                    discarding it. A number that states its own age cannot go
+                    silently stale, which is the same reason every panel on
+                    this site carries a provenance stamp. */}
+                {pulseAt ? <> · read <b style={{ color: "var(--ink-80)" }}>{agoStr(new Date(pulseAt).toISOString())}</b> via /api/feeds</> : " · via /api/feeds"}
               </div>
             </>
           ) : (

@@ -187,8 +187,8 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
         <EduMilestone date="October 2018" title="Bulletproofs integration">
           Range proofs were eating block space. Bulletproofs cut transaction sizes by ~80% — faster and cheaper without sacrificing privacy.
         </EduMilestone>
-        <EduMilestone date="2025 – 2026" title="FCMP++ & Cuprate" tone="var(--p-50)">
-          Full-Chain Membership Proofs move beyond probabilistic privacy toward provable untraceability — replacing 16-member rings with proofs of membership in the entire chain (150M+ outputs). Beta stressnet in May 2026; mainnet hard fork targeted mid-2026.
+        <EduMilestone date="2025 – 2027" title="FCMP++ & Cuprate" tone="var(--p-50)">
+          Full-Chain Membership Proofs move beyond probabilistic privacy toward provable untraceability — replacing 16-member rings with proofs of membership in the entire chain (150M+ outputs). Beta stressnet in May 2026; the working plan for the mainnet hard fork targets March 2027.
         </EduMilestone>
       </div>
 

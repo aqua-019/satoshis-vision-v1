@@ -534,7 +534,7 @@ export function NetworkPage() {
         <Stat k="Difficulty" v={ready ? `${(data.difficulty / 1e9).toFixed(2)}G` : "—"} sub="adj every 720" />
         <Stat k="Total txs" v={ready ? fmtN(data.txCountTotal) : "—"} sub="all-time" />
         <Stat k="Mempool" v={ready ? `${data.mempool.length} tx` : "—"} sub={ready ? fmtBytes(data.mempool.reduce((a, x) => a + x.size, 0)) : "—"} />
-        <Stat k="Fork" v={data.majorVersion ? `v${data.majorVersion}` : "—"} sub="FCMP++ Q3" tone="p" />
+        <Stat k="Fork" v={data.majorVersion ? `v${data.majorVersion}` : "—"} sub="FCMP++ Mar 2027" tone="p" />
       </section>
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}

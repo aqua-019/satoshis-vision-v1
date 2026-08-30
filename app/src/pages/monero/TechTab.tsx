@@ -22,7 +22,7 @@ const PRIMITIVES = [
     b: 'Before a transaction broadcasts widely, it travels along a "stem" of hand-picked peers. Only after several hops does it "fluff" out to the whole network. Observers see fluff peers; the origin is hidden.' },
   { k: "View tags",         q: "Faster wallet sync?",     c: "var(--c-50)",
     b: "Since 2022, every output carries a 1-byte hint that lets wallets skip 255/256 of work on outputs that aren't theirs. Sync time dropped 30–40%. No privacy loss — the tag carries no identifying information." },
-  { k: "FCMP++ (Q3 2026)",  q: "How big is the crowd?",   c: "var(--g-50)",
+  { k: "FCMP++ (Mar 2027)",  q: "How big is the crowd?",   c: "var(--g-50)",
     b: "Full-chain Membership Proofs replace the 16-member ring with a proof that the real spender is somewhere in the entire UTXO set — currently 150M+ outputs. The anonymity multiplier goes from 16× to >10,000,000×." },
 ] as const;
 

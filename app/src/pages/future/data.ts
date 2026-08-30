@@ -25,6 +25,42 @@ export type Metric = readonly [k: string, v: string];
 export type Resource = readonly [label: string, href: string, kind: string];
 export type EcoLink = readonly [label: string, href: string | null];
 
+/**
+ * A dated, third-party REVIEW of one protocol, rendered as CONTENT rather than
+ * as one more row in `resources`.
+ *
+ * ── WHY THIS IS A FIELD AND NOT A PARAGRAPH IN `deep` ────────────────────
+ * `deep` is this site's own prose about how a protocol works. A review is
+ * somebody else's finding about a specific artifact at a specific commit on a
+ * specific date, and those three qualifiers are the whole value: without them
+ * "it was audited" is a reassurance rather than a fact. Keeping it a separate
+ * shape is what lets the renderer show the qualifiers every time and lets a
+ * gate assert they are present.
+ *
+ * ── `scope` IS LOAD-BEARING AND MUST NARROW ──────────────────────────────
+ * The failure mode this field exists to prevent is the reader concluding "the
+ * protocol was audited" from "an implementation of part of it was reviewed".
+ * `scope` names what was actually looked at. A `scope` that restates the
+ * protocol's own name is a defect, not a shortcut.
+ *
+ * ── `dated` IS THE REPORT'S OWN DATE ─────────────────────────────────────
+ * Not the announcement's, not today's. Same doctrine as `EcoShot.captured`
+ * and `LEGALITY_MATRIX.reviewed`: a finding starts aging the moment it is
+ * published, and undated it silently claims to be current.
+ */
+export interface ProtoReview {
+  /** Who performed it. */
+  by: string;
+  /** What was actually examined — narrower than the protocol. See above. */
+  scope: string;
+  /** The report's own date, rendered verbatim. */
+  dated: string;
+  /** The finding, in the reviewer's terms. Hedges in the source survive. */
+  lines: readonly string[];
+  /** The report itself, so the reader can check every sentence above. */
+  href: string;
+}
+
 export interface FutureProtocol {
   id: string;
   tag: string;
@@ -34,10 +70,31 @@ export interface FutureProtocol {
   status: string;
   sc: string; // a `var(--…)` string
   eta: string;
+  /**
+   * The word the card prints before `eta`. Defaults to "ETA".
+   *
+   * It exists because one of these five has SHIPPED, and "ETA released" is a
+   * contradiction. `eta` is a string rendered after a label; when the thing
+   * has arrived, the label is the part that has to change, not the date.
+   */
+  etaLabel?: string;
+  /**
+   * Present ONLY when a reader can run this today, and then it says what they
+   * can do, dated.
+   *
+   * Its PRESENCE is also the page's grouping key — FuturePage puts every
+   * protocol carrying it in the "live to try" band. One field decides both,
+   * deliberately: a separate boolean could disagree with the sentence, and a
+   * grouping that disagrees with its own copy is the defect this file's
+   * `roadmapStatus()` was written to prevent one level up.
+   */
+  live?: string;
   sim: string | null; // simulator id, or null when none exists — see SIM_IDS
   head: string;
   lede: string;
   deep: readonly string[];
+  /** A dated third-party review of this protocol, if one exists. */
+  review?: ProtoReview;
   metrics: readonly Metric[];
   repo: string; // owner/name
   resources: readonly Resource[];
@@ -113,6 +170,25 @@ export interface EcoEntry {
   blocks?: readonly EcoBlock[];
   simLink?: string;
   simLabel?: string;
+  /**
+   * A SECOND primary control, beside the simulator CTA. Same shape as
+   * `simLink`/`simLabel` above, deliberately — a reader meeting two buttons
+   * should meet two of the same thing.
+   *
+   * ── WHY NOT JUST A `links[]` ROW ─────────────────────────────────────
+   * It was one. `links[]` renders `.v6-res` chips at 28px in a wrapped row
+   * under a "Links" rule, which is where a reader goes to leave; the ask was
+   * for a control they meet while reading. The destination therefore appears
+   * ONCE, here, and its former chip is gone — a page that offers the same
+   * place twice in one dialog is teaching the reader that one of them is
+   * different when it is not.
+   *
+   * A leading "/" means an in-app route and is navigated through the router
+   * with the dialog closed first, exactly as `links[]` and `resources[]`
+   * already do. That convention is declared once at `DevLabPulse.href`.
+   */
+  ctaLink?: string;
+  ctaLabel?: string;
   /** One real, dated screenshot. Optional: an entry with none simply shows
    *  its `slots`, which is the pre-p4·M3 behaviour unchanged. */
   shot?: EcoShot;
@@ -194,14 +270,62 @@ export const SIM_IDS: ReadonlySet<string> = new Set(
 export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
   {
     id: "fcmp", tag: "FCMP++", sub: "Full-chain membership proofs", c: "#b87aff", mini: "fcmp",
-    status: "BETA · stressnet live", sc: "var(--y-50)", eta: "Q3 2026 · fork v17", sim: "fcmp",
+    // p4·M5 — ETA RE-DERIVED FROM THE PUBLISHED PLAN, and it moved by two
+    // quarters. It read "Q3 2026 · fork v17", which was already inside the
+    // quarter it named. jeffro256's `fcmp-carrot-plan` — the working plan for
+    // this fork, Manager "jeffro256", Company "The Monero Project" — carries
+    // its own Finish field of March 4, 2027, and its README states
+    // independently that activation lands "in week 9 of 2027". ISO week 9 of
+    // 2027 is Mar 1-7, so the two agree. The fork NUMBER is untouched: the
+    // plan speaks to schedule, never to v17.
+    //
+    // THE PLAN DISCLAIMS ITS OWN ACCURACY, IN ITS OWN CAUTION BLOCK — "a
+    // non-binding working draft … I make no guarantee of its accuracy … or if
+    // the update fails to materialize at all". That is why `deep` below
+    // attributes the date to the plan rather than asserting it, and why the
+    // plan is a cited resource rather than an invisible source.
+    status: "BETA · stressnet live", sc: "var(--y-50)", eta: "Mar 2027 · fork v17", sim: "fcmp",
     head: "The anonymity set goes from 16 to the entire chain.",
     lede: "Today every spend hides among 15 decoys. FCMP++ replaces the ring with a zero-knowledge proof that the spent output exists somewhere in the full set of ~150 million — without revealing which.",
     deep: [
       "The ring signature was always a compromise: big enough to give plausible deniability, small enough to verify fast. FCMP++ (Full-Chain Membership Proofs, plus spend authorization, plus key images) dissolves the compromise. The proof says 'this input is one of every output that has ever existed' — a curve-tree membership proof over the whole chain.",
       "Statistical decoy analysis, the workhorse of every chain-surveillance contract ever sold against Monero, stops being a research field. There is no distribution to fit when the candidate set is the entire UTXO history.",
       "It activates as hard fork v17 without changing addresses or breaking wallets — Seraphis-grade privacy on the current transaction format.",
+      "Carrot rides the same fork. jeffro256's working plan for the release is titled FCMP++/Carrot and treats them as one hard fork, with the Carrot merges landing before the activation task; that plan targets March 2027, and says of itself that it is a non-binding draft that guarantees nothing about its own timeline.",
     ],
+    // p4·M5 — THE FINDING, NOT ANOTHER LINK. Both audit URLs already shipped
+    // at p4·06; what was missing was the RESULT, which no reader gets from a
+    // filename. Every sentence below is quoted or derived from the report
+    // itself, which this sandbox fetched from raw.githubusercontent.com
+    // (818,386 B, http 200) rather than from the announcement post — that
+    // host answers 403 to CONNECT here, so the report is both the stronger
+    // source and the only reachable one.
+    //
+    // FOUR THINGS ARE DELIBERATE:
+    //  · "appear to" survives. The report hedges twice ("appear to be
+    //    correct", "none appear to lead to"), and an unhedged restatement
+    //    would be a stronger claim than the auditors made.
+    //  · the fix review is REPORTED, because it is in the report's own
+    //    Appendix B with a date and per-finding PR numbers. p4·06 and p4·07
+    //    both declined to render Trail of Bits' index GLYPH as a completion
+    //    claim and that reasoning stands — a glyph in a legend is not
+    //    evidence. Appendix B is. Different artifact, different standard.
+    //  · the scope names phases 1a AND 1b. The report says both.
+    //  · the last line exists so the reader cannot conclude "the network was
+    //    audited" from "an implementation was reviewed". FCMP++ is not on
+    //    mainnet, and the sentence that says so is the one that makes the
+    //    rest of the block honest.
+    review: {
+      by: "Trail of Bits",
+      scope: "the FCMP++ cryptography implementation — phases 1a and 1b of the integration audit plan, at one commit of monero-project/monero (PR #10360)",
+      dated: "15 July 2026",
+      lines: [
+        "Six findings, every one of them informational: none high, none medium, none low. The reviewers' own summary is that the changes “appear to be correct”, and that none of the six “appear to lead to incorrect results or exploitable behavior within the Monero system”.",
+        "At the fix review on 15 June 2026 the Monero team had resolved five of the six and partially resolved the last.",
+        "This reviewed one implementation of part of FCMP++, at one commit. It is not a review of the protocol, and it is not a review of a running network — FCMP++ has not activated on mainnet.",
+      ],
+      href: "https://github.com/trailofbits/publications/blob/master/reviews/2026-07-magicgrants-monerofcmp++crypto-securityreview.pdf",
+    },
     metrics: [["Anonymity set", "150M+"], ["Today", "ring-16"], ["Multiplier", "≈10M×"], ["Proof size", "~3-4 KB"], ["Verify", "~35 ms"], ["Addresses", "unchanged"]],
     repo: "kayabaNerve/fcmp-plus-plus",
     // p3·16 adds the hub. This card's `status` already reads "BETA · stressnet
@@ -288,33 +412,93 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
   },
   {
     id: "carrot", tag: "Carrot", sub: "Bounded view keys", c: "#5ed3f4", mini: "carrot",
-    status: "DESIGN · spec draft", sc: "var(--c-50)", eta: "2027+ · wallet-side", sim: "carrot",
+    // p4·M5 — BOTH FIELDS RE-DERIVED, and both were wrong in the same
+    // direction: they described Carrot as a later, separate, wallet-side
+    // effort. Three primary sources say otherwise and none of them is this
+    // site: jeffro256's plan repo is named `fcmp-carrot-plan` and its README
+    // describes "the FCMP++/Carrot hardfork of Monero" — one fork; the plan's
+    // own task list puts `carrot_core merge`, `carrot_impl merge` and
+    // `carrot-fcmp integration merges` before its `HF activation merge`; and
+    // the Carrot specification's opening sentence calls it "an addressing
+    // protocol for the upcoming FCMP++ upgrade to Monero".
+    //
+    // "DESIGN · spec draft" -> "BETA": the specification is a finished
+    // document carrying no draft marker, and the plan records UkoeHB's review
+    // of `carrot_impl` as COMPLETE while the three merge tasks sit at 0%. So
+    // the implementation exists and has been reviewed, and has not shipped —
+    // which is the same standing Jamtis is already described with, and is
+    // strictly past "spec draft".
+    //
+    // `sc` moves with the phase: every other BETA card on this page uses
+    // --y-50, and a status colour that disagrees with its own status token is
+    // a second reading of the same fact.
+    status: "BETA · merging for the FCMP++ fork", sc: "var(--y-50)", eta: "Mar 2027 · with FCMP++", sim: "carrot",
     head: "Give an auditor a keyhole, not the front door.",
     lede: "A new wallet addressing protocol — compatible with FCMP++ era Monero — that allows strictly-bounded disclosure: incoming payments visible, outgoing spends and balance sealed forever.",
     deep: [
       "Carrot (Cryptonote Address on Rerandomizable-RingCT Output Transactions) is jeffro256's answer to the institutional question: how does a business prove revenue to an accountant without handing surveillance-grade access to its whole financial life?",
+      // KEPT, because it is a true property of the design and not a schedule.
+      // What follows it is the schedule, so the two can no longer be read as
+      // one claim — "needs no fork of its own" was being read as "ships later,
+      // separately", which the plan contradicts.
       "Because it's an addressing protocol rather than a consensus change, Carrot can roll out wallet-by-wallet — no hard fork required — and it's designed to remain compatible with today's addresses.",
+      "That is a property of the design, not a release schedule. In practice Carrot is shipping WITH FCMP++: the working plan for the fork is titled FCMP++/Carrot, and it merges carrot_core, carrot_impl and the carrot-fcmp integration before the activation task. As of 30 August 2026 that plan records the implementation review as done and all three merges as still ahead of it.",
     ],
-    metrics: [["Disclosure", "incoming only"], ["Spends", "sealed"], ["Balance", "sealed"], ["Fork needed", "none"], ["Author", "jeffro256"], ["Era", "FCMP++"]],
+    // "Fork needed · none" is about CARROT'S OWN requirement and stays true;
+    // "Ships with" is the schedule, and the pair is what stops either being
+    // read as the other.
+    metrics: [["Disclosure", "incoming only"], ["Spends", "sealed"], ["Balance", "sealed"], ["Fork needed", "none"], ["Ships with", "FCMP++"], ["Author", "jeffro256"]],
     repo: "jeffro256/carrot",
     resources: [
       ["Carrot specification", "https://github.com/jeffro256/carrot", "github"],
+      // The schedule's source, cited rather than silently consumed — and
+      // labelled with what it says about itself, because a plan that
+      // disclaims its own accuracy should not be linked as if it were a
+      // commitment.
+      ["jeffro256 · FCMP++/Carrot plan · non-binding working draft", "https://github.com/jeffro256/fcmp-carrot-plan", "plan"],
       ["MRL discussions", "https://github.com/monero-project/research-lab/issues", "research-lab"],
     ],
   },
   {
     id: "cuprate", tag: "Cuprate", sub: "Rust full node", c: "#ffd400", mini: "cuprate",
-    status: "ALPHA · full sync working", sc: "var(--tk-accent)", eta: "2026–27", sim: "cuprate",
+    // p4·M5 — CUPRATE SHIPPED SOMETHING RUNNABLE AND THIS CARD DID NOT SAY SO.
+    // It read "ALPHA · full sync working" / "ETA 2026-27", which described a
+    // project you could watch rather than one you could run.
+    //
+    // WHAT IS VERIFIED FROM HERE, AND WHAT IS NOT — the two are different and
+    // the difference is stated rather than blurred. `cuprate.org` answers 000
+    // through this sandbox's gateway, so the release POST was not fetched
+    // here; it is the operator's reading, and it is cited as a resource, which
+    // is an anchor rather than a fetch. What WAS reproduced from a reachable
+    // host is the version string itself: `binaries/cuprated/Cargo.toml` on
+    // Cuprate/cuprate@main declares `version = "0.1.0-preview"`.
+    //
+    // THE FENCE, honoured deliberately: the release calls itself BETA and
+    // PREVIEW and both words survive into the status. Nothing here says
+    // production-ready, mainnet-ready, or safe for funds — that question was
+    // put to the release and it does not answer it, and an absence of a
+    // warning is not a clearance. What is claimed is the CAPABILITY, which
+    // the release does state: wallets connect, sync, and send.
+    //
+    // `etaLabel` exists because "ETA released" is a contradiction; see the
+    // field's own note on FutureProtocol.
+    status: "BETA · 0.1.0-preview released", sc: "var(--y-50)",
+    eta: "0.1.0-preview · Aug 2026", etaLabel: "RELEASED", sim: "cuprate",
+    live: "A beta preview is out — as of 30 August 2026 wallets can connect to a Cuprate node and use it to sync and send, instead of monerod. Its own authors call it beta, a preview, and a work in progress.",
     head: "A second, independent implementation of Monero.",
     lede: "Memory-safe Rust, modern tooling, faster initial sync — and the thing money networks actually need: no single client as a single point of failure.",
     deep: [
       "Since 2014, effectively every Monero node has been monerod. One consensus bug, one poisoned dependency, one bad release — and the network stutters as one. Cuprate breaks the monoculture: an independent codebase that must agree with monerod block-by-block, written by a new generation of contributors (boog900, hinto-janai).",
       "First full mainnet sync landed in 2024. The roadmap runs through P2P hardening, RPC parity, and the long-term goal of a meaningful share of reachable nodes running Rust.",
+      "In August 2026 that stopped being something to watch and became something to run: the Beta 0.1.0-preview release reports that wallets can connect to a Cuprate node and use it to sync and send in place of monerod. It is a preview, and the project still describes itself as a work in progress — the release makes no claim about production use, and neither does this page.",
     ],
-    metrics: [["Language", "Rust"], ["Sync", "~1.4× faster"], ["Clients", "1 → 2"], ["First sync", "2024-06"], ["License", "AGPL/MIT"], ["Book", "architecture"]],
+    metrics: [["Language", "Rust"], ["Sync", "~1.4× faster"], ["Clients", "1 → 2"], ["Release", "0.1.0-preview"], ["License", "AGPL/MIT"], ["Book", "architecture"]],
     repo: "Cuprate/cuprate",
     resources: [
       ["Cuprate repository", "https://github.com/Cuprate/cuprate", "github"],
+      // Dated in the label, because a preview version number ages fast and
+      // `Resource` is a positional tuple with nowhere else to put a date.
+      ["Cuprate · Beta 0.1.0-preview “Kesterite” released · Aug 2026", "https://cuprate.org/blog/release-cuprate-0-1-0-preview-kesterite/", "release"],
       ["Architecture book", "https://architecture.cuprate.org", "docs"],
       ["Monero docs · nodes", "https://docs.getmonero.org", "docs"],
     ],
@@ -328,11 +512,31 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
 // notes) so they keep a literal `d`. v17/v18/v19 derive their status text
 // from FUTURE_PROTOCOLS — see roadmapStatus() — so the rail can never
 // disagree with the cards again.
+// p4·M5 — THE v19 STOP IS GONE, AND THAT IS A CORRECTION RATHER THAN A
+// REDESIGN. It read "v19 · Carrot era wallets" and mapped Carrot to a fork of
+// its own. Three primary sources say Carrot activates at the FCMP++ fork
+// instead (see the Carrot card above for all three), so the rail was asserting
+// a fork that the people building it do not plan. A stop that names a fork
+// nobody is shipping is not a placeholder — it is a claim, and it was false.
+//
+// Carrot therefore joins v17. `roadmapStatus()` already handles a
+// multi-protocol stop: it derives from the LEAST-advanced member, so v17 now
+// reads for both, and the tie between two BETA cards resolves to the first
+// listed, which is FCMP++.
+//
+// The rail is four stops. v18 -> v20 skips a number, which is honest: fork
+// numbers are the network's, not this page's, and inventing a v19 to keep the
+// sequence tidy is how the false stop got here.
+//
+// SERAPHIS AND JAMTIS ARE DELIBERATELY UNTOUCHED. Their "2027 · fork v18" now
+// sits oddly close to v17's March 2027 — but no source reachable from here
+// speaks to their schedule, and re-deriving one card from evidence while
+// guessing at the next is worse than leaving the guess visible. Named in the
+// release report as an open question rather than quietly adjusted.
 export const ROADMAP: readonly RoadmapStop[] = [
   { v: "v16", t: "Ring 16 · CLSAG", d: "2022 · live", c: "var(--g-50)", on: false },
-  { v: "v17", t: "FCMP++", protocols: ["fcmp"], c: "#b87aff", on: true },
+  { v: "v17", t: "FCMP++ + Carrot", protocols: ["fcmp", "carrot"], c: "#b87aff", on: true },
   { v: "v18", t: "Seraphis + Jamtis", protocols: ["seraphis", "jamtis"], c: "var(--tk-accent)", on: false },
-  { v: "v19", t: "Carrot era wallets", protocols: ["carrot"], c: "#5ed3f4", on: false },
   { v: "v20", t: "Cuprate share + PQ prep", d: "2028+ · horizon", c: "#ffd400", on: false },
 ];
 
@@ -513,6 +717,14 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // SIM_IDS by EcoPopup, exactly like the protocol cards' CTAs.
     simLink: `${R.LEARN_SIM}?p=stressnet`,
     simLabel: "RUN THE STRESSNET SIMULATOR",
+    // p4·M5 — the simulated explorer was already here, as the third `.v6-res`
+    // chip in `links` below. It is now a control rather than a chip, and it is
+    // REMOVED from `links` rather than duplicated: one destination, one
+    // affordance. "SIMULATED" leads the label because the reader decides what
+    // to expect when they read the button, not when the page they land on
+    // tells them.
+    ctaLink: R.OPERATE_SUPERSTRESS_EXPLORER,
+    ctaLabel: "OPEN THE SIMULATED BETA-CHAIN EXPLORER",
     // The two screenshot slots stay: screenshots were promised as-provided and
     // still may arrive, so an honest reservation is still honest. The third
     // slot — "telemetry endpoint · to be wired" — was retired in p3·19. A
@@ -521,10 +733,43 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // EcoPopup renders every slot identically, so a slot cannot express
     // "answered no" — the only honest form for that is prose, which body[2]
     // now carries.
-    slots: [
-      { label: "screenshot · umbrel node dashboard", h: 130 },
-      { label: "screenshot · MoneroSpace on the beta chain", h: 130 },
-    ],
+    // p4·M5 — ONE RESERVATION IS SATISFIED AND THE OTHER IS RETIRED, under one
+    // rule rather than two special cases: a screenshot slot with an image
+    // ships and carries its capture date; a slot with no image does not
+    // exist. `slots: []` is the same state XMRHUB has carried since p4·M3.
+    //
+    // SLOT 1 — "screenshot · umbrel node dashboard" — IS SATISFIED by the
+    // capture below, and this is the decision rather than an inheritance. The
+    // same file already renders in the Monero Superbrain brief, so it was
+    // worth asking whether reusing it is duplication. Measured: it is not
+    // visible twice anywhere. `/future` can open exactly ONE ecosystem popup
+    // (FuturePage's only setEco call names "stressnet"), and
+    // `/operate/peers` filters to `status === "PARTNER"`, which this entry is
+    // not — so the two popups are on two different pages and no reader meets
+    // the image twice on one. p4·M3 refused this same file for BOTH of
+    // Superbrain's reservations, correctly: those name a store listing and a
+    // mining dashboard, and it is neither. It IS an Umbrel node dashboard,
+    // which is what slot 1 named. A reservation is satisfied by the artifact
+    // it names — and this one names it.
+    //
+    // SLOT 2 — "screenshot · MoneroSpace on the beta chain" — is DELETED. No
+    // such capture exists, and a dashed box on a live page reads as an image
+    // that failed to load rather than as an artifact nobody has taken. If one
+    // arrives it returns as a `shot` with its own date, never as a
+    // placeholder.
+    //
+    // THE CAPTION IS THE HONESTY. The node in this capture has synced
+    // nothing — TESTNET, difficulty 0, transaction count 0, database 0 B, no
+    // top block, every connection count 0 — so the alt text says that. This
+    // entry's own headline is "the FCMP++ beta chain, live", and an
+    // undescribed screenshot of an empty node underneath it would let a
+    // reader take the picture as evidence of the sentence.
+    shot: {
+      src: "/peers/peer-superbrain.webp",
+      alt: "The Superstress app's monitor tab on a Tor-only Umbrel node, running v0.19.0.0-beta.2.0: network TESTNET, difficulty 0, transaction count 0, database size 0 B, no top block yet and every connection count at zero — a node that has just been installed and has not begun syncing.",
+      captured: "2026-08-18",
+    },
+    slots: [],
     // p3·16 replaces the null "Umbrel node writeup" placeholder with the hub
     // that IS the Umbrel node writeup — the placeholder was a promise of a
     // page, and the page now exists on this site.
@@ -538,7 +783,10 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // carries "simulated" and does so BEFORE the destination, because a reader
     // decides whether to expect a chain reading at the moment they read the
     // link, not when the banner tells them on arrival.
-    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS], ["Beta-chain explorer · simulated · on this site", R.OPERATE_SUPERSTRESS_EXPLORER], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
+    // The explorer chip is GONE from this row — it is `ctaLink` above now.
+    // Leaving both would put one destination in two affordances in one
+    // dialog, which teaches the reader that they differ.
+    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
   },
   {
     id: "xmrhub", name: "XMRHUB", head: "the ecosystem, in one directory.",
