@@ -796,3 +796,119 @@
   counters, five historical controls reproducing exactly, the delta explained by #201 wiring
   verify-memphone). verify-future **69 → 110 `ok()` call sites**, measured statically in both trees; runtime assertions on the shipping tree **152** (the base runtime figure is measured separately against its own build rather than inferred).
   · https://github.com/aqua-019/satoshis-vision-v1/pull/202
+- XMRIRISH-20260830-M6b · done — p4·M6b "the peers page gets addresses, and the placeholders
+  go". **FOUR of the brief's premises did not survive measurement, and one dissolved the work
+  it was blocking**: popup coverage is **7/7, not 4/7** (all seven ECOSYSTEM entries carry a
+  non-empty `body[]` and a dated `shot`), so §4b's hard dependency does not exist and the
+  click changed uniformly; all three delivered ASSETS are absent from the tree, the history
+  and this session's uploads (badge, medallion, peer artwork — reported, not guessed); and
+  neither `INDEX-AND-ORDER.md` nor `claude/mockups/peers-grid-3x3.html` exists in any branch.
+  A partner card called `window.open(partner.url)` on body click and every PARTNER carries a
+  `url`, so the whole card unconditionally sent readers off-site before they knew where they
+  were going; it opens our brief now, and the partner's site is a deliberate second click on
+  the `VISIT ↗` anchor already in the dialog. **`?p=<id>` through the existing `useUrlState`
+  hook gives every brief a postable address** — a query param, so no route registration; PUSH
+  per that hook's own policy; `clearAtFallback` so closing DELETES the key; and an unknown
+  slug costs no code because the hook already separates absent from unrecognised. **The
+  reservation mechanism is DELETED, not emptied** — type, field, markup and all seven
+  literals — after p4·M5 stated the rule in `data.ts`'s own words and did not apply it to the
+  entry 200 lines below. The sweep found **SEVEN** reservations, not the two named: 2 in the
+  popup (deleted) and **5 `EmptySlot`s on /operate/superstress, NOT fixed** because
+  verify-superstress §6b asserts `shotSlots >= 1` on them as a deliberate paired control.
+  **verify-future §8 would have HUNG rather than failed** — it waited on a new tab per card
+  via the tree's only `waitForEvent('page')` — and eight parallel readers missed it because
+  the one enumerating click-dependent gates scoped its grep to strings §8 does not contain;
+  a completeness critic found it. verify-origins and verify-peers §9 both assumed a uniform
+  roster and now DERIVE which entries declare a shot, asserting both directions. Kathie joins
+  as the seventh partner, written from the two reachable sources only, with her X link
+  shipped and never described, and her ARTWORK shipping as the first image on this page that
+  is NOT a capture — `EcoShot` gains a required `kind` so the caption reads "artwork ·
+  supplied" instead of mislabelling it "captured", and required `w`/`h` because the hardcoded
+  1000x625 box was an accident of a uniform roster. **"LARGER IS BETTER" WAS ASSUMED AND IS
+  WRONG**: of the two files supplied, the 1133x879 JPEG scores BELOW a deliberate upscale of
+  the 543x405 PNG on strong-edge density and gradient step, so it is an upscale and shipping
+  it at 1000px manufactured detail nobody captured. Re-sourced to the 543 master, shipped at
+  native, with the dpr-2 softness recorded rather than papered over. **§1b SHIPS NOTHING**:
+  the medallion is 1206x1154, not square, no alpha, with a baked rgb(19,18,16) ground at 41.9%
+  of pixels against a rgb(5,5,5) page — blocked on the asset, and NO placeholder, which is
+  §4e's own rule applied to the release that wrote it. **AND THE ASSET SWEEP WAS RUN ONCE AND
+  TRUSTED FOR FOUR HOURS**: two of the three "absent" assets arrived later in the same session
+  and were found only when the operator asked. The scope of an absence includes WHEN; an adversarial pass **refused the first draft** over thirteen
+  overclaiming clauses, including one arithmetically false at ship and one refuted by the
+  entry's own evidence. Accent measured at min ΔE **16.91** against a shipping-pair bar of
+  **4.36**. Budgets paired per stem: **73 of 77 slots size-identical**, four moved,
+  **residual ZERO on both halves** (+1,213 lazy, +3 eager, +1,216 total), `cssGz`
+  BYTE-IDENTICAL at 18,586, **76 = 76 chunks**; no ceiling raised because none was crossed,
+  and `/operate/peers`' margin is now **486 B**, the tightest on that route. Census RECOUNTED and
+  UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6** — with the instrument controlled against six
+  commits, the sixth of which caught a NEW defect class: a block-scalar `run: |` step that a
+  lazy capture under `/m` truncates at the first line end, which no historical control could
+  exercise because only p4·M8 introduced that shape. Five break tests, and **M4 exposed a
+  defect in this release's own gate** — a bare wait threw and killed the run at 8 assertions
+  before §10 could speak; after the fix it reds 16 across five sections.
+  verify-peers **44 → 59**.
+
+
+- XMRIRISH-20260830-M6c · done · p4·M6c "THE ARTWORK IS NOT DATED, AND THE COLUMN WAS GATED
+  BY NOTHING" — shipped inside PR #203, so `SITE_PR` stays 203 ·
+  https://github.com/aqua-019/satoshis-vision-v1/pull/203
+  **A measurement is scoped to WHEN it was taken, not only to what it measured** — the
+  release's own lesson, and the standing scope-of-an-absence rule one axis over. p4·M6b swept
+  for three delivered assets at session start, found none, and restated that one reading as
+  fact for four hours; two of the three had arrived 79 and 106 minutes later. #202 recorded
+  that a reachability result is scoped to what it was measured ON. Same shape, time axis.
+  **The date was a true fact about the wrong subject.** "artwork · supplied 2026-08-30" is
+  the day the file reached us; beside six real capture dates a reader takes it for the age of
+  the artwork. `EcoShot` is a DISCRIMINATED UNION now, so the wrong state is untypeable, each
+  axis proven by applying the mutation and running tsc: a date on artwork **TS2353**, an
+  undated capture **TS2322**, a `.captured` read not narrowed on `kind` **TS2339**. Caption
+  names its source instead — "artwork · supplied by Kathie", derived from `name`.
+  **And the shot column was gated by nothing.** K2 (an entry's `shot` deleted structurally so
+  it compiles) left all 69 assertions GREEN, and a scoped grep for the column across
+  verify-peers, verify-future and verify-origins returns zero — p4·M6b's `408468c` could have
+  been reverted in silence. New §9 BICONDITIONAL read from `getComputedStyle`, not the class
+  name, with a new `data-peer-body` handle. `verify-peers` **67 → 70**.
+  **Four break tests, and the two that stayed green are the finding.** K1 the caption re-dated
+  → 2 reds, and `no SUPPLIED image is captioned as a capture` STAYS GREEN, proving the two are
+  independent since "supplied 2026-08-30" never says "captured" — one forbids the WORD, the
+  other the DIGITS. K2 → green, and verify-origins reads **"6 of the 7 rendered briefs"** and
+  PASSES: the derived count moving is the proof it derives. K3 the column fix reverted → green,
+  because a full roster gives the biconditional no zero-track subject. **K4 = K2+K3 → 1 red**:
+  the two conditions are JOINTLY NECESSARY, p4·M3's two-defence result inverted.
+  **The artwork ships at 1133x879, 55,798 B**, replacing a 543x405 at 25,216 B. Measured at
+  the render size the two masters are EQUIVALENT in edge detail (3.30% vs 3.23% strong-edge at
+  a 996-device-pixel box), so the 1133 carries no meaningful extra detail — it is still the
+  right file because a dpr-2 reader asks ~996 px, which 1133 covers at ratio **1.14**
+  (downsample) and 543 at **0.55** (upsample). **No dpr ceiling left to record**; the earlier
+  caveat described the 543 file and went with it.
+  **Encoded in Chromium, no new dependency** — drawImage to a canvas plus toDataURL, since the
+  gates already ship a browser. **Lossless was tried first and lost badly, against the
+  prediction**: `toDataURL("image/webp", 1)` IS genuinely lossless (canvas round trip maxDiff
+  **0**, pixel-identical) and weighs **456,843 B against q=0.92's 55,798 B — a factor of 8.2**.
+  Flat cel art usually does compress smaller lossless; this file does not, because the supplied
+  master is a JPEG carrying **23,098 unique colours** where authored flat art would be in the
+  hundreds, and lossless must preserve every bit of that noise. Ringing measured against the
+  lossless reference through ONE decoder: in the 7.1% of pixels within 3px of a hard edge, mean
+  **2.655 of 255**, max 20; away from edges 1.007. The first ringing measurement was the WRONG
+  INSTRUMENT — Chromium-encoded WebP against a libjpeg-decoded source, reading decoder
+  disagreement as encoding loss on a file already proven pixel-identical.
+  **Budgets, all green, MEASURED SLACK not ticks**: `/operate/peers` **472 B** (0.45%) ·
+  `/future` **834 B** (0.74%) · `lazyJsRaw` **2,382 B** (0.24%) · `totalJsRaw` **2,925 B**
+  (0.23%) · `cssGz` **414 B** (2.18%) · `eagerJsRaw` **15,543 B**. `cssGz` BYTE-IDENTICAL at
+  18,586 and the eager half byte-identical at 264,457 — no stylesheet rule, no module, and a
+  `public/` asset is in no chunk closure, so the +30,582 B of image costs no route budget.
+  **FORWARD CONSTRAINT, said now rather than discovered as a red**: `/operate/peers` is the
+  tightest margin on the board at 472 B, down from 1,577 B at #202. Kathie's own entry cost
+  ~1,091 B — MORE than the margin now left — so **the next peer added to this route needs a
+  raise**. Planning that arithmetic up front is what #199 and #201 each lost a round to.
+  **p4·M6 is NOT in this release and was reverted out of it** — four of its sections were taken
+  here in error and removed on the operator's instruction. It is a separate PR whose whole
+  proof is zero bytes moved against a four-file diff, and this branch moves bytes across
+  thirteen files, so its break tests cannot run here. README.md, app/README.md, SitePage.tsx
+  and verify-site.mjs are byte-identical to the p4·M6b head `32c4bb5`, verified per file; §1d
+  survives because p4·M6b already landed it. Consequence worth stating: **verify-site §12 is
+  again the pre-M6 self-including selector, so the medallion's hold is correct on BOTH grounds**
+  — the §12 prerequisite and the asset's own format.
+  Census RECOUNTED and UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6**, instrument controlled
+  against SIX commits, all reproducing exactly including the invocation arithmetic and the six
+  orphans by name.

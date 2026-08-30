@@ -4,7 +4,7 @@
 //  no column assertion and never did.)
 //
 // Verifies the ecosystem entries land correctly, rendering:
-//   1. Six PARTNER cards (exact count from source parse)
+//   1. Seven PARTNER cards (exact count from source parse)
 //   2. Superbrain's GitHub repo URL in exact casing (case-sensitive)
 //   3. Install block with 4 ordered steps in <ol>
 //   4. Five app names rendered (Superbrain, SuperPay, MoneroSpace, Superstress, SuperAtomic)
@@ -13,6 +13,11 @@
 //   7. Mobile (390px): no h-scroll, no HTML text under 12px
 //   8. Reduced motion: cards render, zero running animations
 //   9. The partner screenshots: same-origin, resolvable, decoded, dated
+//  10. Every brief has its OWN address: /operate/peers?p=<id> opens it in a
+//      cold tab, a click writes it, a close clears it, an unknown slug is
+//      honest (p4·M6b)
+//  11. No brief renders a screenshot RESERVATION — a dashed, captioned, empty
+//      box. The mechanism was deleted; this is the gate that keeps it gone.
 //
 // CROSS-GATE DEPENDENCY: verify-future.mjs asserts the Superbrain pulse does NOT
 // appear on /future (counts exactly 9 data-pulse="live" on that page). This gate
@@ -49,7 +54,8 @@ const expectedPartnerCount = partnerMatches.length;
 
 R.ok(expectedPartnerCount > 0,
   '§1 · data.ts contains at least one PARTNER (instrument check)');
-/* p4·M3: 4 -> 6 (Monerica, Privacy Gateway). RECOUNTED, never incremented —
+/* p4·M3: 4 -> 6 (Monerica, Privacy Gateway). p4·M6b: 6 -> 7 (Kathie).
+   RECOUNTED, never incremented —
    `expectedPartnerCount` is parsed from data.ts above and every downstream
    assertion in this file compares against THAT, so this literal is the only
    place a human number appears. It is deliberately not derived: a gate whose
@@ -57,8 +63,8 @@ R.ok(expectedPartnerCount > 0,
    changing, which is the whole reason a second, hand-written figure exists
    here at all. If you moved this number without meaning to move it, that is
    the assertion doing its job. */
-R.ok(expectedPartnerCount === 6,
-  `§1 · data.ts declares exactly 6 PARTNER entries (parsed: ${expectedPartnerCount})`);
+R.ok(expectedPartnerCount === 7,
+  `§1 · data.ts declares exactly 7 PARTNER entries (parsed: ${expectedPartnerCount})`);
 
 // §5: Check RepoPulseReadout does not render any typed numbers as text content.
 // RepoPulseReadout was extracted into app/src/pages/future/repoPulse.tsx.
@@ -165,8 +171,21 @@ try {
   const briefButton = superbrainCard.locator('button:has-text("our brief")');
   await briefButton.click();
 
-  // Wait for the modal to open — it renders a dialog with role="dialog"
-  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+  /* p4·M6b — THIS WAIT REPORTS RATHER THAN THROWS, and the reason came out of
+   * a break test rather than a review. M4 (the `?p=` state ignored, so no brief
+   * ever opens) made this line raise, and the raise killed the run at EIGHT
+   * assertions — so §10, which exists PRECISELY to catch a dead brief, never
+   * printed a word. The output was `Test crashed: waitForSelector timeout`,
+   * which reads like a broken harness rather than like a dead feature.
+   *
+   * A bare `waitForSelector` is an assertion with no message and no survivors.
+   * Waiting with a budget and then ASSERTING lets every later section speak,
+   * which is the whole point of having them. p4·M5 fixed six waits of this
+   * shape in verify-future for the same reason. */
+  const dialogOpened = await page.waitForSelector('[role="dialog"]', { timeout: 5000 })
+    .then(() => true).catch(() => false);
+  R.ok(dialogOpened,
+    '§2 · the "our brief" button opens a dialog (precondition: every check below reads inside it, and a bare wait here would abort the run instead of naming the failure)');
 
   // Find the install block by its label, which renders as a .kicker inside the modal
   const installLabel = page.locator('[role="dialog"] .kicker:has-text("Install · Umbrel")');
@@ -223,7 +242,11 @@ try {
     `§6 · Live pulse renders issue count (issues: 7)`);
 
   // Close modal
-  await page.locator('[role="dialog"] .v6-x').click();
+  /* p4·M6b — `.catch` for the same reason as the wait at §2: this closes a
+     dialog that a broken tree never opened, and an unguarded click there burns
+     Playwright's 30s default and then THROWS, taking §10 and §11 down with it.
+     A close that cannot happen is not this section's assertion. */
+  await page.locator('[role="dialog"] .v6-x').click().catch(() => {});
 
   // §6b: Degradation test — mock a 500 response
   await page.route('**/api/feeds*', route => {
@@ -453,7 +476,7 @@ try {
     }
     const body = dataContent.slice(m.index, i + 1);
     const f = (k) => (body.match(new RegExp(k + ':\\s*"((?:[^"\\\\]|\\\\.)*)"')) || [, null])[1];
-    shots.push({ src: f('src'), alt: f('alt') || '', captured: f('captured') });
+    shots.push({ src: f('src'), alt: f('alt') || '', captured: f('captured'), kind: f('kind') });
   }
 
   R.ok(shots.length >= 6,
@@ -470,11 +493,54 @@ try {
     `§9 · every shot src resolves to a real file under public/ (${shots.length - missing.length} of ${shots.length})`,
     missing.map((h) => h.src).join(', '));
 
-  const badDate = shots.filter((h) => !/^\d{4}-\d{2}-\d{2}$/.test(h.captured));
-  R.ok(badDate.length === 0,
-    `§9 · every shot carries an ISO capture date (${shots.length - badDate.length} of ${shots.length})`,
-    badDate.map((h) => `${h.src}: "${h.captured}"`).join(', ')
+  /* p4·M6b — EVERY SHOT DECLARES WHAT IT IS. Six are screenshots this site
+     took; the seventh is artwork the partner supplied. The caption says which,
+     so a missing or invented `kind` is a mislabel waiting to render. */
+  const badKind = shots.filter((h) => h.kind !== 'capture' && h.kind !== 'artwork');
+  R.ok(badKind.length === 0,
+    `§9 · every shot declares kind capture|artwork (${shots.length - badKind.length} of ${shots.length}; ${shots.filter((h) => h.kind === 'capture').length} captures, ${shots.filter((h) => h.kind === 'artwork').length} artwork)`,
+    badKind.map((h) => `${h.src}: ${JSON.stringify(h.kind)}`).join(', '));
+
+  /* p4·M6c — THE DATE IS A PROPERTY OF A CAPTURE, NOT OF AN IMAGE, so this is
+     TWO assertions pointing in OPPOSITE directions where it used to be one
+     blanket rule. Until this release every shot had to carry a date, and the
+     one artwork entry rendered "artwork · supplied 2026-08-30" — the day the
+     file reached us, which is not a fact about the artwork and, sitting in a
+     column beside six real capture dates, reads to a reader as one.
+
+     `EcoShot` is a DISCRIMINATED UNION now, so both wrong states are compile
+     errors before they are gate failures (proven: a date on artwork is TS2353,
+     an undated capture is TS2322, and a `.captured` read that has not narrowed
+     on `kind` is TS2339). This is the SECOND instrument, and it is not
+     redundant — the parser reads SOURCE TEXT, so it still speaks if someone
+     ever loosens the type back to an optional field.
+
+     BOTH SIDES CARRY A FLOOR, and an earlier draft of this block argued the
+     artwork side did not need one "because `badKind` above already fails
+     unless every parsed shot declares one of the two kinds, so caps + arts is
+     the whole set". That reasoning is wrong and is recorded rather than
+     quietly deleted: a partition says nothing about either part being
+     non-empty, so a parse finding zero artwork would have satisfied "no
+     artwork is dated" over an empty set. */
+  const caps = shots.filter((h) => h.kind === 'capture');
+  const arts = shots.filter((h) => h.kind === 'artwork');
+  const undatedCap = caps.filter((h) => !/^\d{4}-\d{2}-\d{2}$/.test(h.captured));
+  R.ok(caps.length >= 1 && undatedCap.length === 0,
+    `§9 · every CAPTURE carries an ISO date (${caps.length - undatedCap.length} of ${caps.length}; floor: at least one capture must exist or this is vacuous)`,
+    undatedCap.map((h) => `${h.src}: ${JSON.stringify(h.captured)}`).join(', ')
     + '  — undated, a screenshot of someone else\'s site silently claims to be current.');
+
+  /* THE FLOOR IS ON THIS SIDE TOO, and the docblock above used to say it was
+     not needed "because `badKind` establishes caps + arts is the whole set".
+     That does not follow: badKind establishes the PARTITION, not that either
+     part is non-empty, so a parse that found zero artwork would satisfy
+     "no artwork is dated" for the wrong reason. Caught by an adversarial pass
+     over this release's own new assertion. */
+  const datedArt = arts.filter((h) => h.captured !== null && h.captured !== undefined);
+  R.ok(arts.length >= 1 && datedArt.length === 0,
+    `§9 · and NO artwork carries one (${arts.length} artwork, ${datedArt.length} dated; floor: at least one artwork must parse or this is vacuous)`,
+    datedArt.map((h) => `${h.src}: ${JSON.stringify(h.captured)}`).join(', ')
+    + '  — a supplied image\'s date is not this site\'s to state; we know when it reached us, not when it was made.');
 
   const alts = shots.map((h) => h.alt.trim());
   R.ok(alts.every((a) => a.length > 30) && new Set(alts).size === alts.length,
@@ -499,7 +565,7 @@ try {
 
   for (const id of briefIds) {
     await page.locator(`[data-peer-brief="${id}"]`).click();
-    await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+    await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
     await page.waitForFunction((i) => {
       const im = document.querySelector(`img[data-peer-shot="${i}"]`);
       return im && im.complete;
@@ -513,34 +579,352 @@ try {
         n: d ? d.querySelectorAll('img').length : -1,
         decoded: !!im && im.naturalWidth > 0,
         nat: im ? `${im.naturalWidth}x${im.naturalHeight}` : null,
+        box: im ? `${im.getAttribute('width')}x${im.getAttribute('height')}` : null,
         src: im ? im.getAttribute('src') : null,
         lazy: im ? im.getAttribute('loading') : null,
         cap: cap[0] || null,
+        /* p4·M6c — THE COLUMN BRANCH, read as a COMPUTED value rather than as
+           a class name. `col-2` is what the source writes; `grid-template-
+           columns` is what the reader gets, and a class that stopped resolving
+           to a grid would leave the class check green. "none" is the no-grid
+           answer, so track count 0 and 2 are the two real states. */
+        tracks: (() => {
+          const b = d ? d.querySelector(`[data-peer-body="${i}"]`) : null;
+          if (!b) return -1;
+          const t = getComputedStyle(b).gridTemplateColumns;
+          return !t || t === 'none' ? 0 : t.trim().split(/\s+/).length;
+        })(),
       };
     }, id));
     await page.keyboard.press('Escape');
     await page.waitForTimeout(260);
   }
 
-  R.ok(shown.length === expectedPartnerCount && shown.every((o) => o.n === 1),
-    `§9 · every brief renders exactly one screenshot (${shown.filter((o) => o.n === 1).length} of ${shown.length})`,
-    shown.filter((o) => o.n !== 1).map((o) => `${o.id}: ${o.n} img`).join(', '));
+  /* p4·M6b — THE ROSTER IS NO LONGER UNIFORM, so "every brief renders exactly
+   * one screenshot" is no longer the claim. `EcoShot` has been OPTIONAL since
+   * p4·M3. This block used to justify the split by saying the seventh peer was
+   * "the first entry to exercise that, because her artwork was never
+   * delivered" — TRUE WHEN WRITTEN AND FALSE WITHIN THE SAME SESSION: the file
+   * arrived and kathie declares a shot, so the no-shot arm currently has NO
+   * live subject at all and is exercised only by a break test. The split is
+   * kept on its own merits: asserting `n === 1` across the board would red on
+   * an honest absence and, worse, would pressure a future author into
+   * inventing a capture to satisfy a gate.
+   *
+   * The expectation is DERIVED from data.ts, by the same segmented parse
+   * verify-origins uses: an entry that DECLARES a shot must render exactly one,
+   * and an entry that declares none must render ZERO. That is strictly stronger
+   * than the old count — it also catches an image appearing where the data
+   * declares none, which is how a borrowed or hotlinked capture would arrive. */
+  const idMarks = [...dataContent.matchAll(/\bid:\s*"([a-z0-9]+)"/g)];
+  const declaresShot = new Set(idMarks.filter((m, i) =>
+    /\bshot:\s*\{/.test(dataContent.slice(m.index, (idMarks[i + 1] || { index: dataContent.length }).index))
+  ).map((m) => m[1]));
+  const withShot = shown.filter((o) => declaresShot.has(o.id));
+  const withoutShot = shown.filter((o) => !declaresShot.has(o.id));
 
-  const undecoded = shown.filter((o) => !o.decoded);
+  R.ok(withShot.length >= 6,
+    `§9 · ${withShot.length} of ${shown.length} briefs declare a screenshot (floor: if this parse found none, every check below would pass over an empty set)`);
+
+  const wrongCount = withShot.filter((o) => o.n !== 1);
+  R.ok(shown.length === expectedPartnerCount && wrongCount.length === 0,
+    `§9 · every brief that DECLARES a screenshot renders exactly one (${withShot.length - wrongCount.length} of ${withShot.length}; ${shown.length} briefs opened of ${expectedPartnerCount})`,
+    wrongCount.map((o) => `${o.id}: ${o.n} img`).join(', '));
+
+  const strayImg = withoutShot.filter((o) => o.n !== 0);
+  R.ok(strayImg.length === 0,
+    `§9 · every brief that declares NO screenshot renders no image at all (${withoutShot.length} such: ${withoutShot.map((o) => o.id).join(', ') || 'none'})`,
+    strayImg.map((o) => `${o.id}: ${o.n} img`).join(', ')
+    + '  — an image where the data declares none is a borrowed capture or a broken src, and both are worse than the absence.');
+
+  /* ── p4·M6c · THE SECOND COLUMN, WHICH WAS GATED BY NOTHING ──────────────
+     p4·M6b shipped `className={e.shot ? "col-2" : undefined}` so a brief with
+     no screenshot gets no track reserved for one. A break test removing one
+     entry's `shot` block found that change UNPROTECTED: the column collapsed
+     correctly, the derived counts all moved, and every one of the 69
+     assertions stayed GREEN. Nothing in the suite could tell the two layouts
+     apart, so the fix could have been reverted in silence — which is the
+     shape this repo keeps recording, a correct change with no witness.
+
+     THE ASSERTION IS A BICONDITIONAL, not two independent checks, because the
+     failure that matters is a DISAGREEMENT between the data and the layout:
+     a track reserved for an image that does not exist, or an image crammed
+     into a single column. Read from `getComputedStyle`, never from the class
+     name — `col-2` is what the source writes and the computed tracks are what
+     the reader gets, so a class that stopped resolving to a grid would leave a
+     class check green.
+
+     BLIND SPOT, STATED: on the shipping roster all seven partners declare a
+     shot, so the ZERO-track arm has no live subject and is exercised only by
+     the break test above. The count is printed on both sides so a reader can
+     see which arm is carrying the assertion rather than inferring it. */
+  const wrongTracks = shown.filter((o) => (declaresShot.has(o.id) ? o.tracks !== 2 : o.tracks !== 0));
+  R.ok(shown.length >= 1 && wrongTracks.length === 0,
+    `§9 · the shot COLUMN exists if and only if the shot does — 2 tracks for the ${withShot.length} briefs that declare one, 0 for the ${withoutShot.length} that do not`,
+    wrongTracks.map((o) => `${o.id}: declares ${declaresShot.has(o.id) ? 'a shot' : 'none'} but renders ${o.tracks} track(s)`).join(', ')
+    + '  — a track reserved for an image that does not exist is the reservation defect p4·M6b deleted the type for.');
+
+  const undecoded = withShot.filter((o) => !o.decoded);
   R.ok(undecoded.length === 0,
-    `§9 · every screenshot actually DECODED, at its intrinsic size (${shown.filter((o) => o.decoded).length} of ${shown.length}; sizes: ${[...new Set(shown.map((o) => o.nat))].join(', ')})`,
+    `§9 · every screenshot actually DECODED, at its intrinsic size (${withShot.filter((o) => o.decoded).length} of ${withShot.length}; sizes: ${[...new Set(withShot.map((o) => o.nat))].join(', ')})`,
     undecoded.map((o) => o.id).join(', ')
     + '  — a 404 leaves the tag, the src and the alt all correct. Only a decode says the bytes arrived.');
 
-  const offOriginSrc = shown.filter((o) => !(o.src || '').startsWith('/peers/'));
+  const offOriginSrc = withShot.filter((o) => !(o.src || '').startsWith('/peers/'));
   R.ok(offOriginSrc.length === 0,
-    `§9 · every RENDERED src is same-origin too, not just the source literal (${shown.length - offOriginSrc.length} of ${shown.length})`,
+    `§9 · every RENDERED src is same-origin too, not just the source literal (${withShot.length - offOriginSrc.length} of ${withShot.length})`,
     offOriginSrc.map((o) => `${o.id}: ${o.src}`).join(', '));
 
-  const undated = shown.filter((o) => !/^captured \d{4}-\d{2}-\d{2}$/i.test(o.cap || ''));
+  /* THE CAPTION MUST MATCH THE KIND, and asserting one fixed wording was the
+     defect waiting to happen: until p4·M6b every image here was a capture, so
+     `/^captured <date>/` was both the rule and an accident of the roster. The
+     first SUPPLIED image would have had to render "captured", claiming this
+     site photographed a page it never visited. Keyed on the declared kind.
+
+     p4·M6c — AND THE TWO FORMS NO LONGER AGREE ABOUT DATES. A capture must
+     carry one; artwork must carry NONE and names its source instead. So the
+     artwork pattern is not "the same shape with a different noun" — it is a
+     different claim, and the date-absence half is asserted separately below
+     rather than left to the shape of one regex. */
+  const kindOf = new Map(shots.map((h) => [h.src.replace(/^\/peers\/peer-|\.webp$/g, ''), h.kind]));
+  const wantCap = (id) => (kindOf.get(id) === 'artwork'
+    ? /^artwork · supplied by \S/i
+    : /^captured \d{4}-\d{2}-\d{2}$/i);
+  const undated = withShot.filter((o) => !wantCap(o.id).test(o.cap || ''));
   R.ok(undated.length === 0,
-    `§9 · every screenshot renders its capture date beneath it (${shown.length - undated.length} of ${shown.length}; e.g. "${shown[0] ? shown[0].cap : 'n/a'}")`,
-    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', '));
+    `§9 · every image renders a caption that matches what it is (${withShot.length - undated.length} of ${withShot.length}; e.g. "${withShot[0] ? withShot[0].cap : 'n/a'}")`,
+    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)} — expected ${kindOf.get(o.id) === 'artwork' ? 'artwork · supplied by <name>' : 'captured <date>'}`).join(', '));
+
+  const artworkMiscalled = withShot.filter((o) => kindOf.get(o.id) === 'artwork' && /captured/i.test(o.cap || ''));
+  R.ok(artworkMiscalled.length === 0,
+    `§9 · no SUPPLIED image is captioned as a capture (${withShot.filter((o) => kindOf.get(o.id) === 'artwork').length} artwork on the page)`,
+    artworkMiscalled.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', ')
+    + '  — "captured" claims this site photographed the partner\'s surface. For art they sent us, that is simply untrue.');
+
+  /* p4·M6c — AND IT RENDERS NO DATE AT ALL. Distinct from the assertion above:
+     that one forbids the WORD "captured", this one forbids the DIGITS. A
+     caption reading "artwork · supplied 2026-08-30" passes the miscalled check
+     cleanly — it never says "captured" — and is exactly what shipped in
+     p4·M6b. Paired with a floor, because "no artwork is dated" is satisfied by
+     a page rendering no artwork. */
+  const artworkOnPage = withShot.filter((o) => kindOf.get(o.id) === 'artwork');
+  const artworkDated = artworkOnPage.filter((o) => /\d{4}-\d{2}-\d{2}/.test(o.cap || ''));
+  R.ok(artworkOnPage.length >= 1 && artworkDated.length === 0,
+    `§9 · and no SUPPLIED image renders a date (${artworkOnPage.length} artwork on the page, ${artworkDated.length} dated; floor: at least one must render or this is vacuous)`,
+    artworkDated.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', ')
+    + '  — beside six real capture dates, a supply date reads as the age of the artwork, which nobody here knows.');
+
+  /* THE RESERVED BOX MUST BE THE IMAGE'S OWN SHAPE. The width/height attributes
+     were a hardcoded 1000x625 while every image was that size; a supplied image
+     of a different shape reserves the wrong box and shifts layout on decode. */
+  const wrongBox = withShot.filter((o) => o.nat && o.box && o.nat !== o.box);
+  R.ok(wrongBox.length === 0,
+    `§9 · every image reserves its OWN intrinsic box, not a shared constant (${withShot.length - wrongBox.length} of ${withShot.length}; ${[...new Set(withShot.map((o) => o.nat))].join(', ')})`,
+    wrongBox.map((o) => `${o.id}: decoded ${o.nat} but reserved ${o.box}`).join(', '));
+
+  /* ══ §10 · EVERY BRIEF HAS ITS OWN ADDRESS (p4·M6b) ═══════════════════
+   *
+   * THE DEFECT THIS CLOSES: before this release all seven briefs shared one
+   * URL. Opening any of them left the address bar at /operate/peers, so a
+   * reader who copied it sent the recipient to the grid rather than to the
+   * brief they were reading. There was no way to share a partner at all.
+   *
+   * PER PEER, NOT ONCE. A single assertion on one peer proves the mechanism
+   * exists and says nothing whatever about the other six — and the failure
+   * mode that matters (a slug that opens the WRONG brief) is invisible unless
+   * every id is driven and the OPENED entry is identified. `data-eco-brief`
+   * carries that identity; matching on the rendered title would work today and
+   * break on the first copy edit.
+   *
+   * THE COLD-TAB CASE IS THE POINT. Each id below is loaded in a FRESH
+   * navigation, which is what a pasted link actually is — not a click followed
+   * by a URL read, which would pass even if the param were write-only. */
+  const peerIds = [...dataContent.matchAll(/\bid:\s*"([a-z0-9]+)"/g)]
+    .map((m, i, all) => ({
+      id: m[1],
+      seg: dataContent.slice(m.index, (all[i + 1] || { index: dataContent.length }).index),
+    }))
+    .filter((e) => /status:\s*"PARTNER"/.test(e.seg))
+    .map((e) => e.id);
+
+  R.ok(peerIds.length === expectedPartnerCount,
+    `§10 · parsed ${peerIds.length} PARTNER slugs to drive, matching the ${expectedPartnerCount} declared (floor: an empty list would make every check below vacuous)`,
+    peerIds.join(', '));
+
+  /* THE PRERENDERED DOCUMENT IS PARAM-BLIND, AND SAYING SO IS THE HONEST
+   * FORM OF "opens on first paint". /operate/peers prerenders to ONE file that
+   * serves all seven addresses, so the brief opens on the first CLIENT render
+   * after hydration — there is no server that could do otherwise on a static
+   * host. What must NOT happen is a rendered-then-corrected sequence, i.e. the
+   * grid settling and the dialog arriving later; that is what the assertion
+   * below measures, by giving it no settle time at all. */
+  const preRendered = readFileSync(join(__dirname, 'dist', 'operate', 'peers', 'index.html'), 'utf8');
+  /* FLOORED, because an absence over an empty or emptied document is true and
+     useless — v6.1.3 shipped exactly that on /simulate. The floor is content
+     the same file must carry either way. */
+  const preBriefs = (preRendered.match(/data-peer-brief=/g) || []).length;
+  R.ok(preBriefs === expectedPartnerCount,
+    `§10 · the prerendered document actually carries its ${expectedPartnerCount} brief controls (${preBriefs}) — floor for the absence below`);
+  R.ok(!/role="dialog"/.test(preRendered),
+    '§10 · the prerendered document carries no dialog — one file serves all seven addresses, so the brief is opened by hydration and this gate says so rather than claiming a server-rendered first paint');
+
+  const opened = [];
+  for (const id of peerIds) {
+    await page.goto(`${BASE}/operate/peers?p=${id}`, { waitUntil: 'domcontentloaded' });
+    const got = await page.waitForFunction(
+      () => document.querySelector('[data-eco-brief]')?.getAttribute('data-eco-brief') ?? null,
+      null, { timeout: 8000 },
+    ).then((h) => h.jsonValue()).catch(() => null);
+    opened.push({ id, got });
+  }
+  const wrongBrief = opened.filter((o) => o.got !== o.id);
+  R.ok(wrongBrief.length === 0,
+    `§10 · every one of the ${peerIds.length} slugs opens ITS OWN brief in a cold tab (${opened.length - wrongBrief.length} of ${opened.length}: ${peerIds.join(', ')})`,
+    wrongBrief.map((o) => `?p=${o.id} opened ${o.got}`).join(', ')
+    + '  — a slug that opens the wrong brief is a shareable link that is shareable and wrong.');
+
+  /* THE UNKNOWN SLUG. This is the case a broken shared link produces, and the
+   * one a fallback would quietly paper over: SimulatePage's v6.0.9 defect was
+   * exactly this — an unrecognised ?p= silently opened a DIFFERENT entry. */
+  await page.goto(`${BASE}/operate/peers?p=nosuchpeer`, { waitUntil: 'networkidle' });
+  const unknown = await page.evaluate(() => ({
+    dialogs: document.querySelectorAll('[role="dialog"]').length,
+    cards: document.querySelectorAll('[data-peer-brief]').length,
+    h1: document.querySelector('h1')?.textContent?.trim() ?? null,
+  }));
+  R.ok(unknown.dialogs === 0 && unknown.cards === expectedPartnerCount,
+    `§10 · an unknown slug degrades to the index — no dialog (${unknown.dialogs}), no error page, all ${unknown.cards} cards still rendered`);
+  R.ok(!!unknown.h1 && unknown.h1.length > 0,
+    `§10 · …and the page still has its own heading rather than a not-found state ("${(unknown.h1 || '').slice(0, 42)}")`);
+
+  /* THE ROUND TRIP: a click WRITES the address, a close CLEARS it. Without the
+   * clear half, `?p=` would be pinned onto a closed page and the canonical
+   * /operate/peers URL would stop existing once a reader opened anything. */
+  await page.goto(`${BASE}/operate/peers`, { waitUntil: 'networkidle' });
+  const first = peerIds[0];
+  await page.locator(`[data-peer-brief="${first}"]`).click();
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
+  const afterOpen = new URL(page.url());
+  R.ok(afterOpen.searchParams.get('p') === first,
+    `§10 · clicking a brief control writes that brief's address (?p=${afterOpen.searchParams.get('p')})`);
+
+  await page.keyboard.press('Escape');
+  /* Reported, not bare — the same shape this file's §2 note argues for, and it
+     was left bare here in the very changeset that wrote that note. */
+  const closed = await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 })
+    .then(() => true).catch(() => false);
+  R.ok(closed, '§10 · Escape closes the brief (precondition for the URL check below, and a bare wait here would abort the run rather than name the failure)');
+  const afterClose = new URL(page.url());
+  R.ok(afterClose.searchParams.get('p') === null && afterClose.pathname === '/operate/peers',
+    `§10 · closing clears the param rather than pinning a closed brief into the URL (${afterClose.pathname}${afterClose.search})`);
+
+  /* THE CARD BODY ITSELF, which is the behaviour change this release makes.
+   * A card used to `window.open` the partner's site on body click. Clicking the
+   * card must now open the brief and must NOT navigate the app anywhere. */
+  await page.goto(`${BASE}/operate/peers`, { waitUntil: 'networkidle' });
+  const cardBox = page.locator('.v6-peer-grid .panel').first();
+  await cardBox.click({ position: { x: 40, y: 90 } });
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
+  const afterCard = await page.evaluate(() => ({
+    dialogs: document.querySelectorAll('[role="dialog"]').length,
+    href: location.pathname + location.search,
+    brief: document.querySelector('[data-eco-brief]')?.getAttribute('data-eco-brief') ?? null,
+  }));
+  R.ok(afterCard.dialogs === 1 && afterCard.brief === peerIds[0],
+    `§10 · clicking the CARD BODY opens that card's brief (dialogs ${afterCard.dialogs}, brief ${afterCard.brief}) — it used to open the partner's site in a new tab`);
+  R.ok(afterCard.href === `/operate/peers?p=${peerIds[0]}`,
+    `§10 · …and the card click stayed on this origin, at the brief's address (${afterCard.href})`);
+
+  /* THE IN-APP CROSS-LINK, which is the assertion this release most needed and
+   * did not have. Moving the open-brief state into the URL made `onClose` write
+   * HISTORY, and every in-app destination in the dialog ran `onClose()` beside
+   * its navigation — so the close RACED the navigation and won: clicking "The
+   * Superstress hub · on this site" left the reader back on /operate/peers,
+   * having never reached the hub, with Back going FORWARD to the destination.
+   *
+   * NOTHING SAW IT. The full 39-gate chain was green, verify-peers was green at
+   * 59, and verify-future's own §8/§9/§10 all passed — because every one of
+   * them asserts what the dialog CONTAINS, and this is about what happens after
+   * you leave it. An assertion that follows the link is the only shape that
+   * catches it. */
+  await page.goto(`${BASE}/operate/peers?p=superbrain`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('[data-eco-brief="superbrain"]', { timeout: 8000 }).catch(() => {});
+  const xlink = page.locator('[role="dialog"] a.v6-res', { hasText: 'Superstress hub' });
+  const xn = await xlink.count();
+  R.ok(xn === 1,
+    `§10 · the Superbrain brief carries exactly one in-app cross-link to drive (${xn}) — floor: a zero here would make the assertion below pass over nothing`);
+  if (xn === 1) {
+    await xlink.first().click();
+    await page.waitForTimeout(1200);
+    const landed = new URL(page.url()).pathname;
+    R.ok(landed === '/operate/superstress',
+      `§10 · following an in-app cross-link OUT of a brief actually arrives (${landed}) — before this release's fix it landed back on /operate/peers, because the close wrote history and raced the navigation`);
+    await page.goBack();
+    await page.waitForTimeout(800);
+    const back = new URL(page.url());
+    R.ok(back.pathname === '/operate/peers' && back.searchParams.get('p') === 'superbrain',
+      `§10 · …and Back returns to the BRIEF the reader came from, not past it (${back.pathname}${back.search})`);
+  }
+
+  /* ══ §11 · NO SCREENSHOT RESERVATION MAY SHIP (p4·M6b) ════════════════
+   *
+   * A "slot" was a dashed, captioned, empty box meaning "this artifact has not
+   * arrived". The Superbrain brief shipped two of them ("screenshot · umbrel
+   * community store listing", "screenshot · superbrain mining dashboard") for
+   * several releases, and p4·M5 retired the stressnet pair while stating the
+   * rule in data.ts's own words — without applying it to the entry 200 lines
+   * below. That is why this is a gate and not a paragraph.
+   *
+   * THE RULE: a screenshot slot with an image ships and carries its capture
+   * date; a screenshot slot without an image DOES NOT EXIST. An empty labelled
+   * box reads as an image that failed to load, which tells a reader the page is
+   * broken rather than that the picture was never taken — on a site whose whole
+   * discipline is honest absence, it is the one shape of absence that lies.
+   *
+   * MEASURED ON THE RENDER, NOT ON THE SOURCE, and deliberately: the type and
+   * the field are deleted, so a source check would assert against a mechanism
+   * that no longer exists and pass forever without reading a page. This sweeps
+   * every opened brief for any element whose own text is a screenshot caption
+   * and which contains no <img>.
+   *
+   * PAIRED WITH A FLOOR, because it is an ABSENCE. If the sweep opened nothing,
+   * or if captions stopped being rendered at all, "zero placeholders" would be
+   * true of an empty set. The floor counts the SUBJECT that must exist in both
+   * states: the real, dated captions under the screenshots that DID arrive. */
+  const slotSweep = { boxes: [], captions: 0, briefs: 0 };
+  for (const id of peerIds) {
+    await page.goto(`${BASE}/operate/peers?p=${id}`, { waitUntil: 'networkidle' });
+    const seen = await page.evaluate(() => {
+      const d = document.querySelector('[role="dialog"]');
+      if (!d) return null;
+      const bad = [...d.querySelectorAll('*')]
+        .filter((el) => {
+          const t = (el.textContent || '').trim();
+          // `screenshot · <thing>` is the reservation caption. CSS uppercases
+          // it, so innerText would read "SCREENSHOT ·" — match case-insensitively
+          // and on textContent, which is the authored string either way.
+          if (!/^screenshot\s*[·:]/i.test(t)) return false;
+          if (t.length > 90) return false;          // a paragraph that merely mentions one
+          return el.querySelectorAll('img').length === 0
+              && (el.closest('figure') === null);   // a real <figcaption> lives in a figure
+        })
+        .map((el) => (el.textContent || '').trim().slice(0, 60));
+      return {
+        bad,
+        captions: d.querySelectorAll('figure figcaption').length,
+      };
+    });
+    if (seen) { slotSweep.briefs++; slotSweep.boxes.push(...seen.bad); slotSweep.captions += seen.captions; }
+  }
+
+  R.ok(slotSweep.briefs === peerIds.length,
+    `§11 · the sweep actually opened every brief (${slotSweep.briefs} of ${peerIds.length}) — a sweep that opened none would report zero placeholders truthfully and uselessly`);
+  R.ok(slotSweep.captions >= 6,
+    `§11 · …and the briefs it opened do render real dated screenshot captions (${slotSweep.captions}) — the paired positive, so "no reservation" cannot be satisfied by a page that renders no captions at all`);
+  R.ok(slotSweep.boxes.length === 0,
+    `§11 · NO brief renders a screenshot reservation — a captioned box with no image in it (${slotSweep.boxes.length} found across ${slotSweep.briefs} briefs)`,
+    slotSweep.boxes.join(' | ')
+    + '  — a slot with no image reads as a failed load, not as an artifact nobody has captured. See EcoShot in data.ts.');
 
   await page.close();
   await reducedMotionPage.close();

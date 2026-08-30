@@ -181,10 +181,31 @@ against your own node or another independent source.
 
 ### The simulators are simulated
 
-The interactive protocol demonstrations under `/learn` render **invented
-values by design**, in order to illustrate a mechanism. They are labelled as
-such throughout. They are not chain data, not historical data, and not a
-prediction of anything.
+Some surfaces render **invented values by design**, in order to illustrate a
+mechanism, and every one of them says so on its own face — the interactive
+protocol demonstrations at `/learn/sim` and the beta-chain explorer at
+`/operate/superstress/explorer` are the two a reader is most likely to meet.
+They are not chain data, not historical data, and not a prediction of anything.
+
+**The rule is the property, not the list.** A surface that invents a figure
+labels it; a surface that reports one names where it came from, through the
+provenance vocabulary every displayed figure on this site carries. That is what
+`app/verify-provenance.mjs` and `app/verify-prng.mjs` enforce, and it is why
+this paragraph deliberately does not enumerate: the previous version of this
+sentence scoped the rule to `/learn` and missed the explorer entirely, and a
+count would go stale the same way the next time a surface is added.
+
+The explorer is the one that most needs saying, because it wears an explorer's
+clothes — block tiles, confirmation depths, a fee ladder, a transaction feed —
+and an explorer is normally a window onto a real chain. This one is a window
+onto a model. Its header reads `MODEL · WIND TUNNEL · NOTHING HERE WAS
+MEASURED`, its transaction ids are `sim:` followed by sixteen hex characters
+rather than a real sixty-four, and its chain is *seeded* rather than random, so
+the same block always shows the same contents.
+
+(A rule about what a page CLAIMS should not be scoped by the prefix its URL
+happens to have, nor by a count of the pages that happened to exist when it was
+written.)
 
 ### Your jurisdiction is your responsibility
 

@@ -6,14 +6,24 @@
  * either page so neither has to import the other — and so TrustedPeersPage
  * never transitively pulls in FutureMini's canvas code.
  *
- * v6.0.1 addition: when the entry carries a `url`, the dialog grows a
- * VISIT <NAME> ↗ anchor. Partner cards now open the partner's own site on
- * body click, so this dialog is the in-site brief that click used to show —
- * nothing that was reachable before became unreachable.
+ * When the entry carries a `url`, the dialog grows a VISIT <NAME> ↗ anchor.
+ *
+ * p4·M6b — THAT ANCHOR IS NOW THE ONLY WAY OFF-SITE FROM A CARD BODY, and it
+ * matters more than it did. A partner card used to `window.open` the partner's
+ * site on body click; it opens THIS DIALOG now, so leaving is a second,
+ * deliberate click that a reader makes after reading who they are about to
+ * visit. See TrustedPeersPage's header for the argument.
+ *
+ * p4·M6b — THE RESERVATION SLOTS ARE GONE. This body used to render an
+ * `e.slots` array as dashed, captioned, empty boxes under the screenshot. A
+ * slot with no image in it reads as an image that failed to load, not as an
+ * artifact nobody has captured yet — so the type, the field and this markup
+ * were deleted together. See EcoShot's header in data.ts for the rule, and
+ * verify-peers §11 for the gate that keeps it.
  */
 
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { V6Modal } from "./V6Modal";
 import { SIM_IDS, type EcoEntry } from "./data";
@@ -40,12 +50,50 @@ function simIdOf(simLink: string | undefined): string | null {
 
 export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const titleId = React.useId();
   const simId = simIdOf(e.simLink);
 
+  /* p4·M6b — CLOSE ONLY WHEN THE READER IS STAYING ON THIS PAGE.
+   *
+   * THE DEFECT THIS FIXES WAS INTRODUCED BY THE SAME RELEASE, and 39 green
+   * gates did not see it. Every in-app destination in this dialog used to run
+   * `onClose()` beside its navigation, on the sound rule that "a modal left
+   * open over the route it just sent you to is the defect one layer up". That
+   * was free while `onClose` was a React state reset. It stopped being free
+   * when /operate/peers moved its open-brief state into the URL: `onClose` is
+   * now `setPeer("")`, which WRITES HISTORY, so the close raced the navigation
+   * and won.
+   *
+   * Measured on the built branch before this fix — clicking "The Superstress
+   * hub · on this site →" inside the Superbrain brief:
+   *
+   *     before : /operate/peers?p=superbrain
+   *     after  : /operate/peers          <- never reached the hub
+   *     Back   : /operate/superstress    <- Back goes FORWARD to the destination
+   *
+   * Two pushes 5.8ms apart, the destination then the page you were already on.
+   * The reader followed a link and was returned to where they started.
+   *
+   * The dialog does not need closing when the destination is a DIFFERENT
+   * route: the route change unmounts this dialog's host page and the dialog
+   * with it. It DOES need closing for a same-page destination, which is the
+   * case the original rule was written for and which no entry uses today —
+   * kept because the next in-app link somebody adds may be one. */
+  const leaveOpenTo = (dest: string) => {
+    try { return new URL(dest, window.location.origin).pathname !== pathname; }
+    catch { return false; }
+  };
+  const closeUnlessLeaving = (dest: string) => { if (!leaveOpenTo(dest)) onClose(); };
+
   return (
     <V6Modal open={open} onClose={onClose} labelledBy={titleId}>
-      <div className="v6-modal-head">
+      {/* p4·M6b — `data-eco-brief` names WHICH entry this dialog is showing.
+          /operate/peers?p=<id> is a shareable address now, so a gate has to be
+          able to assert that a given slug opened the MATCHING brief rather than
+          merely that some dialog appeared. Matching on the rendered title text
+          would work today and break on the first copy edit; this cannot. */}
+      <div className="v6-modal-head" data-eco-brief={e.id}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <span className="v6-status" style={{ color: e.c }}>
@@ -66,7 +114,46 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
       </div>
 
       <div className="v6-modal-body">
-        <div className="col-2" style={{ gridTemplateColumns: "1.2fr 1fr", gap: 26 }}>
+        {/* p4·M6b — THE SECOND COLUMN EXISTS TO HOLD THE SCREENSHOT, so an entry
+            with no screenshot does not get one. Until this release the right
+            column always held something — a shot, or a dashed reservation box —
+            so deleting the reservations is what made the empty case reachable,
+            which is why the two changes belong in one release.
+
+            AND MY OWN DIAGNOSIS OF IT WAS WRONG, CORRECTED BY MEASURING RATHER
+            THAN BY LOOKING AGAIN. Seeing the seventh partner's brief render
+            with a wide empty band down its right side, I recorded it as "~40%
+            of the dialog is dead space, caused by the reserved second track".
+            Measured at 1440 on the shipping build, both states:
+
+              with a shot (xmrclub):  grid 597.8px + 498.2px, paragraph 598px
+              without    (kathie):    block, column 1122px,   paragraph 639px
+
+            The paragraph is capped by `max-width: 638.948px` — the HOUSE PROSE
+            MEASURE, which p4·07 already measured at 639px across three sibling
+            surfaces and recorded as house behaviour rather than a defect. So
+            the empty band is the prose cap meeting a fixed-width dialog, and
+            it is NOT caused by the grid: removing the track is worth 598 -> 639,
+            about 7% of measure, and the band remains.
+
+            KEPT ANYWAY, on the narrower claim it can actually support: a track
+            reserved for a thing that does not exist is worth removing, and the
+            prose gets its full measure instead of a column's share. What it is
+            NOT is a fix for the whitespace, and saying so here costs nothing
+            while letting the next reader skip the re-measurement. */}
+        {/* p4·M6c — `data-peer-body` IS THE GATE'S HANDLE, and it exists because
+            the branch above was gated by NOTHING. A break test removing one
+            entry's shot left all 67 assertions green: the column collapsed
+            correctly and no assertion in the suite could see either state, so
+            this fix could have been reverted in silence. A stable attribute
+            rather than a positional selector, on `verify-orb`'s recorded
+            ground — a positional one starts passing for the wrong reason the
+            moment the markup moves. */}
+        <div
+          data-peer-body={e.id}
+          className={e.shot ? "col-2" : undefined}
+          style={e.shot ? { gridTemplateColumns: "1.2fr 1fr", gap: 26 } : undefined}
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {e.body.map((par, i) => (
               <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
@@ -114,7 +201,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
               <button
                 type="button"
                 className="proto-btn"
-                onClick={() => { onClose(); navigate(`${R.LEARN_SIM}?p=` + simId); }}
+                onClick={() => { const d = `${R.LEARN_SIM}?p=` + simId; closeUnlessLeaving(d); navigate(d); }}
                 style={{ alignSelf: "flex-start", borderColor: e.c, color: e.c, boxShadow: `0 0 10px ${e.c}44` }}
               >
                 ▶ {e.simLabel}
@@ -138,7 +225,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                   type="button"
                   className="proto-btn"
                   data-eco-cta={e.id}
-                  onClick={() => { onClose(); navigate(e.ctaLink as string); }}
+                  onClick={() => { const d = e.ctaLink as string; closeUnlessLeaving(d); navigate(d); }}
                   style={{ alignSelf: "flex-start", borderColor: e.c, color: e.c, boxShadow: `0 0 10px ${e.c}44` }}
                 >
                   {e.ctaLabel} →
@@ -168,12 +255,16 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
               </a>
             ) : null}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* p4·M3 — THE REAL SCREENSHOT, above whatever is still reserved.
+          {e.shot ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* p4·M3 — THE REAL SCREENSHOT.
                 Four things here are load-bearing and none is styling:
 
-                `width`/`height` ARE THE INTRINSIC PIXELS (every capture is
-                1000x625), so the browser reserves the aspect-ratio box before
+                `width`/`height` ARE THE INTRINSIC PIXELS, read PER SHOT since
+                p4·M6b — they were a hardcoded 1000x625 while every image here
+                was a capture at exactly that size, and the first SUPPLIED
+                image (1133x879) made the shared constant a per-entry fact. The
+                browser reserves the aspect-ratio box before
                 a byte of image arrives and the paragraph beside it never
                 jumps. Without them a lazy image is a layout shift by
                 construction, which this repo caps at 0.005.
@@ -192,17 +283,32 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 a real <figure>/<figcaption> pair so the association survives
                 for a screen reader, where a sibling <div> would not.
 
+                AND ONLY A CAPTURE IS DATED (p4·M6c). `EcoShot` is a
+                discriminated union, so `.captured` exists on the capture arm
+                alone and this expression narrows on `kind` before it can read
+                one — an undated capture and a dated artwork are both compile
+                errors rather than review findings. The artwork caption names
+                the source instead, from `e.name`, so it says where the image
+                came from without publishing a date nobody here established.
+
                 NO onError FALLBACK, DELIBERATELY. A missing asset must look
                 broken: a shot that silently degrades to a placeholder is a
                 gate that can never go red, and verify-peers §9 asserts every
                 src resolves precisely so this branch is never reached. */}
-            {e.shot ? (
+            {/* p4·M6b — no inner `e.shot ?` here: the COLUMN above is now guarded
+                on the same expression, so an inner test could only encode a
+                state no entry can produce (wrapper rendered, figure absent).
+                It discriminated until this release, because the same div also
+                rendered the `slots` reservations and a slots-only entry took
+                it legitimately. Deleting the slots and guarding the column in
+                one release is what made it dead. */}
+            {(
               <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                 <img
                   src={e.shot.src}
                   alt={e.shot.alt}
-                  width={1000}
-                  height={625}
+                  width={e.shot.w}
+                  height={e.shot.h}
                   loading="lazy"
                   decoding="async"
                   data-peer-shot={e.id}
@@ -212,23 +318,14 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                   className="mono"
                   style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}
                 >
-                  captured {e.shot.captured}
+                  {e.shot.kind === "artwork"
+                    ? `artwork · supplied by ${e.name}`
+                    : `captured ${e.shot.captured}`}
                 </figcaption>
               </figure>
-            ) : null}
-            {e.slots.map((s, i) => (
-              <div
-                key={i}
-                style={{
-                  border: "1px dashed var(--ink-20)", height: s.h || 120,
-                  display: "grid", placeItems: "center",
-                  background: "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--text-primary) 1.5%, transparent) 0 10px, color-mix(in srgb, var(--text-primary) 4%, transparent) 10px 20px)",
-                }}
-              >
-                <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>{s.label}</span>
-              </div>
-            ))}
-          </div>
+            )}
+            </div>
+          ) : null}
         </div>
 
         <div style={{ borderTop: "1px solid var(--rule)", paddingTop: 16 }}>
@@ -247,7 +344,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                  modal left open over the route it just sent you to is the
                  same defect one layer up. */
               href && href.startsWith("/") ? (
-                <Link key={label} className="v6-res" to={href} onClick={onClose}>
+                <Link key={label} className="v6-res" to={href} onClick={() => closeUnlessLeaving(href)}>
                   <span className="led" style={{ background: e.c, boxShadow: `0 0 6px ${e.c}` }} />{label} →
                 </Link>
               ) : href ? (

@@ -1,14 +1,67 @@
 /**
  * pages/TrustedPeersPage.tsx — the collaborator directory (/operate/peers).
  *
- * v6.0.1 behaviour change: a card's body now opens the partner's OWN site in
- * a new tab (noopener,noreferrer) rather than our in-site brief. The brief is
- * not removed — it moved to the `our brief` button in each card's footer,
- * which stops propagation so it never navigates away. Nothing that was
- * reachable before became unreachable.
+ * ── p4·M6b · THE CARD OPENS THE BRIEF, AND THE BRIEF HAS AN ADDRESS ───────
+ * Two changes that are one mechanism, which is why they land together.
  *
- * The stressnet entry has no `url` (it has no external site), so it keeps
- * modal-on-click.
+ * 1 · A CARD BODY NO LONGER LEAVES THE SITE. v6.0.1 made `<Card onClick>` call
+ *     `window.open(partner.url)`. Measured before this change: every one of
+ *     the six PARTNER entries carries a `url`, so the `else` branch of that
+ *     handler was DEAD CODE here and the whole card unconditionally navigated
+ *     off-site on first click. A reader who wanted to know who these people
+ *     are had to find a 52.8x16px button (p4·M3 measured it, and enlarged it
+ *     to 44px precisely because a near-miss on it was destructive).
+ *
+ *     This page's own claim is that no request leaves this origin while you
+ *     are on it, and that a link you follow is a link you CHOSE. A card that
+ *     navigates on first click makes the reader leave before they know where
+ *     they are going. So the card opens our brief, and the partner's site is a
+ *     second, deliberate click on the `VISIT <NAME> ↗` anchor already inside
+ *     the dialog. Nothing that was reachable became unreachable — the footer
+ *     `visit <domain> ↗` anchor is still there and still stops propagation.
+ *
+ *     AND THE NEAR-MISS ASYMMETRY p4·M3 RECORDED INVERTS, IN THE SAFE
+ *     DIRECTION. That note explains why `our brief` was enlarged and the
+ *     sibling anchor deliberately was not: a near-miss on the anchor landed on
+ *     the card, which did the same thing the anchor did. Both halves still
+ *     hold, with the destinations swapped — a near-miss on `visit ↗` now lands
+ *     on the card, which opens the brief: in-site, dismissible, and not a
+ *     navigation the reader did not ask for. The destructive near-miss the 44px
+ *     floor was built for is gone. (Narrowed deliberately: in the WRAPPED
+ *     footer state at 390 a tap well below the button can still reach the
+ *     `visit ↗` anchor — pre-existing geometry, byte-identical to base, and
+ *     recorded at the control itself.)
+ *
+ * 2 · `?p=<id>` MAKES A BRIEF SHAREABLE. Before this, all seven briefs shared
+ *     one address: opening any of them left the URL at /operate/peers, so
+ *     copying it sent the recipient to the grid rather than to the brief they
+ *     were reading. There was no way to share a partner.
+ *
+ *     The shape is `/future/protocol?p=` (p4·06), through the same `useUrlState`
+ *     hook, and a QUERY PARAM rather than a path segment deliberately: a path
+ *     would demand a new ROUTES entry, a prerendered file, a sitemap row, a
+ *     budget row and the rest of the twelve-surface registration sweep, for one
+ *     component rendering one array. It buys the reader nothing.
+ *
+ *     PUSH, NOT REPLACE, per that hook's own documented policy: a parameter
+ *     naming PRIMARY, SHAREABLE CONTENT gets a history entry (`?v=` on the
+ *     mempool and `?p=` on the simulators both do), so Back closes the brief —
+ *     which is the gesture a phone reader reaches for first.
+ *
+ *     `clearAtFallback` is what makes closing honest: the fallback is the empty
+ *     string, which is not in `PEER_IDS`, so writing it DELETES the key rather
+ *     than pinning `?p=` onto a closed page. Absent and closed are the same
+ *     state, and the canonical /operate/peers URL stays clean.
+ *
+ *     AN UNKNOWN SLUG COSTS NO CODE. `isKnown` is false for anything not in
+ *     PEER_IDS, so `?p=nonsense` renders the index with no dialog — the honest
+ *     answer, and the one a broken shared link produces.
+ *
+ * KEYBOARD, STATED RATHER THAN ASSUMED: `Card` sets `role="button"` but no
+ * tabIndex and no key handler (design/primitives.tsx), so a card has never been
+ * keyboard-operable and this change does not alter that. Every brief stays
+ * reachable by keyboard through the real `<button>` in the footer, which is why
+ * that button is kept rather than folded into the card it now duplicates.
  *
  * Any EcoEntry that carries a `repo` (currently only Superbrain) also gets a
  * live GitHub pulse readout on its card, via future/repoPulse.tsx's
@@ -31,12 +84,34 @@ import { EcoPopup } from "./future/EcoPopup";
 // import through cards.tsx once already put /about/peers at 101,152 B gzip
 // against a 100,000 B ceiling.
 import { RepoPulseReadout } from "./future/repoPulse";
+import { useUrlState } from "@/routes/useUrlState";
 import { R } from "../../scripts/routes.mjs";
 
+/* Hoisted to module scope on `useUrlState`'s own instruction: `values` is
+   deliberately not a dependency of its setter, so an inline array literal would
+   rebuild that callback every render for no behavioural gain.
+
+   THESE IDS ARE AN INTERFACE, NOT AN IMPLEMENTATION DETAIL. Each one is a URL
+   somebody can post, and a posted URL cannot be renamed later without breaking
+   it. They are `EcoEntry.id` verbatim — the same keys the popup, the stagger
+   index and the brief control already use — so there is no second list to
+   drift. Renaming one is a breaking change to a public address. */
+const PARTNERS = ECOSYSTEM.filter((e) => e.status === "PARTNER");
+const PEER_IDS = PARTNERS.map((e) => e.id);
+
 export function TrustedPeersPage() {
-  const [eco, setEco] = React.useState<string | null>(null);
-  const partners = ECOSYSTEM.filter((e) => e.status === "PARTNER");
-  const openE = ECOSYSTEM.find((e) => e.id === eco);
+  /* The empty string is the "no brief open" fallback and is deliberately NOT a
+     member of PEER_IDS: `isKnown` is therefore false for it, so a bare `?p=`
+     behaves exactly like no parameter at all, and `clearAtFallback` turns the
+     close into a delete rather than a `?p=` that pins an empty value. */
+  const [, setPeer, { raw: requested, isKnown }] = useUrlState<string>({
+    key: "p",
+    values: PEER_IDS,
+    fallback: "",
+    clearAtFallback: true,
+  });
+  const partners = PARTNERS;
+  const openE = isKnown ? ECOSYSTEM.find((e) => e.id === requested) : undefined;
   // D0666 — retain the last-opened brief so V6Modal can play its exit before
   // unmounting. Dropping <EcoPopup> on close (what this used to do) removes
   // the dialog from the DOM on the same frame, which is the exact absence of
@@ -51,7 +126,7 @@ export function TrustedPeersPage() {
       <PageHeader
         kicker="Trusted peers · the surfaces around the protocol"
         title='The projects we <em style="color:var(--p-50);text-shadow:var(--glow-soft-p);font-style:normal">stand beside</em>.'
-        sub="Independent Monero collaborators we cross-link with and vouch for. Open any card for their site, or read our brief on it."
+        sub="Independent Monero collaborators we cross-link with and vouch for. Open any card to read our brief; their own site is one click further, from inside it."
         right={<Pill tone="acc" dot>{partners.length} partners</Pill>}
       />
 
@@ -69,16 +144,13 @@ export function TrustedPeersPage() {
       <section className="v6-peer-grid" style={{ display: "grid", gap: 18 }}>
         {partners.map((e, i) => {
           const primary = (e.links.find(([, href]) => href) || e.links[0] || [])[0];
-          /* Card click → the partner's own site (new tab, noopener). The
-             in-site brief stays one click away in the footer, so nothing
-             that was in the modal is lost. */
-          const visit = () => {
-            if (e.url) window.open(e.url, "_blank", "noopener,noreferrer");
-            else setEco(e.id);
-          };
+          /* Card click → OUR BRIEF, at this peer's own address. The partner's
+             site is a deliberate second click, on the `VISIT ↗` anchor inside
+             the dialog or on the footer anchor below. See the header. */
+          const openBrief = () => setPeer(e.id);
           return (
             <div key={e.id} className="v6-stagger" style={{ ["--stagger-i" as never]: String(i) }}>
-              <Card onClick={visit} style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 300, borderColor: e.c + "44" }}>
+              <Card onClick={openBrief} style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 300, borderColor: e.c + "44" }}>
                 <div style={{ height: 4, background: e.c, boxShadow: `0 0 14px ${e.c}` }} />
                 <div style={{ padding: "22px 24px 20px", display: "flex", flexDirection: "column", gap: 13, flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -161,12 +233,33 @@ export function TrustedPeersPage() {
                         Missing it costs nothing. Only this button's near-miss
                         is destructive, so only this button is enlarged.
 
+                        [p4·M6b — THE PREMISE OF THE PARAGRAPH ABOVE IS NO
+                        LONGER TRUE, AND ITS CONCLUSION STILL IS. The card no
+                        longer opens the partner's site, so a near-miss on the
+                        anchor lands on a card that opens the BRIEF — in-site,
+                        dismissible, and not a navigation the reader did not
+                        ask for. The asymmetry inverts in the SAFE direction
+                        and the anchor still needs no enlarging. The dated
+                        measurement above is left as written, per this repo's
+                        rule that rewriting one falsifies it; this bracket is
+                        the marker that says to check its date before quoting
+                        it. Residual, measured and NOT fixed: in the WRAPPED
+                        footer state at 390 a tap ~10px below this button can
+                        still land on the anchor and open a new tab — that
+                        geometry is byte-identical to base and is not this
+                        release's.]
+
                         NO NEW CSS RULE: `cssGz` runs a 416 B margin and this
                         page's idiom is inline style throughout. */}
                     <button
                       type="button"
                       className="mono dim2"
-                      onClick={(ev) => { ev.stopPropagation(); setEco(e.id); }}
+                      /* stopPropagation still matters even though the card
+                         now does the same thing: without it one tap fires
+                         `setPeer` twice, and `useUrlState` PUSHES, so a single
+                         click would leave two identical history entries and
+                         Back would appear not to work. */
+                      onClick={(ev) => { ev.stopPropagation(); setPeer(e.id); }}
                       aria-label={`Read our brief on ${e.name}`}
                       data-peer-brief={e.id}
                       style={{
@@ -223,7 +316,7 @@ export function TrustedPeersPage() {
         })}
       </section>
 
-      {shownE ? <EcoPopup e={shownE} open={!!openE} onClose={() => setEco(null)} /> : null}
+      {shownE ? <EcoPopup e={shownE} open={!!openE} onClose={() => setPeer("")} /> : null}
     </PageShell>
   );
 }
