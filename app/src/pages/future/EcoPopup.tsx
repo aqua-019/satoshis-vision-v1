@@ -81,7 +81,37 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
       </div>
 
       <div className="v6-modal-body">
-        <div className="col-2" style={{ gridTemplateColumns: "1.2fr 1fr", gap: 26 }}>
+        {/* p4·M6b — THE SECOND COLUMN EXISTS TO HOLD THE SCREENSHOT, so an entry
+            with no screenshot does not get one. Until this release the right
+            column always held something — a shot, or a dashed reservation box —
+            so deleting the reservations is what made the empty case reachable,
+            which is why the two changes belong in one release.
+
+            AND MY OWN DIAGNOSIS OF IT WAS WRONG, CORRECTED BY MEASURING RATHER
+            THAN BY LOOKING AGAIN. Seeing the seventh partner's brief render
+            with a wide empty band down its right side, I recorded it as "~40%
+            of the dialog is dead space, caused by the reserved second track".
+            Measured at 1440 on the shipping build, both states:
+
+              with a shot (xmrclub):  grid 597.8px + 498.2px, paragraph 598px
+              without    (kathie):    block, column 1122px,   paragraph 639px
+
+            The paragraph is capped by `max-width: 638.948px` — the HOUSE PROSE
+            MEASURE, which p4·07 already measured at 639px across three sibling
+            surfaces and recorded as house behaviour rather than a defect. So
+            the empty band is the prose cap meeting a fixed-width dialog, and
+            it is NOT caused by the grid: removing the track is worth 598 -> 639,
+            about 7% of measure, and the band remains.
+
+            KEPT ANYWAY, on the narrower claim it can actually support: a track
+            reserved for a thing that does not exist is worth removing, and the
+            prose gets its full measure instead of a column's share. What it is
+            NOT is a fix for the whitespace, and saying so here costs nothing
+            while letting the next reader skip the re-measurement. */}
+        <div
+          className={e.shot ? "col-2" : undefined}
+          style={e.shot ? { gridTemplateColumns: "1.2fr 1fr", gap: 26 } : undefined}
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {e.body.map((par, i) => (
               <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
@@ -183,8 +213,9 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
               </a>
             ) : null}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* p4·M3 — THE REAL SCREENSHOT, above whatever is still reserved.
+          {e.shot ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* p4·M3 — THE REAL SCREENSHOT.
                 Four things here are load-bearing and none is styling:
 
                 `width`/`height` ARE THE INTRINSIC PIXELS (every capture is
@@ -231,7 +262,8 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 </figcaption>
               </figure>
             ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
 
         <div style={{ borderTop: "1px solid var(--rule)", paddingTop: 16 }}>
