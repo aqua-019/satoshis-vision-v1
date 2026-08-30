@@ -994,6 +994,46 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   self-including selector, so the medallion's hold is correct on BOTH of its grounds** — the
   §12 prerequisite and the asset's own format — where for a few commits it rested only on the
   second.
+  **AN ADVERSARIAL SOURCE AUDIT FOUND SEVEN MORE, AND ITS OWN TOP FINDING WAS ABOUT MY
+  DISPATCH.** Five read-only lenses over the repo, every finding then verified by a separate
+  refute-by-default pass: 24 confirmed of a much larger raw set. **The first thing it caught
+  was that I had dispatched it and then edited the files it was auditing** — it recorded the
+  `shot: {` line series shifting between its own successive greps and both files' mtimes
+  advancing mid-read. That is p3·19's recorded defect ("a recon agent measured a tree that was
+  moving under it"), committed by someone with it in this file. **Dispatch recon BEFORE
+  editing, or pin it to a revision with `git show <sha>:<path>`.** The audit's verifier caught
+  it unprompted, which is the rule working from the other end.
+  **TWO OF ITS FIVE BLOCKING FINDINGS WERE ALREADY FIXED** by the same uncommitted change it
+  was reading (§9's `badDate` and `wantCap`), and it said so. **FIVE WERE REAL AND ARE FIXED
+  HERE**, and every one is the same family: prose that was true when written and false within
+  the same session.
+  · **`data.ts` said "THIS ENTRY SHIPS WITH NO `shot`, AND THE ABSENCE IS DELIBERATE. The
+    artwork was never delivered to this build" — roughly a hundred lines above the `shot` it
+    denied**, inside ONE object literal. A gate reads the field, never the prose beside it.
+  · `CLAUDE.md`'s p4·M6b note asserted the caption reads "artwork · supplied 2026-08-30" in
+    the present tense. **ANNOTATED, NOT OVERWRITTEN**, on p4·01's rule — a dated measurement
+    is a record of what was true when taken.
+  · `verify-peers` §9's docblock justified its derived split by "the seventh peer … because
+    her artwork was never delivered"; `verify-origins` §2's carried the same sentence. Both
+    false the moment the file arrived, and both were doing real work as JUSTIFICATION.
+  · **MY OWN NEW ARTWORK-DATE ASSERTION HAD NO FLOOR, and the reason I gave for omitting one
+    was wrong**: I wrote that `badKind` establishes `caps + arts` is the whole set, which is a
+    PARTITION and says nothing about either part being non-empty — so a parse finding zero
+    artwork would have satisfied "no artwork is dated" over an empty set. Floored, with the
+    bad reasoning recorded rather than deleted.
+  · `EcoPopup`'s comment gave the supplied image as 1000x776 against a shipping 1133x879.
+  **AND ONE FINDING IS A DECISION RATHER THAN A DEFECT, DISPOSED OF EXPLICITLY: ACCEPTED.**
+  The ruling said the artwork "carries no capture date … say so rather than dating it
+  falsely"; the caption ships as **"artwork · supplied by Kathie"**, which adds an attribution
+  the ruling did not ask for. It is kept: it satisfies the ruling exactly (no date, and it
+  says what the image is), and naming the source is this page's own provenance discipline —
+  every other image says where it came from. Recorded here so it is a decision on the record
+  rather than something that slipped in beside a type change. The audit was also right that
+  its own cited line number was wrong, which it corrected itself.
+  **AND THE AUDIT REFUTED ONE OF MY PREMISES**: I briefed it that a parser expecting
+  `src, alt, captured` IN ORDER would break. No such parser survives in any gate — both
+  candidates document having rejected that form. The brief's highest-value hypothesis was
+  already false.
   **No human has seen the rendered result in a browser.**
 
 - **2026-08-30**: p4·M6b "THE PEERS PAGE GETS ADDRESSES, AND THE PLACEHOLDERS GO" (app/ +
@@ -1078,8 +1118,19 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   us. `EcoShot` therefore gains a REQUIRED `kind: "capture" | "artwork"`, because the caption
   says which out loud and the two are not interchangeable — rendering "captured" over
   supplied art would claim a photograph of a page nobody photographed. It reads
-  **"artwork · supplied 2026-08-30"**. `w`/`h` become required too: `EcoPopup` hardcoded
-  `1000x625` while every image happened to be exactly that, and this one is **543x405**, so a
+  **"artwork · supplied 2026-08-30"**.
+  **[p4·M6c ANNOTATION — BOTH FIGURES IN THIS SENTENCE ARE SUPERSEDED, and they are ANNOTATED
+  RATHER THAN OVERWRITTEN on p4·01's rule: a dated measurement is a record of what was true
+  when it was taken, and rewriting it falsifies it rather than refreshing it.** The caption
+  now reads **"artwork · supplied by Kathie"** and carries no date at all — a supply date is
+  a fact about our inbox, not about the artwork, and beside six real capture dates a reader
+  takes it for the second. `EcoShot` is a discriminated union so a dated artwork is a compile
+  error. And the image is **1133x879**, not 543x405: the smaller file was the one to hand
+  when this was written, and the larger master covers a dpr-2 ask at ratio 1.14 where the
+  smaller covers it at 0.55. **This sentence was found by an adversarial pass, not by a
+  gate** — no gate reads prose, which is the whole reason the pass exists.]
+  `w`/`h` become required too: `EcoPopup` hardcoded
+  `1000x625` while every image happened to be exactly that, and this one was **543x405**, so a
   shared constant would reserve the wrong box and shift layout on decode against a repo that
   caps CLS at 0.005. **THE ART IS NOT RESTYLED** — a bright pink banner on a dark page is a
   jolt, and the jolt is hers; dimming or tinting a partner's work to sit quietly inside our

@@ -515,10 +515,13 @@ try {
      redundant — the parser reads SOURCE TEXT, so it still speaks if someone
      ever loosens the type back to an optional field.
 
-     THE FLOOR IS ON THE CAPTURE SIDE because "every capture is dated" is
-     vacuously true of a parse that found no captures. The artwork side needs
-     no floor of its own: `badKind` above already fails unless every parsed
-     shot declares one of the two kinds, so caps + arts is the whole set. */
+     BOTH SIDES CARRY A FLOOR, and an earlier draft of this block argued the
+     artwork side did not need one "because `badKind` above already fails
+     unless every parsed shot declares one of the two kinds, so caps + arts is
+     the whole set". That reasoning is wrong and is recorded rather than
+     quietly deleted: a partition says nothing about either part being
+     non-empty, so a parse finding zero artwork would have satisfied "no
+     artwork is dated" over an empty set. */
   const caps = shots.filter((h) => h.kind === 'capture');
   const arts = shots.filter((h) => h.kind === 'artwork');
   const undatedCap = caps.filter((h) => !/^\d{4}-\d{2}-\d{2}$/.test(h.captured));
@@ -527,9 +530,15 @@ try {
     undatedCap.map((h) => `${h.src}: ${JSON.stringify(h.captured)}`).join(', ')
     + '  — undated, a screenshot of someone else\'s site silently claims to be current.');
 
+  /* THE FLOOR IS ON THIS SIDE TOO, and the docblock above used to say it was
+     not needed "because `badKind` establishes caps + arts is the whole set".
+     That does not follow: badKind establishes the PARTITION, not that either
+     part is non-empty, so a parse that found zero artwork would satisfy
+     "no artwork is dated" for the wrong reason. Caught by an adversarial pass
+     over this release's own new assertion. */
   const datedArt = arts.filter((h) => h.captured !== null && h.captured !== undefined);
-  R.ok(datedArt.length === 0,
-    `§9 · and NO artwork carries one (${arts.length} artwork, ${datedArt.length} dated)`,
+  R.ok(arts.length >= 1 && datedArt.length === 0,
+    `§9 · and NO artwork carries one (${arts.length} artwork, ${datedArt.length} dated; floor: at least one artwork must parse or this is vacuous)`,
     datedArt.map((h) => `${h.src}: ${JSON.stringify(h.captured)}`).join(', ')
     + '  — a supplied image\'s date is not this site\'s to state; we know when it reached us, not when it was made.');
 
@@ -593,9 +602,13 @@ try {
 
   /* p4·M6b — THE ROSTER IS NO LONGER UNIFORM, so "every brief renders exactly
    * one screenshot" is no longer the claim. `EcoShot` has been OPTIONAL since
-   * p4·M3; the seventh peer is simply the first entry to exercise that, because
-   * her artwork was never delivered. Asserting `n === 1` across the board would
-   * red on an honest absence and, worse, would pressure a future author into
+   * p4·M3. This block used to justify the split by saying the seventh peer was
+   * "the first entry to exercise that, because her artwork was never
+   * delivered" — TRUE WHEN WRITTEN AND FALSE WITHIN THE SAME SESSION: the file
+   * arrived and kathie declares a shot, so the no-shot arm currently has NO
+   * live subject at all and is exercised only by a break test. The split is
+   * kept on its own merits: asserting `n === 1` across the board would red on
+   * an honest absence and, worse, would pressure a future author into
    * inventing a capture to satisfy a gate.
    *
    * The expectation is DERIVED from data.ts, by the same segmented parse

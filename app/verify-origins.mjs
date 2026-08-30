@@ -240,10 +240,13 @@ await coldBootOffBrowser(b);
        * This read `shotsSeen === ids.length`, which silently assumed every
        * partner carries a screenshot. `EcoShot` has been OPTIONAL since p4·M3
        * ("an entry with none…"), so that equality was a true statement about
-       * the roster that happened to hold rather than an invariant — and the
-       * seventh peer, whose artwork was never delivered, is the first entry to
-       * falsify it. Left as it was, an honest absence would have read as a
-       * blocked or hotlinked image.
+       * the roster that happened to hold rather than an invariant. This block
+       * used to add "and the seventh peer, whose artwork was never delivered,
+       * is the first entry to falsify it" — true when written and false within
+       * the same session, because the file arrived and kathie declares a shot.
+       * NO entry falsifies it on the shipping roster today. The derivation is
+       * kept on its own merits: left as an equality, an honest absence would
+       * have read as a blocked or hotlinked image.
        *
        * So the expectation comes from data.ts: exactly those entries that
        * DECLARE a shot must have loaded one, and every entry that declares none
@@ -302,8 +305,14 @@ await coldBootOffBrowser(b);
       }
       ok(shotsSeen === expectShot.length,
          `2 · and all ${expectShot.length} declared partner screenshots loaded and decoded while this listener was counting (${shotsSeen})`);
+      /* VACUOUS BY ROSTER, AND THE MESSAGE SAYS SO — every partner declares a
+         shot today, so this sweeps an empty set and would pass over a deleted
+         branch. It is kept because the roster is data and will change; the
+         count is printed so a reader sees "0 such briefs" rather than assuming
+         coverage. Do not add a `>= 1` floor here: it would red the shipping
+         tree for a state that is not a defect. */
       ok(strays.length === 0,
-         `2 · every brief that declares NO screenshot renders no <img> at all (${ids.length - expectShot.length} such briefs)`,
+         `2 · every brief that declares NO screenshot renders no <img> at all (${ids.length - expectShot.length} such briefs — vacuous while that is 0)`,
          strays.join(', ') + '  — an image where the data declares none is either a borrowed src or a broken one.');
     }
 

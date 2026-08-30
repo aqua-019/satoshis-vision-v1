@@ -1239,17 +1239,28 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
        than none. (Monerica's "oldest directory" is the counter-example that
        proves the rule: it is the OPERATOR'S claim and is flagged as one.)
 
-       ── NO SCREENSHOT, SAID OUT LOUD ──────────────────────────────────
-       THIS ENTRY SHIPS WITH NO `shot`, AND THE ABSENCE IS DELIBERATE. The
-       artwork was never delivered to this build. `shot` has been optional
-       since p4·M3, and p4·M6b deleted the reservation mechanism outright — so
-       an entry with no capture renders NOTHING in its place rather than a
-       dashed box claiming one is coming. See EcoShot's header for the rule
-       and verify-peers §9, which asserts exactly this: an entry declaring no
-       shot must render zero images. When a capture arrives it lands here,
-       dated, like the other six. This paragraph exists so the next person to
-       open this file does not spend ten minutes deciding whether the picture
-       is missing or broken.
+       ── THE IMAGE ARRIVED, AND THIS BLOCK USED TO SAY IT HAD NOT ──────
+       An earlier version of this paragraph read "THIS ENTRY SHIPS WITH NO
+       `shot`, AND THE ABSENCE IS DELIBERATE. The artwork was never delivered
+       to this build." That was true when it was written and false by the time
+       anyone read it: the file arrived later in the same session, the entry
+       below declares a `shot`, and the comment went on asserting an absence
+       roughly a hundred lines above the thing it denied. A self-contradiction
+       inside ONE object literal, and nothing in the suite could see it — a
+       gate reads the `shot` field, not the prose beside it.
+
+       IT IS THE TIME-SCOPE DEFECT, IN THE FILE THAT CAUSED IT. A measurement
+       is scoped to WHEN it was taken as well as to what it measured, and a
+       session that runs for hours will outlive an absence recorded in the
+       present tense. Found by an adversarial pass, not by a gate.
+
+       THE RULE THE BLOCK WAS ACTUALLY FOR SURVIVES, because it is about the
+       type rather than about this entry: `shot` has been optional since
+       p4·M3, and p4·M6b deleted the reservation mechanism outright — so an
+       entry with no image renders NOTHING in its place rather than a dashed
+       box claiming one is coming. `verify-peers` §9 asserts both directions,
+       including (p4·M6c) that the second grid COLUMN exists if and only if
+       the shot does.
 
        ── THE NAMING DECISIONS ──────────────────────────────────────────
        `id` IS "kathie" — the display name, not either handle, because it

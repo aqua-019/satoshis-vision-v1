@@ -263,7 +263,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 `width`/`height` ARE THE INTRINSIC PIXELS, read PER SHOT since
                 p4·M6b — they were a hardcoded 1000x625 while every image here
                 was a capture at exactly that size, and the first SUPPLIED
-                image (1000x776) made the shared constant a per-entry fact. The
+                image (1133x879) made the shared constant a per-entry fact. The
                 browser reserves the aspect-ratio box before
                 a byte of image arrives and the paragraph beside it never
                 jumps. Without them a lazy image is a layout shift by
