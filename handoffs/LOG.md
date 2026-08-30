@@ -821,13 +821,18 @@
   a completeness critic found it. verify-origins and verify-peers §9 both assumed a uniform
   roster and now DERIVE which entries declare a shot, asserting both directions. Kathie joins
   as the seventh partner, written from the two reachable sources only, with her X link
-  shipped and never described; an adversarial pass **refused the first draft** over thirteen
+  shipped and never described, and her ARTWORK shipping as the first image on this page that
+  is NOT a capture — `EcoShot` gains a required `kind` so the caption reads "artwork ·
+  supplied" instead of mislabelling it "captured", and required `w`/`h` because the hardcoded
+  1000x625 box was an accident of a uniform roster. **AND THE ASSET SWEEP WAS RUN ONCE AND
+  TRUSTED FOR FOUR HOURS**: two of the three "absent" assets arrived later in the same session
+  and were found only when the operator asked. The scope of an absence includes WHEN; an adversarial pass **refused the first draft** over thirteen
   overclaiming clauses, including one arithmetically false at ship and one refuted by the
   entry's own evidence. Accent measured at min ΔE **16.91** against a shipping-pair bar of
   **4.36**. Budgets paired per stem: **73 of 77 slots size-identical**, four moved,
   **residual ZERO on both halves** (+1,213 lazy, +3 eager, +1,216 total), `cssGz`
   BYTE-IDENTICAL at 18,586, **76 = 76 chunks**; no ceiling raised because none was crossed,
-  and `/operate/peers`' margin is now **657 B**, the tightest on that route. Census RECOUNTED and
+  and `/operate/peers`' margin is now **486 B**, the tightest on that route. Census RECOUNTED and
   UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6** — with the instrument controlled against six
   commits, the sixth of which caught a NEW defect class: a block-scalar `run: |` step that a
   lazy capture under `/m` truncates at the first line end, which no historical control could

@@ -886,10 +886,15 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   branching on it. Measured before a line was written: all **7** ECOSYSTEM entries carry a
   non-empty `body[]`, and 7 of 7 carry a dated `shot` — popup coverage is **7/7, not 4/7**.
   The blocker does not exist, so the click changes uniformly and no brief had to be written
-  to unblock it. The other three: **all three delivered assets are absent** (the
-  `xmr-club-grade-a.svg` badge, the medallion, `peer-kathie` artwork — none in the tree, the
-  history, or this session's uploads, so §1, §1b and the seventh peer's picture are
-  BLOCKED and reported rather than guessed); **`INDEX-AND-ORDER.md` does not exist** in any
+  to unblock it. The other three: **THE ASSET CHECK WAS RUN ONCE AND
+  THEN TRUSTED FOR FOUR HOURS, WHICH IS THE SCOPE-OF-AN-ABSENCE RULE FAILING ON THE TIME
+  AXIS.** The sweep at session start found no `xmr-club-grade-a.svg` badge, no medallion and
+  no `peer-kathie` artwork, and that one reading was restated as fact in this note, in the
+  LOG and in the PR body. **TWO OF THE THREE ARRIVED LATER IN THE SAME SESSION** — the
+  artwork and the medallion, uploaded 79 and 106 minutes after the sweep — and were found
+  only because the operator asked. An empty search result is evidence only after its SCOPE is
+  verified, and in a session that runs for hours the scope includes WHEN. The artwork now
+  ships (below); the medallion is outstanding and the badge genuinely never arrived; **`INDEX-AND-ORDER.md` does not exist** in any
   branch, and three sections cite it as the authority for open items; and
   **`claude/mockups/peers-grid-3x3.html` does not exist** — the same absence p4·06 already
   recorded against the same filename, which is the second release running that a brief has
@@ -948,6 +953,19 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   (stressnet is not a PARTNER) and exactly the defect `verify-peers` §9 already records
   against its own earlier regex — a comment changes what the parser can see. Segmenting the
   file at every `id:` is exact at any comment length.
+  **HER ARTWORK SHIPS, AND IT IS THE FIRST IMAGE ON THIS PAGE THAT IS NOT A CAPTURE.** The
+  other six are screenshots this site took of somebody else's surface; this one was sent to
+  us. `EcoShot` therefore gains a REQUIRED `kind: "capture" | "artwork"`, because the caption
+  says which out loud and the two are not interchangeable — rendering "captured" over
+  supplied art would claim a photograph of a page nobody photographed. It reads
+  **"artwork · supplied 2026-08-30"**. `w`/`h` become required too: `EcoPopup` hardcoded
+  `1000x625` while every image happened to be exactly that, and the first supplied image is
+  **1000x776**, so a shared constant would reserve the wrong box and shift layout on decode
+  against a repo that caps CLS at 0.005. **THE ART IS NOT RESTYLED** — a bright pink banner
+  on a dark page is a jolt, and the jolt is hers; dimming or tinting a partner's work to sit
+  quietly inside our palette would be editing it. Two versions were supplied and the larger
+  is the source, so the 1000px render is a downscale. 32,078 B, inside the 9,050-53,936 B
+  register the six captures set, and a `public/` asset costs the route JS budget nothing.
   **KATHIE IS WRITTEN FROM TWO SOURCES AND AN ADVERSARIAL PASS REFUSED THE FIRST DRAFT.**
   Verified: her XMR Bazaar seller page (bio, verbatim, three words — "i sell art" — and
   sticker listings) and her xmrchat tipping page (only heading "Recent Tips", no
@@ -994,8 +1012,8 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   three digits at identical length cost nothing. `cssGz` **BYTE-IDENTICAL at 18,586** against a 414 B
   margin — the release adds no stylesheet rule at all, which was the design constraint rather
   than the outcome. `CHUNK_COUNT` **76 = 76**. **NO CEILING RAISED, because none was crossed —
-  and the margin is said out loud: `/operate/peers` is now 105,343 of 106,000, a margin of
-  657 B**, which is where the eighth peer reds. **NOT "the tightest recorded" — that
+  and the margin is said out loud: `/operate/peers` is now 105,514 of 106,000, a margin of
+  486 B**, which is where the eighth peer reds. **NOT "the tightest recorded" — that
   superlative was written here and is false**: this file already records `/about/sources` at
   **642 B**, `/future` at **497 B** and `/future` again at **310 B**. It is the tightest
   margin on THIS route, which is a checkable claim and the one worth making.
@@ -1033,7 +1051,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   otherwise, and the failure was `verify-coldboot-live` §0a refusing a dist built before the
   last commit. The run was VOID, not a pass. `set -o pipefail`, and read the recorded exit.
   **NOT FIXED, and named**: the five `EmptySlot` reservations on `/operate/superstress`
-  (above); `/operate/peers`' 657 B margin; the three undelivered assets; `LICENSE` item 3,
+  (above); `/operate/peers`' 486 B margin; the three undelivered assets; `LICENSE` item 3,
   which names exchange widgets that no longer exist — quoted in the PR with two drafted
   replacements and **the file untouched**, because a licence is not a feature PR's to change;
   and the X handle, which stays the honest `X · handle pending` null because the operator has
