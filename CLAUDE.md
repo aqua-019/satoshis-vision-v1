@@ -152,8 +152,12 @@ chain and market data.
   and 67 here, by a script CONTROLLED against the base commit before being trusted: it
   strips YAML comments, expands every `npm run <script>` TRANSITIVELY against package.json,
   and allows the `node ../api/verify-*.mjs` prefix. Recount BOTH places, and control the
-  instrument first. Measured as 30 step `run:` lines (31 matches − the
-  `defaults: run:` mapping key), **75** invocations − 6 duplicates.
+  instrument first. **RECOUNTED at p4·M5 and both figures moved: 32 step `run:` lines
+  (33 matches − the `defaults: run:` mapping key)**, where this line read 30 and p4·07 and
+  p4·M7 both flagged it as measuring 31 without correcting it. **75** invocations − 6
+  duplicates, unchanged. AND THE DECOMMENTING IS WORTH TWO FILES, NOT ONE: an unstripped
+  count reads CI distinct **77**, because `ci.yml` names `verify-pageshell.mjs` and
+  `verify-perf-classic.mjs` inside COMMENTS.
   **THAT INVOCATION FIGURE READ 71 AND WAS ARITHMETICALLY IMPOSSIBLE — p3·19 found it by
   recounting rather than by reading.** 71 − 6 = 65, which equals NEITHER distinct figure
   the same paragraph asserts (67 at `bda0491`, 69 here); the sentence disagreed with itself
@@ -164,7 +168,7 @@ chain and market data.
   times, arriving inside a SINGLE sentence rather than across two sections. — the workflow had never
   judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
   had no same-runner baseline to difference against; read the `on:` block for the cost
-  accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
+  accepted. In two jobs: **14** individually-named offline gates (recounted at p4·M5; this read 12, and p4·07, p4·M7 and p4·M8 each flagged it as measuring 14 without correcting it), then `verify:static`
   (**22** gates, no browser), `verify:e2e` (**34** gates, against `scripts/serve-dist.mjs`) and
   **five individually-named browser gates** — `verify:fit`, `verify:mobile`,
   `verify:perf-runtime` (v2·3b) plus `verify:tracking` and `verify:memstats` (#174), one
@@ -771,6 +775,182 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-30**: p4·M5 "THE FUTURE PAGE, CURRENT AND REORGANISED" (app/) — every dated claim
+  on `/future` was stale, and one of them was stale in TEN PLACES AT ONCE.
+  **SEVEN OF THE BRIEF'S PREMISES DID NOT SURVIVE MEASUREMENT.**
+  **THE AUDIT REPORT IS FETCHABLE AND THE ANNOUNCEMENT IS NOT, WHICH MADE THE WEAKER SOURCE
+  UNNECESSARY.** `magicgrants.org` answers **403 to CONNECT** here — the proxy logs
+  `connect_rejected` by name — so the brief's quoted sentence could not be reproduced. But
+  `raw.githubusercontent.com` resolves and Trail of Bits publish the PDF there: **818,386 B,
+  http 200, matching p4·06's recorded figure exactly**, text extracted with pdfminer.six. It
+  CORRECTS the brief twice — the review covers **phases 1a AND 1b**, and Appendix B records
+  **five resolved and one PARTIALLY resolved**, six of six addressed, where the brief says
+  "five of six fully or partially". Severities reconcile independently: the exposure table
+  reads High 0 · Medium 0 · Low 0 · Informational 6 · Undetermined 0, and the category
+  table's 2 + 1 + 3 matches the per-finding table row by row.
+  **IT OVERTURNS A PRIOR DELIBERATE DECISION, ON NEW EVIDENCE.** p4·06 and p4·07 both
+  DECLINED to render Trail of Bits' index GLYPH as a completion claim, because "the findings
+  were fixed" was unverified. That reasoning stands and the glyph is still not rendered —
+  what is rendered is the report's OWN Appendix B, dated 15 June 2026, with per-finding PR
+  numbers. A glyph in a legend and a dated appendix are different artifacts at different
+  standards of evidence.
+  **THE HEDGES SURVIVE VERBATIM** — "appear to be correct", "none appear to lead to … or
+  exploitable behavior within the Monero system". An unhedged restatement would be a
+  stronger claim than the auditors made.
+  **AND THE GATE FOR IT IS NOT A WORD BAN, WHICH WOULD HAVE BEEN WRONG IN BOTH DIRECTIONS.**
+  The honest block MUST say FCMP++ is not on mainnet — that sentence is what stops a reader
+  generalising — and it quotes the auditors' own "exploitable behavior". So §G4 forbids the
+  CONJUNCTION: no sentence may claim freedom from exploits ON a deployed network.
+  Sentence-scoped with paired controls, `verify-superstress` §6f's idiom.
+  **CARROT AND FCMP++ ARE ONE HARD FORK, AND THE RAIL SAID OTHERWISE.** Three primary
+  sources, all fetched: the plan repo is named `fcmp-carrot-plan` and its README describes
+  "the FCMP++/Carrot hardfork of Monero"; its 45-task WBS merges `carrot_core`, `carrot_impl`
+  and `carrot-fcmp integration` BEFORE its `HF activation merge`; and the Carrot spec opens
+  by calling itself "an addressing protocol for the upcoming FCMP++ upgrade". So the
+  `v19 · Carrot era wallets` stop asserted a fork nobody is shipping. **It is DELETED and
+  Carrot joins v17** — the one structural edit to a section the brief said to keep, and a
+  correction rather than a redesign. Seraphis and Jamtis are deliberately UNTOUCHED: their
+  "2027 · fork v18" now sits oddly close to v17's March 2027, but no reachable source speaks
+  to their schedule, and re-deriving one card from evidence while guessing at the next is
+  worse than leaving the guess visible.
+  **THE BRIEF'S GANTT END DATE IS WRONG AND THE REPO CONTRADICTS IT TWICE.** It says
+  "Jul 21 2026 → Feb 23 2027"; the start is right and the **Finish field is March 4, 2027**,
+  with the README stating independently that activation lands "in week 9 of 2027" — ISO week
+  9 of 2027 is **Mar 1-7**, which contains Mar 4. Feb 23 is ISO week **8** and matches
+  neither. **THE PLAN DISCLAIMS ITS OWN ACCURACY** in its own CAUTION block, so the page
+  attributes the date rather than asserting it.
+  **AND I CORRECTED MY OWN NOTE ABOUT IT BY MEASURING RATHER THAN RE-READING.** I first
+  recorded "every task shows 0%, so the progress column is not maintained". Measured: **10 of
+  45 tasks are non-zero** — `mx25519 unclamped` 100%, `UkoeHB's carrot_impl review` 100%,
+  `HF activation merge` 22% — while the three Carrot MERGE tasks sit at 0%. That column is
+  what licenses Carrot moving DESIGN → BETA: the implementation exists and has been reviewed,
+  and has not shipped.
+  **CUPRATE HAD SHIPPED AND THE CARD DID NOT KNOW** (operator correction, mid-flight).
+  `cuprate.org` answers **000** here, so the release post is carried on the operator's
+  authority and cited as an anchor — but the version was reproduced from a host that does
+  resolve: `binaries/cuprated/Cargo.toml` on `main` declares `version = "0.1.0-preview"`.
+  Both "Beta" and "preview" survive into the status and nothing claims production readiness:
+  that question was put to the release and it does not answer it, and an absence of a warning
+  is not a clearance. **`etaLabel` exists because "ETA released" is a contradiction** — when
+  the thing has arrived it is the LABEL that changes, not the date.
+  **TEN STALE FORK DATES, AND THE FOOTER IS THE SHARP END.** The activation date was an
+  independent literal on ten surfaces — the global footer, the network page's Fork stat, the
+  mempool reactor's kv row, two Monero tabs, three places in the fcmp simulator, the
+  education journey and the markets thesis — every one reading "Q3 2026" or "mid-2026". The
+  footer renders ON `/future`, so the page contradicted its own chrome inside one viewport.
+  This is the two-lists-one-truth defect `roadmapStatus()` was written to prevent, applied to
+  a DATE, and it CANNOT be fixed the same way: the honest single source (`FUTURE_PROTOCOLS`)
+  is LAZY and `Footer.tsx` is EAGER, so importing it there would drag `data.ts` into the entry
+  chunk every route pays for at first paint — the leaf lesson, ninth sighting. So the single
+  source is enforced in the GATE at zero runtime cost: assertion 18 PARSES the canonical token
+  out of the fcmp card's own `eta`, never restates it, sweeps **all of `app/src`** rather than
+  just /future, and is PAIRED with a control that the canonical date IS stated somewhere —
+  "no stale date" is satisfied just as well by a tree naming no date at all. Break test M7
+  restores a stale date to the FOOTER, a file /future does not own, and reds.
+  **THE REORG: one flat grid measuring 4-across-then-1 at 1440 — a widow card — became three
+  bands laying out 2/1/2.** All three memberships are DERIVED: "landing next" is the
+  membership of the roadmap stop already flagged `on`, "live to try" is the protocols carrying
+  a `live` sentence (sharing its band with the stressnet card), "further out" is the
+  remainder — so the bands PARTITION the catalogue by construction and no list can disagree
+  with the rail. **`/future`'s section order was pinned by NOTHING**: zero `data-*`
+  attributes, no gate reading a kicker, so a permutation preserving content shipped green
+  through all 75 CI gates. Pinned now in document order, `verify-site` §12's idiom.
+  **THE STRESSNET BRIEF.** Slot 1 is satisfied and slot 2 deleted, under one rule rather than
+  two special cases: a slot with an image ships and carries its date, a slot without one does
+  not exist. Reusing `peer-superbrain.webp` is a DECISION — measured, `/future` opens exactly
+  one ecosystem popup and `/operate/peers` filters to PARTNER, which stressnet is not, so the
+  two briefs are on two different pages and no reader meets the image twice on one. p4·M3
+  refused this same file for BOTH of Superbrain's reservations, correctly: those name a store
+  listing and a mining dashboard. This one names an Umbrel node dashboard, which it is. **The
+  alt text says the node has synced nothing, because it has** — TESTNET, difficulty 0, tx
+  count 0, no top block, every connection 0 — and the entry's headline reads "the FCMP++ beta
+  chain, live", so an undescribed screenshot would let the picture stand as evidence for the
+  sentence. **THE BRIEF'S OWN DESCRIPTION OF THAT CAPTURE WAS INVENTED IN PART**: it lists
+  "block height · sync bar · Tor connections", and Top Block and Busy Syncing are BLANK and
+  every connection reads 0. "TOR ONLY" is really there.
+  **ELEVEN BREAK TESTS.** M1 a marker no longer matching the shipped order → **3** · M2 the
+  finding removed → **1** · M3 the overclaim → **3** · M4 the reservation restored → **1** ·
+  M5 the explorer as chip AND button → **1** · M6b both overflow defences removed → **1** ·
+  M7 the footer date → **1** · M8 the pulse back to a policy → **2** · M9 the eta drifting →
+  **1**.
+  **M6 REFUSED TWICE AND BOTH REFUSALS WERE TRUE STATEMENTS ABOUT THE PAGE.** Removing
+  `minWidth: 0` left scenario H green at 1440, because the reorg ALSO fixes the overflow
+  there — bands of 2/1/2 give ~643px tracks against the failure copy's ~435px min-content, so
+  the defences are INDEPENDENTLY SUFFICIENT (p4·M3's shape). H was extended to **820**, where
+  a two-card band yields ~380px tracks — **and it immediately caught a defect 1440 had
+  hidden**: the unbreakable ~55-character endpoint URL spilled its own card border, content
+  382-399px inside 337px tracks, with `.main` at 0 throughout so nothing outside the card
+  could see it. Fixed with `overflowWrap`. M6 then refused AGAIN because the wrap is itself
+  sufficient, so **M6b removes BOTH and reds**. `minWidth: 0` is kept and is INERT, said out
+  loud: a guard nothing has driven is not coverage.
+  **TWO ROUNDS WERE CORRECTLY VOIDED RATHER THAN COUNTED** — both early M2 mutations failed
+  `tsc` and GUARD 2 refused to treat a failed build as a pass, p4·03's trap fired twice in one
+  session. A third M2 was too WEAK: it prepended a line rather than removing the finding.
+  **THREE OF MY OWN ASSERTIONS WERE WRONG, AND EACH RED WAS MADE TO PRINT WHAT IT SAW, WHICH
+  IS WHAT FOUND ALL THREE.** (1) The date check read the block's `textContent`, where adjacent
+  block elements concatenate with no separator — "…2026Scope: the…" — so a trailing `\b` sits
+  between two word characters and can NEVER match. (2) The pulse check measured the wrong
+  dialog. (3) The screenshot check sampled `naturalWidth` on a `loading="lazy"` image and had
+  passed only because an unrelated open/close gave it time.
+  **AND MY EXPLANATION OF (2) WAS ITSELF FALSE, WHICH IS THE ONE WORTH KEEPING.** I wrote that
+  FuturePage retains the last popup (D0666) so `[role="dialog"]` matches two elements.
+  Measured by sampling every 30ms through the exact open/close race: the maximum number of
+  simultaneous `role="dialog"` nodes is **ONE** — 0 → 1 → 0 → 1 → 0 across 45 samples, never
+  two, not even transiently. `V6Modal` really does return null once `present` drops. The
+  gate's defect was a missing wait; the page is sound. The distinction is load-bearing because
+  a retained stale dialog WOULD be an accessibility defect worth its own fix, and p4·M6b is
+  about to build routing on this mount model.
+  **A WAIT THAT HANGS REPORTS NOTHING.** `waitForFunction(count === 9)` burns its timeout and
+  throws, killing the run before any later assertion prints — a mutation rendering 8 cards
+  produced `exit=1, 0 named reds`, and a grep for the red marker over that crash returns
+  EMPTY, which reads exactly like "no failures found". This is how that assertion behaves
+  whenever the count is wrong, including on CI. **Six of six waits now report instead of
+  hang**: three count waits go through a new `waitCount()` that waits with a budget and then
+  asserts expected vs actual, and the three boolean waits can no longer kill the run.
+  **`verify-origins` WAS MEASURING THE WRONG SUBJECT ON A SECOND ROUTE.** p4·M3 found that
+  `/operate/peers`' screenshots live in a modal that unmounts, so an unclicked page issues no
+  image request. `/future` became the second such route in THIS release, because it grew an
+  image — the brief is opened now and `shotSeen` asserted POSITIVE. It recurred not because
+  the earlier fix was wrong but because a ROUTE GREW AN IMAGE, which is a thing routes do.
+  **`verify-explorer` §9 ASSERTED A TUPLE SHAPE AND THE CLAIM OUTLIVED IT** — it required the
+  literal `links[]` row p4·07 wrote, and the destination is now a primary control, so it went
+  red against a page satisfying the intent more strongly. Re-asserted affordance-agnostically.
+  **BUDGETS: RESIDUAL ZERO, cssGz BYTE-IDENTICAL, NOTHING MINTED.** Paired per chunk STEM
+  against an ISOLATED worktree build of `9fcc24a`: **65 of 74 stems SIZE-IDENTICAL**;
+  `repoPulse` +2,923 · `FuturePage` +1,804 · `ProtocolDetail` +1,332 · `EcoPopup` +504 plus
+  six copy deltas = **+6,795, which IS `totalRaw`'s whole delta**. `cssGz` **BYTE-IDENTICAL at
+  18,586** — no stylesheet rule at all. The eager entry moves **SIX BYTES** (101,533 →
+  101,539), the footer's corrected date and nothing else. `CHUNK_COUNT` **76 = 76**.
+  `lazyJsRaw` 986,000 → **993,000** and `totalJsRaw` 1,251,000 → **1,258,000** move together
+  by 7,000 so their gap holds at 265,000. **`/future/protocol` 106,000 → 109,000 RAISED WHILE
+  GREEN** at 287 B / 0.27% — p4·02's own ground, that a ceiling one word of copy can cross has
+  stopped detecting. NOT raised and named: `/future` 1,597 B and `/operate/peers` 1,587 B.
+  **CENSUS RECOUNTED AND UNCHANGED — 89 / 85 / 22 / 39 / 75 / 6** (81 invocations − 6
+  duplicates), the correct outcome for extending an e2e member in place and adding no gate
+  FILE. Derived twice by two independently written counters, with five historical controls
+  reproducing exactly, so the archived CI **74** is superseded by a freshly derived **75** —
+  the delta is #201 wiring `verify-memphone`. Two side figures settled: `ci.yml` measures
+  **33 `run:` matches / 32 step lines** against the recorded "30", and the "12
+  individually-named offline gates" measures **14**. `verify-future` **69 → 110 `ok()` call
+  sites**, 152 runtime assertions on the shipping tree.
+  **NOT FIXED, and named. THE REPO-PULSE STALENESS LEVER.** Three caches sit in series: edge
+  `s-maxage` 24h + `stale-while-revalidate` 24h + client `FEED_TTL` 24h, so a reading can be
+  ~48h old while every surface claimed "refreshed every 24h". The edge TTL is the lever —
+  the edge cache is SHARED, so its TTL alone decides how old that copy can be, and upstream
+  cost is bounded by (9 repos × regions × 1/hour) rather than by traffic. **The change was
+  written, measured, and REVERTED**: the operator's verifier measured production answering
+  `src=pulls` as `{"source":"getmonero"}`, which the current `feeds.js` CANNOT do — it runs a
+  pre-`pulls` build, so any edge change is inert until a cache-busting redeploy, and
+  `/api/feeds` is INDEX §E's own item. **The client half IS fixed**: the pulse states the age
+  of its own reading rather than a policy. `xmr.irish` answers **000** here, so I could
+  neither confirm nor refute the production staleness myself.
+  **ALSO NOT FIXED, and named**: `/future` and `/operate/peers` route margins (above); the
+  Seraphis/Jamtis schedule (above); PR and issue STATES are printed NOWHERE because
+  `api.github.com` and `github.com` both answer 403 here; the GitHub MCP server returned
+  `Bad credentials` for the second recorded time; a pre-existing 8px scroller
+  (`div./span. 315/307`) survives on `/future` at every width and is not this release's.
+  **No human has seen the rendered result in a browser** — read from screenshots at 1440, 390
+  at dpr 1, 2 AND 3, and 320, before and after, plus both popups.
 - **2026-08-23**: p4·M8 "THE PHONE GETS A CLASSIC MEMPOOL IT CAN READ" (app/ + .github/) —
   `/live/mempool?v=classic` is the site's DEFAULT view on its flagship surface, so it is the
   page a phone lands on.
