@@ -171,8 +171,21 @@ try {
   const briefButton = superbrainCard.locator('button:has-text("our brief")');
   await briefButton.click();
 
-  // Wait for the modal to open — it renders a dialog with role="dialog"
-  await page.waitForSelector('[role="dialog"]', { timeout: 5000 });
+  /* p4·M6b — THIS WAIT REPORTS RATHER THAN THROWS, and the reason came out of
+   * a break test rather than a review. M4 (the `?p=` state ignored, so no brief
+   * ever opens) made this line raise, and the raise killed the run at EIGHT
+   * assertions — so §10, which exists PRECISELY to catch a dead brief, never
+   * printed a word. The output was `Test crashed: waitForSelector timeout`,
+   * which reads like a broken harness rather than like a dead feature.
+   *
+   * A bare `waitForSelector` is an assertion with no message and no survivors.
+   * Waiting with a budget and then ASSERTING lets every later section speak,
+   * which is the whole point of having them. p4·M5 fixed six waits of this
+   * shape in verify-future for the same reason. */
+  const dialogOpened = await page.waitForSelector('[role="dialog"]', { timeout: 5000 })
+    .then(() => true).catch(() => false);
+  R.ok(dialogOpened,
+    '§2 · the "our brief" button opens a dialog (precondition: every check below reads inside it, and a bare wait here would abort the run instead of naming the failure)');
 
   // Find the install block by its label, which renders as a .kicker inside the modal
   const installLabel = page.locator('[role="dialog"] .kicker:has-text("Install · Umbrel")');
@@ -505,7 +518,7 @@ try {
 
   for (const id of briefIds) {
     await page.locator(`[data-peer-brief="${id}"]`).click();
-    await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+    await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
     await page.waitForFunction((i) => {
       const im = document.querySelector(`img[data-peer-shot="${i}"]`);
       return im && im.complete;
@@ -652,7 +665,7 @@ try {
   await page.goto(`${BASE}/operate/peers`, { waitUntil: 'networkidle' });
   const first = peerIds[0];
   await page.locator(`[data-peer-brief="${first}"]`).click();
-  await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
   const afterOpen = new URL(page.url());
   R.ok(afterOpen.searchParams.get('p') === first,
     `§10 · clicking a brief control writes that brief's address (?p=${afterOpen.searchParams.get('p')})`);
