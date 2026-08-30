@@ -254,10 +254,14 @@ The default build:
   ships in the app itself, reachable from a `⌘ DESIGN` control in the topbar
   — this is user-facing, not a design-time tool. v6.1.2 added phosphor as a
   third Theme option and flipped the default from indigo to classic; it also
-  mounted the same Theme control (`design/ThemeToggle.tsx`) directly on Main
-  Home, beside the hero CTAs, as a first-class control rather than a
-  topbar-only footnote — both toggles render from one definition so they
-  can't drift out of sync. The full tweaks system (Accent/Type/Glow/Density)
+  mounted a SECOND copy of the same Theme control (`design/ThemeToggle.tsx`)
+  directly on Main Home, beside the hero CTAs. **That second mount was removed
+  in p4·M2** and is recorded here rather than deleted, because the reasoning
+  outlives it: a theme is a display preference and belongs with the other
+  display preferences, not as a first-class control on the site's front door.
+  `ThemeToggle.tsx` is mounted ONCE today, in `design/DesignPanel.tsx`, which
+  rides the topbar on every route — so the control is reachable everywhere
+  without any page carrying its own copy. The full tweaks system (Accent/Type/Glow/Density)
   is still deliberately **not** in this repo; that remains a design-time
   concern and still lives in the design hub. Don't conflate the two: the
   in-app panel is two knobs, not the whole tweaks surface.

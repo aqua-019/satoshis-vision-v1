@@ -251,10 +251,25 @@ export function SitePage() {
       <CloverOverlay />
 
       <Crumbs path={R.ABOUT_SITE} />
+      {/* THE SUB DESCRIBES THE PAGE; IT DOES NOT ENUMERATE IT — and that is
+          structural rather than stylistic. The previous sentence read "What
+          this site is, what is on it, where it came from, how it treats you,
+          and how it stays up", which is mission → OVERVIEW → record → ethos →
+          operator: the order this page had BEFORE p4·M2 moved support to
+          second and the derived overview last. So a sentence in the header
+          was describing a sequence the page had stopped rendering, and
+          nothing could see it: §12 pins the DOM order and is blind to prose,
+          §1 reads the prerendered TEXT and is blind to order.
+
+          The fix is to remove the coupling rather than to gate it. A gate
+          matching this string against the section list would pin the two
+          together forever and make every future reorder an edit in two
+          places — the same two-lists-one-truth defect one level up. A
+          sentence that names no sequence has no sequence left to rot. */}
       <PageHeader
         kicker="non-profit · educational · no trackers"
         title='<em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">xmr.irish</em>: a non-profit educational system &amp; blockchain explorer'
-        sub="What this site is, what is on it, where it came from, how it treats you, and how it stays up."
+        sub="The site's own entry in its archive — what it is for, and what it holds itself to."
       />
 
       {/* ── The mission ─────────────────────────────────────────────────── */}
