@@ -959,13 +959,35 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   says which out loud and the two are not interchangeable — rendering "captured" over
   supplied art would claim a photograph of a page nobody photographed. It reads
   **"artwork · supplied 2026-08-30"**. `w`/`h` become required too: `EcoPopup` hardcoded
-  `1000x625` while every image happened to be exactly that, and the first supplied image is
-  **1000x776**, so a shared constant would reserve the wrong box and shift layout on decode
-  against a repo that caps CLS at 0.005. **THE ART IS NOT RESTYLED** — a bright pink banner
-  on a dark page is a jolt, and the jolt is hers; dimming or tinting a partner's work to sit
-  quietly inside our palette would be editing it. Two versions were supplied and the larger
-  is the source, so the 1000px render is a downscale. 32,078 B, inside the 9,050-53,936 B
-  register the six captures set, and a `public/` asset costs the route JS budget nothing.
+  `1000x625` while every image happened to be exactly that, and this one is **543x405**, so a
+  shared constant would reserve the wrong box and shift layout on decode against a repo that
+  caps CLS at 0.005. **THE ART IS NOT RESTYLED** — a bright pink banner on a dark page is a
+  jolt, and the jolt is hers; dimming or tinting a partner's work to sit quietly inside our
+  palette would be editing it.
+  **AND "LARGER IS BETTER" WAS ASSUMED RATHER THAN MEASURED, WHICH IS THIS FILE'S OWN FAMILY
+  ARRIVING IN AN ASSET DECISION.** Two files were supplied — 543x405 PNG and 1133x879 JPEG —
+  and the JPEG was taken as the source on size alone, then rendered at 1000px wide and
+  described here as "a downscale rather than an upscale". Measured, strong-edge pixels and
+  mean gradient step at native size: **PNG 543 → 4.23% / 95.4** · **JPG 1133 → 1.91% / 56.1**
+  · control, the PNG deliberately upscaled to 1133 → **2.29% / 62.1** · control, a real
+  1000px capture → **3.31% / 84.2**. The JPEG scores BELOW a deliberate upscale of the PNG,
+  which is what settles it: it is an upscale, softened further by JPEG, and shipping it at
+  1000px was manufacturing detail nobody captured. Re-sourced to the 543x405 master and
+  shipped at native, **25,216 B**, inside the 9,050-53,936 B register the six captures set;
+  a `public/` asset costs the route JS budget nothing.
+  **KNOWN LIMIT, RECORDED RATHER THAN PAPERED OVER**: the shot column is ~498 CSS px, so 543
+  native is comfortable at dpr 1 and SOFT above it — at dpr 2 the reader asks for ~996 device
+  px and gets 543. It is not upscaled to hide that, because a soft image and a soft image with
+  more pixels in it look the same and only one is honest about its source.
+  **§1b IS BLOCKED ON ITS ASSET AND SHIPS NOTHING — no placeholder, which is §4e's rule
+  applied to the release that wrote it.** The medallion arrived and is unusable as delivered,
+  measured rather than taken on trust: **1206x1154 (not square), mode RGB (no alpha), and a
+  baked `rgb(19,18,16)` ground on all four corners at 41.9% of pixels** against this site's
+  `rgb(5,5,5)` `--bg-0`. It would render as a visibly lighter rectangle on a near-black page.
+  Keying it out here was refused on the operator's instruction and on the merits — the mark
+  has soft edges and a glow, and a hand-keyed matte on those is how a clean emblem acquires a
+  halo. It needs to arrive transparent and square. The xmr.club badge (§1) never arrived at
+  all.
   **KATHIE IS WRITTEN FROM TWO SOURCES AND AN ADVERSARIAL PASS REFUSED THE FIRST DRAFT.**
   Verified: her XMR Bazaar seller page (bio, verbatim, three words — "i sell art" — and
   sticker listings) and her xmrchat tipping page (only heading "Recent Tips", no

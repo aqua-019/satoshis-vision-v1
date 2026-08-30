@@ -1289,17 +1289,39 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
        our palette would be editing a partner's art to suit our own. It renders
        at its own colours, in the same bordered figure the six captures use.
 
-       TWO VERSIONS WERE SUPPLIED (1133x879 and 543x405); the larger is the
-       source, so the 1000px-wide render is a downscale rather than an upscale.
-       1000x776 at 32,078 B sits inside the register the six captures set
-       (9,050 - 53,936 B). */
+       SHIPPED AT ITS NATIVE 543x405, AND THE FIRST ATTEMPT GOT THAT WRONG.
+       Two files were supplied — 543x405 PNG and 1133x879 JPEG — and the larger
+       was taken as the source on the assumption that larger means better. It
+       does not: measured, the 1133 JPEG is an UPSCALE that carries no detail
+       beyond the 543 master and has been softened further by JPEG. Strong-edge
+       pixels and mean gradient step, at native size:
+
+         PNG 543                          4.23%   95.4   <- the real master
+         JPG 1133 (was the source)        1.91%   56.1
+         control: PNG upscaled to 1133    2.29%   62.1   <- the JPEG is SOFTER
+         control: a real 1000px capture   3.31%   84.2
+
+       The JPEG scores BELOW a deliberate upscale of the PNG, which is what
+       settles it. So the master is 543x405 and it ships at 543x405 — rendering
+       it at 1000 would manufacture detail nobody captured, which is the same
+       failure one layer down from inventing a figure.
+
+       KNOWN LIMIT, RECORDED RATHER THAN HIDDEN: the shot column is ~498 CSS px
+       wide here, so 543 native is comfortable at dpr 1 and SOFT above it — at
+       dpr 2 the reader is asking for ~996 device px and getting 543. It is not
+       upscaled to paper over that; a soft image and a soft image with more
+       pixels in it look the same and only one of them is honest about its
+       source. If a larger master arrives, it replaces this file and this
+       paragraph goes.
+
+       25,216 B, inside the register the six captures set (9,050 - 53,936 B). */
     shot: {
       src: "/peers/peer-kathie.webp",
       alt: "Kathie's own promotional artwork: three cartoon animals on a pink striped ground under the hand-lettered word KATHIE \u2014 two cats and a rabbit, the middle cat holding a Monero logo and the outer two each holding a heart.",
       captured: "2026-08-30",
       kind: "artwork",
-      w: 1000,
-      h: 776,
+      w: 543,
+      h: 405,
     },
     body: [
       "Kathie sells stickers on XMR Bazaar as kafi, and her bio there is three words long: \u201ci sell art\u201d, lowercase. Among the designs on the seller page when it was read: a lucky cat, a bear, a piggy bank, a chopper, a birthday card and a sheet, alongside plain Monero stickers sold in lots. XMR Bazaar is a Monero marketplace; her listings sit on it.",

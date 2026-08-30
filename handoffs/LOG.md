@@ -824,7 +824,14 @@
   shipped and never described, and her ARTWORK shipping as the first image on this page that
   is NOT a capture — `EcoShot` gains a required `kind` so the caption reads "artwork ·
   supplied" instead of mislabelling it "captured", and required `w`/`h` because the hardcoded
-  1000x625 box was an accident of a uniform roster. **AND THE ASSET SWEEP WAS RUN ONCE AND
+  1000x625 box was an accident of a uniform roster. **"LARGER IS BETTER" WAS ASSUMED AND IS
+  WRONG**: of the two files supplied, the 1133x879 JPEG scores BELOW a deliberate upscale of
+  the 543x405 PNG on strong-edge density and gradient step, so it is an upscale and shipping
+  it at 1000px manufactured detail nobody captured. Re-sourced to the 543 master, shipped at
+  native, with the dpr-2 softness recorded rather than papered over. **§1b SHIPS NOTHING**:
+  the medallion is 1206x1154, not square, no alpha, with a baked rgb(19,18,16) ground at 41.9%
+  of pixels against a rgb(5,5,5) page — blocked on the asset, and NO placeholder, which is
+  §4e's own rule applied to the release that wrote it. **AND THE ASSET SWEEP WAS RUN ONCE AND
   TRUSTED FOR FOUR HOURS**: two of the three "absent" assets arrived later in the same session
   and were found only when the operator asked. The scope of an absence includes WHEN; an adversarial pass **refused the first draft** over thirteen
   overclaiming clauses, including one arithmetically false at ship and one refuted by the
