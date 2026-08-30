@@ -67,6 +67,32 @@ function findChrome() {
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 
+/**
+ * Wait for a countable condition, then ASSERT it — never wait alone.
+ *
+ * p4·M5: `waitForFunction(() => count === 9)` HANGS when the count is wrong.
+ * It burns its whole timeout and throws, killing the run before any later
+ * assertion prints, so a real regression reports NOTHING — no named red, and
+ * a grep for the red marker over the crash comes back empty, which reads
+ * exactly like "no failures found". Found the hard way: a mutation that
+ * rendered 8 protocol cards instead of 9 produced `exit=1, 0 named reds`.
+ *
+ * This waits with a SHORT budget and then states expected vs actual, so the
+ * same regression costs one line instead of one run.
+ */
+async function waitCount(page, label, selector, expected, timeout = 15000) {
+  await page
+    .waitForFunction(
+      ([sel, n]) => document.querySelectorAll(sel).length === n,
+      [selector, expected],
+      { timeout },
+    )
+    .catch(() => {});
+  const actual = await page.locator(selector).count();
+  ok(actual === expected, `${label} (expected ${expected}, got ${actual} for ${selector})`);
+  return actual;
+}
+
 /* ── static source gates ────────────────────────────────────────────
    Deliberately ABOVE the browser launch, so the two copy criteria still
    run (and still fail the build) on a machine with no chromium. */
@@ -333,10 +359,7 @@ console.log('engine:', engine, '\n');
   // only once that repo's fetch has resolved. 5 protocol cards + 4 registry
   // pulses = 9. Note the protocol cards' hook sits on a `display: contents`
   // element, so this must be a querySelectorAll count, not a visibility wait.
-  await page.waitForFunction(
-    (n) => document.querySelectorAll('[data-pulse="live"]').length === n,
-    9, { timeout: 15000 },
-  );
+  await waitCount(page, 'A · nine repo pulses resolve on a cold load', '[data-pulse="live"]', 9);
 
   const body = await page.innerText('body');
 
@@ -431,10 +454,7 @@ console.log('engine:', engine, '\n');
   await page.reload({ waitUntil: 'domcontentloaded' });
   // Positive half anchored on the DOM: a cache hit renders from the lazy
   // useState initialiser, so all nine flip to "live" without any network.
-  await page.waitForFunction(
-    (n) => document.querySelectorAll('[data-pulse="live"]').length === n,
-    9, { timeout: 15000 },
-  );
+  await waitCount(page, '6 · all nine flip to live from cache with no network', '[data-pulse="live"]', 9);
   // Grace window for the NEGATIVE half — a rogue request needs time to appear
   // before we can honestly say none did.
   await page.waitForTimeout(600);
@@ -682,7 +702,8 @@ console.log('engine:', engine, '\n');
   await page.waitForFunction(() => {
     const els = document.querySelectorAll('[data-pulse-state]');
     return els.length > 0 && [...els].every((e) => e.getAttribute('data-pulse-state') === 'fail');
-  }, { timeout: 20000 });
+  }, { timeout: 20000 }).catch(() => {}); // never let a wait KILL the run — the
+  // named assertion below reports expected vs actual in one line instead.
 
   const failed = await page.locator('[data-pulse-state="fail"]').count();
   ok(failed >= 9, `F · every at-rest pulse surface reports state="fail" (${failed} ≥ 9)`);
@@ -715,10 +736,7 @@ console.log('engine:', engine, '\n');
   await mockFeeds(ctx, {});
   const page = await ctx.newPage();
   await page.goto(base + '/future', { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(
-    (n) => document.querySelectorAll('[data-pulse="live"]').length === n,
-    9, { timeout: 15000 },
-  );
+  await waitCount(page, 'G · nine repo pulses resolve before the page is measured', '[data-pulse="live"]', 9);
 
   /* ── G1 · SECTION ORDER, read in document order ── */
   const EXPECTED = ['rail', 'next', 'live', 'live-protocols', 'horizon', 'news', 'automation'];
@@ -831,12 +849,19 @@ console.log('engine:', engine, '\n');
      twice that. `at` was already computed by useCachedFeed and thrown away by
      this surface.
 
-     Read from the dialog that is ALREADY open here, deliberately. FuturePage
-     RETAINS the last opened popup rather than unmounting it (D0666), so once
-     an ecosystem brief has been opened `[role="dialog"]` matches two elements
-     and resolves to whichever is first — which is exactly how an earlier
-     revision of this assertion came to measure the stressnet brief's prose
-     and report a pulse line that was never there. */
+     Read from the dialog that is ALREADY open here, deliberately. An earlier
+     revision opened a THIRD dialog for this check and measured the stressnet
+     brief's prose instead — it sampled after pressing Escape but before the
+     next dialog had mounted, so it read the outgoing one.
+
+     I first wrote that down as "FuturePage retains the last popup (D0666), so
+     `[role="dialog"]` matches two elements" — and THAT IS FALSE, measured.
+     Sampling every 30ms through the exact open/close race, the maximum number
+     of simultaneous `role="dialog"` nodes is ONE (0 -> 1 -> 0 -> 1 -> 0, 45
+     samples, never two, not even transiently): V6Modal really does return null
+     once `present` drops. The defect was a missing wait in the gate, not an
+     ambiguity in the page, and the distinction matters because a retained
+     stale dialog would have been an accessibility defect worth its own fix. */
   ok(/read \d+[mhd] ago via \/api\/feeds/.test(dlgText),
     `G6 · the repo pulse reports how old ITS OWN reading is (saw: "${(dlgText.match(/read [^·]{0,28}/) || ['none'])[0].trim()}")`);
   ok(!/refreshed every 24h/.test(dlgText),
@@ -855,7 +880,7 @@ console.log('engine:', engine, '\n');
   await page.waitForFunction(() => {
     const i = document.querySelector('[role="dialog"] img');
     return !!i && i.complete && i.naturalWidth > 0;
-  }, { timeout: 10000 });
+  }, { timeout: 10000 }).catch(() => {}); // G5's naturalWidth assertion reports it
   const eco = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"]');
     if (!d) return null;
@@ -909,8 +934,18 @@ console.log('engine:', engine, '\n');
    `/api/feeds?src=ghrepo&repo=…` string. With a healthy feed the same page
    measured zero — which is why no gate had ever seen it, and why this
    scenario forces the failure rather than trusting the happy path.          */
-{
-  const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
+// TWO WIDTHS, AND THE SECOND IS THE ONE THAT MATTERS. A break test removing
+// `minWidth: 0` left this scenario GREEN at 1440 — because the reorg ALSO
+// fixes the overflow there: splitting five cards into bands of 2/1/2 gives
+// ~643px tracks, far above the failure copy's ~435px min-content, so the
+// min-width is inert at that width. The two defences are INDEPENDENTLY
+// SUFFICIENT at 1440 (p4·M3's recorded shape). At 820px the same two-card band
+// yields ~380px tracks and the min-width is the ONLY thing holding the box, so
+// that is where the assertion has teeth. Measured, not assumed — and stated
+// here because a scenario that only ever runs where its subject is inert is a
+// scenario that proves nothing.
+for (const W of [1440, 820]) {
+  const ctx = await b.newContext({ viewport: { width: W, height: 900 } });
   await mockStatus(ctx);
   await mockFeeds(ctx, { pulseFails: true });
   const page = await ctx.newPage();
@@ -918,7 +953,7 @@ console.log('engine:', engine, '\n');
   await page.waitForFunction(() => {
     const els = document.querySelectorAll('[data-pulse-state]');
     return els.length > 0 && [...els].every((e) => e.getAttribute('data-pulse-state') === 'fail');
-  }, { timeout: 20000 });
+  }, { timeout: 20000 }).catch(() => {}); // H's own non-vacuity floor reports it
 
   const geo = await page.evaluate(() => {
     const vw = window.innerWidth;
@@ -934,13 +969,13 @@ console.log('engine:', engine, '\n');
   // NON-VACUITY: the failure state must actually be on screen, or "no
   // overflow" is a true fact about a page that never rendered the copy.
   const failCount = await page.locator('[data-pulse-state="fail"]').count();
-  ok(failCount >= 9, `H · the failure copy is rendered on every pulse surface (${failCount})`);
+  ok(failCount >= 9, `H@${W} · the failure copy is rendered on every pulse surface (${failCount})`);
   ok(geo.mainOver <= 0,
-    `H · with the pulse proxy down, .main does not scroll horizontally at 1440 (over by ${geo.mainOver}px)`);
+    `H@${W} · with the pulse proxy down, .main does not scroll horizontally (over by ${geo.mainOver}px)`);
   ok(geo.past === 0,
-    `H · and no element renders past the viewport edge (${geo.past})`);
+    `H@${W} · and no element renders past the viewport edge (${geo.past})`);
   ok(!geo.scrollers.some((s) => /proto-grid|stagger/.test(s)),
-    `H · the protocol grid and its stagger wrappers fit their tracks (${JSON.stringify(geo.scrollers)})`);
+    `H@${W} · the protocol grid and its stagger wrappers fit their tracks (${JSON.stringify(geo.scrollers)})`);
   await ctx.close();
 }
 

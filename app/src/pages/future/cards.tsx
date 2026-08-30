@@ -129,10 +129,21 @@ export function ProtocolCard({ p, onOpen, morphed }: ProtocolCardProps) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
           <span className="mono dim2" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.1em" }}>
             {p.repo}
+            {/* p4·M5 — `overflowWrap: anywhere` on the failure branch's ENDPOINT,
+                and it is a fix rather than styling. That copy contains an
+                unbreakable ~55-character URL which sets this card's min-content
+                width; measured at 820px the content ran 382-399px inside a
+                337px track and spilled its own border. `.main` stayed at 0, so
+                nothing outside the card could see it — which is why it survived
+                every gate until scenario H was run at a width where the band
+                split does not rescue it. `anywhere` rather than `break-word`
+                because this token has no break opportunity at all, and p4·02
+                measured that the two differ only in min-content sizing, which
+                is exactly the property wanted here. */}
             {pulse
               ? <> · ★{pulse.stars.toLocaleString()} · {agoStr(pulse.pushed)}</>
               : pulseFailed
-                ? <span style={{ color: "var(--y-50)" }}> · <code>{repoPulseEndpoint(p.repo)}</code> unreachable</span>
+                ? <span style={{ color: "var(--y-50)", overflowWrap: "anywhere", minWidth: 0 }}> · <code>{repoPulseEndpoint(p.repo)}</code> unreachable</span>
                 : " · pinging…"}
           </span>
           <span className="open-cue">open window →</span>

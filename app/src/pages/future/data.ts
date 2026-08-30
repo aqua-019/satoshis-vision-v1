@@ -391,6 +391,10 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
     resources: [
       ["Seraphis spec (UkoeHB)", "https://github.com/UkoeHB/Seraphis", "github"],
       ["seraphis-migration · wallet3", "https://github.com/seraphis-migration/wallet3", "github"],
+      // Linked, NOT transcribed. Its checkboxes are the live state of the
+      // launch list and would be stale here within a week — the link is the
+      // only form of it that cannot rot.
+      ["seraphis-migration · TODO list for launch", "https://github.com/seraphis-migration/monero/issues/53", "issue"],
       ["MRL discussion", "https://github.com/monero-project/research-lab/issues", "research-lab"],
     ],
   },
@@ -456,6 +460,12 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
       // disclaims its own accuracy should not be linked as if it were a
       // commitment.
       ["jeffro256 · FCMP++/Carrot plan · non-binding working draft", "https://github.com/jeffro256/fcmp-carrot-plan", "plan"],
+      // The concrete prerequisite the plan schedules twice (tasks 11 and 13).
+      // Linked, never described by STATE: api.github.com answers 403 through
+      // this sandbox's gateway, so "open"/"merged" is a claim nothing here
+      // could check, and an anchor with a wrong state in its label is worse
+      // than an anchor with none.
+      ["monero-project/monero · external: add mx25519", "https://github.com/monero-project/monero/pull/10964", "pr"],
       ["MRL discussions", "https://github.com/monero-project/research-lab/issues", "research-lab"],
     ],
   },
