@@ -62,7 +62,7 @@ export function Footer() {
       <span>TXS {hasData(data.status.network) ? fmtN(data.txCountTotal) : "—"}</span>
       <span>MEMPOOL {hasData(data.status.network) ? data.mempool.length : "—"}</span>
       <span>RING 16</span>
-      <span>FORK {data.majorVersion ? "v" + data.majorVersion : "—"} · FCMP++ Q3</span>
+      <span>FORK {data.majorVersion ? "v" + data.majorVersion : "—"} · FCMP++ Mar 2027</span>
       <span style={{ marginLeft: "auto" }}>UTC {t ? t.toISOString().slice(11, 19) : "—"}</span>
       <span><Link to={R.ABOUT_SOURCES} style={{ color: "inherit", textDecoration: "none" }}>SOURCES</Link></span>
       <span>©2026 XMR.IRISH</span>

@@ -120,6 +120,42 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 ▶ {e.simLabel}
               </button>
             ) : null}
+            {/* p4·M5 — a SECOND primary control, beside the simulator CTA.
+                It is a <button> routed through `navigate`, not an <a href>,
+                because a leading-"/" destination is an in-app route and this
+                dialog must close before the app navigates under it — the same
+                two-step `links[]` and `resources[]` already perform, and the
+                same reason: a modal left open over the route it just sent you
+                to is the defect one layer up.
+
+                An off-site `ctaLink` renders as a real anchor instead, so the
+                field stays honest for a destination that is not this site.
+                Today only the stressnet entry uses it, and its link is
+                in-app. */}
+            {e.ctaLink && e.ctaLabel ? (
+              e.ctaLink.startsWith("/") ? (
+                <button
+                  type="button"
+                  className="proto-btn"
+                  data-eco-cta={e.id}
+                  onClick={() => { onClose(); navigate(e.ctaLink as string); }}
+                  style={{ alignSelf: "flex-start", borderColor: e.c, color: e.c, boxShadow: `0 0 10px ${e.c}44` }}
+                >
+                  {e.ctaLabel} →
+                </button>
+              ) : (
+                <a
+                  className="proto-btn"
+                  data-eco-cta={e.id}
+                  href={e.ctaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ alignSelf: "flex-start", borderColor: e.c, color: e.c, boxShadow: `0 0 10px ${e.c}44` }}
+                >
+                  {e.ctaLabel} ↗
+                </a>
+              )
+            ) : null}
             {e.url ? (
               <a
                 className="proto-btn"

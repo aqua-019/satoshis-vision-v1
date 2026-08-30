@@ -67,6 +67,32 @@ function findChrome() {
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 
+/**
+ * Wait for a countable condition, then ASSERT it — never wait alone.
+ *
+ * p4·M5: `waitForFunction(() => count === 9)` HANGS when the count is wrong.
+ * It burns its whole timeout and throws, killing the run before any later
+ * assertion prints, so a real regression reports NOTHING — no named red, and
+ * a grep for the red marker over the crash comes back empty, which reads
+ * exactly like "no failures found". Found the hard way: a mutation that
+ * rendered 8 protocol cards instead of 9 produced `exit=1, 0 named reds`.
+ *
+ * This waits with a SHORT budget and then states expected vs actual, so the
+ * same regression costs one line instead of one run.
+ */
+async function waitCount(page, label, selector, expected, timeout = 15000) {
+  await page
+    .waitForFunction(
+      ([sel, n]) => document.querySelectorAll(sel).length === n,
+      [selector, expected],
+      { timeout },
+    )
+    .catch(() => {});
+  const actual = await page.locator(selector).count();
+  ok(actual === expected, `${label} (expected ${expected}, got ${actual} for ${selector})`);
+  return actual;
+}
+
 /* ── static source gates ────────────────────────────────────────────
    Deliberately ABOVE the browser launch, so the two copy criteria still
    run (and still fail the build) on a machine with no chromium. */
@@ -107,6 +133,93 @@ const named = APP_SRC.filter((f) => /MoneroSpace/.test(readFileSync(f, 'utf8')))
 ok(named.length >= 1, `15 · the project is named MoneroSpace where it is described (${named.length} file(s))`);
 const linked = APP_SRC.filter((f) => /github\.com\/brainchainz\/Monero-Superbrain/.test(readFileSync(f, 'utf8')));
 ok(linked.length >= 1, `15 · its repo is linked, not merely named (${linked.length} file(s))`);
+
+/* 18 — ONE FORK DATE, EVERYWHERE (p4·M5).
+   The FCMP++ activation date is a claim this site makes on NINE surfaces
+   besides the Future card — the global footer, the network page's Fork stat,
+   the mempool reactor's kv row, two Monero tabs, three places in the fcmp
+   simulator, the education journey and the markets thesis. Every one of them
+   was an independent literal, every one said "Q3 2026" or "mid-2026", and
+   when p4·M5 re-derived the card from the published plan they all became
+   false at once. The footer is the sharp end: it renders on /future itself,
+   so the page disagreed with its own chrome inside one viewport.
+
+   This is the two-lists-one-truth defect this file's own `roadmapStatus()`
+   was written to prevent, applied to a DATE — and it cannot be fixed the same
+   way, because the honest single source (`FUTURE_PROTOCOLS`) is lazy and
+   `Footer.tsx` is EAGER. Importing it there would drag data.ts into the entry
+   chunk that every route pays for on first paint, which is the leaf lesson
+   this repo has now recorded nine times.
+
+   So the single source is enforced HERE instead, at zero runtime cost: the
+   canonical token is PARSED out of the fcmp card's own `eta`, never restated
+   in this file, and no surface may claim a different future activation date.
+   Change the card and this assertion changes with it.
+
+   Scoped to FUTURE-fork sentences deliberately. The tree is full of correct
+   historical dates — the 2024 audits, the May 2026 stressnet, the timeline's
+   49 dated events — and a bare year ban would fail every one of them. */
+/**
+ * Strip `//` and block comments, STRING-AWARE.
+ *
+ * Every stripper defect this repo has recorded lives in exactly this gap: a
+ * `//` inside a URL string (p4·01's `'**\/api/**'`), a template literal's
+ * backtick read as an opener (p4·02's worker), a `/*` inside a quoted string.
+ * A naive regex is not merely imprecise here — it can swallow the rest of the
+ * file and turn a real hit into a silent pass. So this walks characters and
+ * tracks which of the five states it is in, and the falsifiability PAIR below
+ * proves it, because a stripper nobody has tested against its own failure mode
+ * is an assumption wearing a function's clothes.
+ */
+function stripComments(src) {
+  let out = '', i = 0, s = null; // s: null | "'" | '"' | '`'
+  while (i < src.length) {
+    const c = src[i], d = src[i + 1];
+    if (s) {
+      if (c === '\\') { out += c + (d ?? ''); i += 2; continue; }
+      if (c === s) s = null;
+      out += c; i += 1; continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { s = c; out += c; i += 1; continue; }
+    if (c === '/' && d === '/') { while (i < src.length && src[i] !== '\n') i += 1; continue; }
+    if (c === '/' && d === '*') { i += 2; while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) i += 1; i += 2; out += ' '; continue; }
+    out += c; i += 1;
+  }
+  return out;
+}
+{
+  // FALSIFIABILITY PAIR — it must remove a real comment AND must not touch a
+  // comment-shaped substring inside a string. Both directions, because a
+  // stripper that removes everything passes the first test perfectly.
+  const removes = stripComments('a /* Q3 2026 */ b // Q3 2026\nc');
+  const keeps = stripComments('const u = "https://x/**/y"; const t = `a // b`;');
+  ok(!/Q3 2026/.test(removes) && /a\s+b/.test(removes),
+    '18 · the comment stripper removes real comments');
+  ok(keeps.includes('https://x/**/y') && keeps.includes('a // b'),
+    '18 · …and leaves comment-shaped text inside string and template literals alone');
+}
+
+const dataSrc = readFileSync(join(__dirname, 'src/pages/future/data.ts'), 'utf8');
+const fcmpEta = dataSrc.match(/id:\s*"fcmp"[\s\S]{0,4000}?eta:\s*"([^"]+)"/);
+ok(!!fcmpEta, '18 · the fcmp card\'s eta is parseable from data.ts source');
+const canonicalDate = fcmpEta ? fcmpEta[1].split(' · ')[0].trim() : '';
+ok(/^[A-Z][a-z]{2} 20\d{2}$/.test(canonicalDate),
+  `18 · it leads with a month-and-year token ("${canonicalDate}")`);
+// The stale shapes this release retired, plus any quarter-shaped claim, when
+// they sit in a sentence that is about FCMP++ ACTIVATING rather than about
+// something that already happened.
+const STALE_FORK_RX = /(?:fcmp[^.\n]{0,140}?|(?:hard ?fork|activat\w+)[^.\n]{0,100}?)\b(?:Q[1-4] ?20\d{2}|mid-20\d{2})/i;
+const forkStale = APP_SRC
+  .filter((f) => !f.endsWith('data.ts')) // its own comment records the retired string
+  .filter((f) => STALE_FORK_RX.test(stripComments(readFileSync(f, 'utf8'))));
+ok(forkStale.length === 0,
+  `18 · no surface states a quarter-shaped FCMP++ fork date (found ${forkStale.length}${forkStale.length ? ': ' + forkStale.map((f) => f.split('/src/')[1]).join(', ') : ''})`);
+// PAIRED POSITIVE CONTROL — without it, "no stale date" is satisfied just as
+// well by a tree that mentions no fork date at all, which is the vacuity this
+// file's own §15 control exists to prevent one assertion up.
+const statesCanonical = APP_SRC.filter((f) => new RegExp(canonicalDate.replace(/ /g, ' ?')).test(readFileSync(f, 'utf8')));
+ok(statesCanonical.length >= 3,
+  `18 · and the canonical date "${canonicalDate}" IS stated across the site (${statesCanonical.length} files)`);
 
 const DAY = 86400000;
 const iso = (msAgo) => new Date(Date.now() - msAgo).toISOString();
@@ -246,10 +359,7 @@ console.log('engine:', engine, '\n');
   // only once that repo's fetch has resolved. 5 protocol cards + 4 registry
   // pulses = 9. Note the protocol cards' hook sits on a `display: contents`
   // element, so this must be a querySelectorAll count, not a visibility wait.
-  await page.waitForFunction(
-    (n) => document.querySelectorAll('[data-pulse="live"]').length === n,
-    9, { timeout: 15000 },
-  );
+  await waitCount(page, 'A · nine repo pulses resolve on a cold load', '[data-pulse="live"]', 9);
 
   const body = await page.innerText('body');
 
@@ -344,10 +454,7 @@ console.log('engine:', engine, '\n');
   await page.reload({ waitUntil: 'domcontentloaded' });
   // Positive half anchored on the DOM: a cache hit renders from the lazy
   // useState initialiser, so all nine flip to "live" without any network.
-  await page.waitForFunction(
-    (n) => document.querySelectorAll('[data-pulse="live"]').length === n,
-    9, { timeout: 15000 },
-  );
+  await waitCount(page, '6 · all nine flip to live from cache with no network', '[data-pulse="live"]', 9);
   // Grace window for the NEGATIVE half — a rogue request needs time to appear
   // before we can honestly say none did.
   await page.waitForTimeout(600);
@@ -595,7 +702,8 @@ console.log('engine:', engine, '\n');
   await page.waitForFunction(() => {
     const els = document.querySelectorAll('[data-pulse-state]');
     return els.length > 0 && [...els].every((e) => e.getAttribute('data-pulse-state') === 'fail');
-  }, { timeout: 20000 });
+  }, { timeout: 20000 }).catch(() => {}); // never let a wait KILL the run — the
+  // named assertion below reports expected vs actual in one line instead.
 
   const failed = await page.locator('[data-pulse-state="fail"]').count();
   ok(failed >= 9, `F · every at-rest pulse surface reports state="fail" (${failed} ≥ 9)`);
@@ -610,6 +718,264 @@ console.log('engine:', engine, '\n');
   // The failure must be CONTAINED: a dead pulse proxy must not blank the page.
   ok(/FCMP/i.test(body), 'F · the rest of /future still renders (failure is contained)');
 
+  await ctx.close();
+}
+
+/* ══ SCENARIO G · p4·M5 — the reorganised page, the audit finding, and the
+   stressnet popup ═════════════════════════════════════════════════════════
+
+   WHY THIS SECTION EXISTS AT ALL: before it, /future's section order was
+   pinned by nothing. Measured on the base — the page carried ZERO `data-*`
+   attributes of its own, no gate read any kicker, and every gate located its
+   subject by content. A permutation of FuturePage.tsx that preserved content
+   shipped green through all 75 CI gates. `verify-site` §12 solved the same
+   problem for /about/site with `data-site-section`; this is that idiom.        */
+{
+  const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
+  await mockStatus(ctx);
+  await mockFeeds(ctx, {});
+  const page = await ctx.newPage();
+  await page.goto(base + '/future', { waitUntil: 'domcontentloaded' });
+  await waitCount(page, 'G · nine repo pulses resolve before the page is measured', '[data-pulse="live"]', 9);
+
+  /* ── G1 · SECTION ORDER, read in document order ── */
+  const EXPECTED = ['rail', 'next', 'live', 'live-protocols', 'horizon', 'news', 'automation'];
+  const order = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-future-section]')].map((e) => e.getAttribute('data-future-section')));
+  // NON-VACUITY FIRST. An empty NodeList would make a join comparison read
+  // '' === '' only if EXPECTED were also empty, but a wrong-length list still
+  // deserves its own named red rather than one confusing string diff.
+  ok(order.length === EXPECTED.length,
+    `G1 · every section carries a data-future-section marker (${order.length} of ${EXPECTED.length}: ${order.join(' → ')})`);
+  ok(order.join(',') === EXPECTED.join(','),
+    `G1 · they render in the shipped order (${order.join(' → ')})`);
+  // The two the reorg actually turned on, named individually so a red says
+  // WHICH half moved rather than printing a seven-item diff.
+  ok(order.indexOf('next') < order.indexOf('live'),
+    'G1 · what is landing next comes before what is live to try');
+  ok(order.indexOf('live') < order.indexOf('horizon'),
+    'G1 · …and what is live to try comes before the later forks');
+  ok(order[0] === 'rail', 'G1 · the roadmap rail is still the section landing');
+
+  /* ── G2 · THE BANDS PARTITION THE CATALOGUE.
+     The failure this guards is a card silently disappearing: the three bands
+     are computed by filters, and a filter that stops matching drops a
+     protocol off the page with nothing red anywhere. */
+  const banded = await page.evaluate(() => {
+    const out = {};
+    for (const s of ['next', 'live-protocols', 'horizon']) {
+      const el = document.querySelector(`[data-future-section="${s}"]`);
+      out[s] = el ? [...el.querySelectorAll('h3')].map((h) => (h.textContent || '').trim()) : [];
+    }
+    out.all = [...document.querySelectorAll('.v6-proto-grid h3')].map((h) => (h.textContent || '').trim());
+    return out;
+  });
+  const bandTotal = banded.next.length + banded['live-protocols'].length + banded.horizon.length;
+  ok(bandTotal === banded.all.length && bandTotal === 5,
+    `G2 · the three bands partition all five protocol cards (${banded.next.length}+${banded['live-protocols'].length}+${banded.horizon.length}=${bandTotal})`);
+  ok(new Set(banded.all).size === banded.all.length,
+    'G2 · and no protocol renders in two bands at once');
+  // FCMP++ and Carrot are in the NEXT band because the rail says so, not
+  // because this gate names them — the assertion reads the rail's own NEXT
+  // stop, so re-marking the rail moves both sides together.
+  const railNext = await page.evaluate(() => {
+    const stop = [...document.querySelectorAll('.v6-rail .stop')].find((s) => /NEXT/.test(s.textContent || ''));
+    return stop ? (stop.textContent || '').replace(/\s+/g, ' ').trim() : null;
+  });
+  ok(!!railNext && banded.next.every((tag) => railNext.includes(tag)),
+    `G2 · every card in the "landing next" band is named on the rail's NEXT stop ("${railNext}")`);
+
+  /* ── G3 · THE AUDIT FINDING IS CONTENT, not another link ── */
+  await page.locator('.v6-proto-grid h3', { hasText: 'FCMP++' }).first().click();
+  await page.waitForSelector('[role="dialog"] [data-proto-review]', { timeout: 8000 });
+  const review = await page.evaluate(() => {
+    const el = document.querySelector('[role="dialog"] [data-proto-review]');
+    if (!el) return null;
+    return {
+      text: (el.textContent || '').replace(/\s+/g, ' ').trim(),
+      kicker: (el.querySelector('.kicker')?.textContent || '').trim(),
+      scope: (el.querySelector('[data-review-scope]')?.textContent || '').trim(),
+      hrefs: [...el.querySelectorAll('a[href]')].map((a) => a.getAttribute('href')),
+    };
+  });
+  ok(!!review, 'G3 · the fcmp deep-dive renders a review block');
+  if (review) {
+    ok(/Trail of Bits/i.test(review.text), 'G3 · it names the reviewer');
+    // Read the KICKER, not the block's textContent: textContent concatenates
+    // adjacent block elements with no separator ("…2026Scope: the…"), so a
+    // trailing \b sits between two word characters and can never match. The
+    // date lives in the kicker; assert it where it lives.
+    ok(/\b(15 July 2026|July 2026)/.test(review.kicker),
+      `G3 · it carries the report's own date (kicker: "${review.kicker}")`);
+    ok(/six/i.test(review.text) && /informational/i.test(review.text),
+      'G3 · it states the finding — six, informational');
+    // The SCOPE line is the assertion that stops "audited" being read as a
+    // claim about the protocol or the network.
+    ok(review.scope.length > 30 && /implementation/i.test(review.scope),
+      `G3 · and it names what was actually reviewed ("${review.scope.slice(0, 72)}…")`);
+    ok(review.hrefs.some((h) => /trailofbits\/publications/.test(h || '')),
+      'G3 · the report itself is linked from the block that summarises it');
+  }
+
+  /* ── G4 · THE CLAIM'S SHAPE.
+     The brief asked for "no mainnet, no exploits". Measured, a WORD BAN would
+     be wrong in both directions: the honest version of this block MUST say
+     FCMP++ is not on mainnet (that sentence is what stops the reader
+     generalising), and it quotes the auditors' own "exploitable behavior".
+     What is actually forbidden is the CONJUNCTION — a sentence claiming
+     freedom from exploits ON a deployed network, which is the false claim
+     "zero exploits on mainnet" would have made. Sentence-scoped, which is
+     verify-superstress §6f's idiom and the reason it survives rewording. */
+  const dlgText = await page.evaluate(() => (document.querySelector('[role="dialog"]')?.textContent || '').replace(/\s+/g, ' '));
+  const sentences = dlgText.split(/(?<=[.!?])\s+/).filter((s) => s.trim());
+  const EXPLOIT_RX = /\bexploit\w*\b|\bvulnerab\w*\b/i;
+  const DEPLOYED_RX = /\bmainnet\b|\bin production\b|\bdeployed\b/i;
+  const both = sentences.filter((s) => EXPLOIT_RX.test(s) && DEPLOYED_RX.test(s));
+  // PAIRED CONTROLS — without them a zero below means "the block says nothing"
+  // just as well as "the block says nothing false".
+  ok(sentences.length > 8, `G4 · the dialog splits into ${sentences.length} sentences`);
+  ok(sentences.some((s) => EXPLOIT_RX.test(s)),
+    'G4 · the splitter CAN see exploit-shaped sentences (the quoted finding is one)');
+  ok(sentences.some((s) => DEPLOYED_RX.test(s)),
+    'G4 · …and deployment-shaped ones (the not-on-mainnet caveat is one)');
+  ok(both.length === 0,
+    `G4 · no sentence claims freedom from exploits on a deployed network (found ${both.length}${both.length ? ': ' + JSON.stringify(both.slice(0, 2)) : ''})`);
+  ok(/not (a review of a running network|on mainnet)|has not activated on mainnet/i.test(dlgText),
+    'G4 · and the page states plainly that FCMP++ has not activated on mainnet');
+
+  /* ── G6 · THE PULSE STATES ITS OWN AGE, rather than a refresh policy.
+     "refreshed every 24h" described the client TTL while the edge held the
+     same payload for another day, so a figure presented as fresh could be
+     twice that. `at` was already computed by useCachedFeed and thrown away by
+     this surface.
+
+     Read from the dialog that is ALREADY open here, deliberately. An earlier
+     revision opened a THIRD dialog for this check and measured the stressnet
+     brief's prose instead — it sampled after pressing Escape but before the
+     next dialog had mounted, so it read the outgoing one.
+
+     I first wrote that down as "FuturePage retains the last popup (D0666), so
+     `[role="dialog"]` matches two elements" — and THAT IS FALSE, measured.
+     Sampling every 30ms through the exact open/close race, the maximum number
+     of simultaneous `role="dialog"` nodes is ONE (0 -> 1 -> 0 -> 1 -> 0, 45
+     samples, never two, not even transiently): V6Modal really does return null
+     once `present` drops. The defect was a missing wait in the gate, not an
+     ambiguity in the page, and the distinction matters because a retained
+     stale dialog would have been an accessibility defect worth its own fix. */
+  ok(/read \d+[mhd] ago via \/api\/feeds/.test(dlgText),
+    `G6 · the repo pulse reports how old ITS OWN reading is (saw: "${(dlgText.match(/read [^·]{0,28}/) || ['none'])[0].trim()}")`);
+  ok(!/refreshed every 24h/.test(dlgText),
+    'G6 · and no longer states a refresh policy in place of a measurement');
+  await page.keyboard.press('Escape');
+
+  /* ── G5 · THE STRESSNET POPUP: one real image, no reservations, one
+     explorer control. Measured on the base: imgs 0, two dashed slot boxes,
+     and the explorer present only as the third `.v6-res` chip. */
+  await page.locator('.panel').filter({ hasText: 'superstress net' }).first().click();
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+  // The shot is loading="lazy", so `naturalWidth` is 0 until it decodes.
+  // Sampling it immediately measures the decode race, not the image — an
+  // earlier revision of this block passed only because an unrelated open/close
+  // happened to give it the time. Wait for the settled subject.
+  await page.waitForFunction(() => {
+    const i = document.querySelector('[role="dialog"] img');
+    return !!i && i.complete && i.naturalWidth > 0;
+  }, { timeout: 10000 }).catch(() => {}); // G5's naturalWidth assertion reports it
+  const eco = await page.evaluate(() => {
+    const d = document.querySelector('[role="dialog"]');
+    if (!d) return null;
+    const imgs = [...d.querySelectorAll('img')];
+    return {
+      imgs: imgs.map((i) => ({ src: i.getAttribute('src'), nw: i.naturalWidth, nh: i.naturalHeight, alt: i.getAttribute('alt') || '' })),
+      caption: (d.querySelector('figcaption')?.textContent || '').trim(),
+      dashed: [...d.querySelectorAll('div')].filter((e) => getComputedStyle(e).borderStyle.includes('dashed') && /screenshot|embed/i.test(e.textContent || '')).length,
+      ctas: [...d.querySelectorAll('.proto-btn')].map((e) => (e.textContent || '').trim()),
+      explorerMentions: [...d.querySelectorAll('a,button')].filter((e) => /explorer/i.test(e.textContent || '')).length,
+      text: (d.textContent || '').replace(/\s+/g, ' '),
+    };
+  });
+  ok(!!eco && eco.imgs.length === 1, `G5 · the stressnet brief renders exactly one screenshot (${eco?.imgs.length})`);
+  if (eco && eco.imgs[0]) {
+    // A src that 404s still renders an <img>; naturalWidth is what separates
+    // "an image element exists" from "an image loaded".
+    ok(eco.imgs[0].nw > 0 && eco.imgs[0].nh > 0,
+      `G5 · and it actually loaded (${eco.imgs[0].nw}x${eco.imgs[0].nh})`);
+    ok((eco.imgs[0].src || '').startsWith('/peers/'),
+      `G5 · from a same-origin path (${eco.imgs[0].src})`);
+    // THE CAPTION IS THE HONESTY. The node in this capture has synced nothing;
+    // under a headline reading "the beta chain, live" an undescribed
+    // screenshot of an empty node lets the picture stand as evidence.
+    ok(/testnet/i.test(eco.imgs[0].alt) && /\b0\b/.test(eco.imgs[0].alt),
+      'G5 · whose alt text describes what is actually in it — a testnet node reporting zeros');
+    ok(/captured 20\d\d-\d\d-\d\d/i.test(eco.caption),
+      `G5 · and it is dated ("${eco.caption}")`);
+  }
+  ok(eco && eco.dashed === 0,
+    `G5 · no screenshot reservation boxes remain — a slot with no image does not exist (${eco?.dashed})`);
+  ok(eco && eco.ctas.some((t) => /explorer/i.test(t)),
+    `G5 · the simulated explorer is a primary control (${JSON.stringify(eco?.ctas)})`);
+  ok(eco && /simulated/i.test(eco.ctas.find((t) => /explorer/i.test(t)) || ''),
+    'G5 · whose label says SIMULATED before the destination');
+  ok(eco && eco.explorerMentions === 1,
+    `G5 · and it appears exactly once — one destination, one affordance (${eco?.explorerMentions})`);
+  await page.keyboard.press('Escape');
+
+  await ctx.close();
+}
+
+/* ══ SCENARIO H · p4·M5 — the page does not grow a horizontal scrollbar when
+   the pulse proxy is down.
+
+   MEASURED ON THE UNTOUCHED BASE at 1440, and it only happens in the failure
+   state: `main.main` scrolled 1457/1440, `.v6-proto-grid` 1387/1300, and the
+   five `.v6-stagger` wrappers rendered 320-411px inside 315px tracks. The
+   wrapper is the grid item, its default `min-width: auto` is min-content, and
+   the failure copy contains an unbreakable ~60-character
+   `/api/feeds?src=ghrepo&repo=…` string. With a healthy feed the same page
+   measured zero — which is why no gate had ever seen it, and why this
+   scenario forces the failure rather than trusting the happy path.          */
+// TWO WIDTHS, AND THE SECOND IS THE ONE THAT MATTERS. A break test removing
+// `minWidth: 0` left this scenario GREEN at 1440 — because the reorg ALSO
+// fixes the overflow there: splitting five cards into bands of 2/1/2 gives
+// ~643px tracks, far above the failure copy's ~435px min-content, so the
+// min-width is inert at that width. The two defences are INDEPENDENTLY
+// SUFFICIENT at 1440 (p4·M3's recorded shape). At 820px the same two-card band
+// yields ~380px tracks and the min-width is the ONLY thing holding the box, so
+// that is where the assertion has teeth. Measured, not assumed — and stated
+// here because a scenario that only ever runs where its subject is inert is a
+// scenario that proves nothing.
+for (const W of [1440, 820]) {
+  const ctx = await b.newContext({ viewport: { width: W, height: 900 } });
+  await mockStatus(ctx);
+  await mockFeeds(ctx, { pulseFails: true });
+  const page = await ctx.newPage();
+  await page.goto(base + '/future', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => {
+    const els = document.querySelectorAll('[data-pulse-state]');
+    return els.length > 0 && [...els].every((e) => e.getAttribute('data-pulse-state') === 'fail');
+  }, { timeout: 20000 }).catch(() => {}); // H's own non-vacuity floor reports it
+
+  const geo = await page.evaluate(() => {
+    const vw = window.innerWidth;
+    const scrollers = [...document.querySelectorAll('main.main, main.main *')]
+      .filter((e) => e.scrollWidth - e.clientWidth > 1)
+      .map((e) => `${e.tagName.toLowerCase()}.${(e.className || '').toString().split(' ')[0]} ${e.scrollWidth}/${e.clientWidth}`);
+    const past = [...document.querySelectorAll('main.main *')]
+      .map((e) => e.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0 && r.right > vw + 0.5).length;
+    const main = document.querySelector('main.main');
+    return { vw, scrollers, past, mainOver: main ? main.scrollWidth - main.clientWidth : -1 };
+  });
+  // NON-VACUITY: the failure state must actually be on screen, or "no
+  // overflow" is a true fact about a page that never rendered the copy.
+  const failCount = await page.locator('[data-pulse-state="fail"]').count();
+  ok(failCount >= 9, `H@${W} · the failure copy is rendered on every pulse surface (${failCount})`);
+  ok(geo.mainOver <= 0,
+    `H@${W} · with the pulse proxy down, .main does not scroll horizontally (over by ${geo.mainOver}px)`);
+  ok(geo.past === 0,
+    `H@${W} · and no element renders past the viewport edge (${geo.past})`);
+  ok(!geo.scrollers.some((s) => /proto-grid|stagger/.test(s)),
+    `H@${W} · the protocol grid and its stagger wrappers fit their tracks (${JSON.stringify(geo.scrollers)})`);
   await ctx.close();
 }
 

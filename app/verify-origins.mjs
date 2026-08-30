@@ -248,6 +248,40 @@ await coldBootOffBrowser(b);
       ok(shotsSeen === ids.length,
          `2 · and all ${ids.length} partner screenshots loaded and decoded while this listener was counting (${shotsSeen})`);
     }
+
+    /* p4·M5 — /future IS NOW THE SECOND ROUTE WHERE VISITING IT IS NOT ENOUGH,
+     * for exactly the reason recorded above, and it became one in the release
+     * that added this comment.
+     *
+     * That page's stressnet brief now carries a real screenshot, and it lives
+     * in the same `V6Modal` that unmounts when closed — so on a page nobody
+     * has clicked, the <img> does not exist and no image request is issued.
+     * Until this block existed, "/future makes zero off-origin requests" was a
+     * true statement about a page that had not loaded the one asset on it most
+     * likely to be off-origin. That is p4·M3's finding recurring on a second
+     * route, and it recurred because a route GREW an image, which is a thing
+     * routes do.
+     *
+     * Same floor as the peers block, and for the same reason: if the click
+     * silently did nothing this would go back to measuring an unopened page
+     * while looking like it had improved. `shotSeen` is asserted POSITIVE. */
+    if (route === '/future') {
+      const band = p.locator('.panel').filter({ hasText: 'superstress net' }).first();
+      const bandCount = await band.count();
+      ok(bandCount === 1,
+         `2 · /future exposes the stressnet brief to open (${bandCount}) (floor: an unopened page issues no image request, so a zero here would make the check below vacuous)`);
+      await band.click().catch(() => {});
+      await p.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
+      let shotSeen = 0;
+      await p.waitForFunction(() => {
+        const im = document.querySelector('[role="dialog"] img');
+        return im && im.complete && im.naturalWidth > 0;
+      }, undefined, { timeout: 8000 }).then(() => { shotSeen = 1; }).catch(() => {});
+      ok(shotSeen === 1,
+         `2 · and its screenshot loaded and decoded while this listener was counting (${shotSeen})`);
+      await p.keyboard.press('Escape').catch(() => {});
+      await p.waitForTimeout(220);
+    }
   }
   ok(offOrigin.length === 0,
      `2 · the app requests exactly one origin${offOrigin.length ? ': ' + [...new Set(offOrigin)].join(', ') : ''}`);

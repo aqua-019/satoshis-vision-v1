@@ -507,8 +507,25 @@ try {
 
   R.ok(!/\["Beta-chain explorer",\s*null\]/.test(DATA_SRC),
     'data.ts no longer carries ["Beta-chain explorer", null]');
-  R.ok(/Beta-chain explorer[^"]*·\s*simulated[^"]*",\s*R\.OPERATE_SUPERSTRESS_EXPLORER/.test(DATA_SRC),
-    'and the row now points at this route, labelled simulated');
+  /* p4·M5 — THIS ASSERTED A TUPLE SHAPE AND THE CLAIM OUTLIVED IT. It required
+     the literal `["Beta-chain explorer … · simulated …", R.OPERATE_SUPERSTRESS_EXPLORER]`,
+     which is the `links[]` row p4·07 wrote. That destination is now a PRIMARY
+     CONTROL beside the simulator CTA (`ctaLink`/`ctaLabel`) rather than a
+     `.v6-res` chip, and it was REMOVED from `links[]` so one destination does
+     not appear twice in one dialog — so the old regex went red against a page
+     that satisfies the claim more strongly than before.
+
+     What p4·07 actually wanted is affordance-agnostic and is what is asserted
+     now: the stressnet entry POINTS at this route, and the label a reader sees
+     says SIMULATED before they click. Checked within a window around the route
+     constant so the label may sit on either side of it — a `links[]` tuple
+     puts it before, a `ctaLink`/`ctaLabel` pair puts it after. */
+  const explorerAt = DATA_SRC.indexOf('R.OPERATE_SUPERSTRESS_EXPLORER');
+  R.ok(explorerAt !== -1, 'data.ts points at this route from the stressnet entry');
+  const near = explorerAt === -1 ? '' : DATA_SRC.slice(Math.max(0, explorerAt - 220), explorerAt + 220);
+  R.ok(/simulated/i.test(near) && /explorer/i.test(near),
+    'and the label a reader sees says SIMULATED before the destination',
+    `window around the route constant: ${JSON.stringify(near.replace(/\s+/g, ' ').slice(0, 150))}`);
 
   await page.goto(BASE + ROUTE.OPERATE_SUPERSTRESS, { waitUntil: 'networkidle' });
   const hubLinks = await page.evaluate(() =>

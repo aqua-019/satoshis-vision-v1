@@ -105,16 +105,45 @@ export function ProtocolCard({ p, onOpen, morphed }: ProtocolCardProps) {
           >
             {p.tag}
           </h3>
-          <div className="kicker" style={{ marginBottom: 10 }}>{p.sub} · ETA {p.eta}</div>
+          {/* p4·M5 — the label is data now. One of the five has SHIPPED, and
+              "ETA released" is a contradiction; see FutureProtocol.etaLabel.
+              Defaulting here rather than in data.ts keeps the other four
+              rows untouched. */}
+          <div className="kicker" style={{ marginBottom: 10 }}>{p.sub} · {p.etaLabel ?? "ETA"} {p.eta}</div>
+          {/* p4·M5 — the card carries the EXISTENCE of a review and its date;
+              the finding itself is one click away in ProtocolDetail. A card
+              is ~240px and a three-sentence finding does not fit one without
+              crowding out the lede — but a reader who never opens the popup
+              should still learn that the thing was independently reviewed and
+              when. It prints no verdict, deliberately: "reviewed" is a fact
+              about a process, and a one-word verdict on a card is exactly the
+              reassurance this release exists to replace with a finding. */}
+          {p.review ? (
+            <div data-proto-review-badge className="mono" style={{ marginBottom: 10, fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-40)" }}>
+              <span className="led" style={{ background: p.c, boxShadow: `0 0 6px ${p.c}`, marginRight: 6 }} />
+              Reviewed · {p.review.by} · {p.review.dated}
+            </div>
+          ) : null}
           <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{p.lede}</p>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
           <span className="mono dim2" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.1em" }}>
             {p.repo}
+            {/* p4·M5 — `overflowWrap: anywhere` on the failure branch's ENDPOINT,
+                and it is a fix rather than styling. That copy contains an
+                unbreakable ~55-character URL which sets this card's min-content
+                width; measured at 820px the content ran 382-399px inside a
+                337px track and spilled its own border. `.main` stayed at 0, so
+                nothing outside the card could see it — which is why it survived
+                every gate until scenario H was run at a width where the band
+                split does not rescue it. `anywhere` rather than `break-word`
+                because this token has no break opportunity at all, and p4·02
+                measured that the two differ only in min-content sizing, which
+                is exactly the property wanted here. */}
             {pulse
               ? <> · ★{pulse.stars.toLocaleString()} · {agoStr(pulse.pushed)}</>
               : pulseFailed
-                ? <span style={{ color: "var(--y-50)" }}> · <code>{repoPulseEndpoint(p.repo)}</code> unreachable</span>
+                ? <span style={{ color: "var(--y-50)", overflowWrap: "anywhere", minWidth: 0 }}> · <code>{repoPulseEndpoint(p.repo)}</code> unreachable</span>
                 : " · pinging…"}
           </span>
           <span className="open-cue">open window →</span>
@@ -171,7 +200,7 @@ export function MoneroNewsCard() {
   return (
     <Card style={{ padding: 22 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
-        <div className="kicker">Fork status · ETAs · dev labs — refreshed every 24h</div>
+        <div className="kicker">Fork status · ETAs · dev labs — each row stamped with its own age</div>
         <span className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>getmonero.org · monero-project/research-lab</span>
       </div>
 

@@ -133,7 +133,7 @@ export function AttacksTab(_props: MoneroTabProps) {
         </p>
         <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.75 }}>
           Operational attacks — phishing, timing correlation, KYC at the on-ramp — remain effective against careless users.
-          The protocol itself has held. FCMP++ will close most remaining theoretical attack surface in Q3 2026.
+          The protocol itself has held. FCMP++ will close most remaining theoretical attack surface when it activates — targeted for March 2027 by the working plan for the fork.
         </p>
       </Card>
     </div>

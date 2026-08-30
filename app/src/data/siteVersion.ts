@@ -96,7 +96,7 @@ export const SITE_ERA = "v6";
 /** The pull request this build ships. Bump it in the SAME commit that opens
  *  the PR — `verify-releases.mjs` fails the build once `handoffs/LOG.md`
  *  records a newer one, which is the staleness detector described above. */
-export const SITE_PR = 201;
+export const SITE_PR = 202;
 
 /** The rendered topbar label (`NavTop.tsx`), linking to
  *  `/about/sources#release-notes`.
