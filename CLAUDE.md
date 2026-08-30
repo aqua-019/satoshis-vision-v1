@@ -1059,9 +1059,25 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `<link rel="canonical">` anywhere in the tree** and both `xmr.irish` and `www.xmr.irish`
   answer, so every peer address is postable at two hosts; the sitemap uses the apex. That is
   reported, not decided — picking a canonical host is the operator's call.
+  **THE ONLY RED IN THE FINAL CHAIN IS `verify-vitals`, AND IT IS PAIRED RATHER THAN WAVED
+  AT.** All 39 gates ran; two vitals assertions failed. Measured against the FROZEN `ce87559`
+  build served on the same port on the same machine, interleaved in time:
+  · **`/live/markets` LCP is RED ON THE BASE TOO** — base **4,324ms**, head **4,244ms**
+    against a 2,600 ceiling, so the head is **80ms BETTER** and the ceiling is unreachable
+    in this sandbox either way. p4·M7 recorded the same route at **2,168ms on CI** against
+    4,368 here — a factor of two between the machines — and CI is the calibrated environment.
+  · **`/` blocking straddles its ceiling INDEPENDENTLY OF THE TREE**, which is p4·01's
+    recorded finding reproduced exactly. Four base samples: **370 · 436 · 387 · 436** (two
+    red, span 66ms). Four head samples: **405 · 403 · 408 · 417** (span 14ms) — entirely
+    INSIDE the base's range, with a marginally lower median. p4·01 recorded 353 · 356 · 390 ·
+    407 across two trees and called it "a plateau straddling a 400 ms ceiling independently
+    of the tree"; this is that plateau, shifted by a machine that has been building and
+    serving for hours.
+  Neither route is reachable from this change: `/` and `/live/markets` load no chunk this
+  diff touches, and the eager entry moved **3 bytes**.
   **No human has seen the rendered result in a browser** — read from screenshots at 1440, 390
-  (dpr 2) and 320 (dpr 3): the seven-card grid, Kathie's brief with and without the column
-  fix, a brief with a screenshot, the unknown-slug state and reduced motion.
+  (dpr 2) and 320 (dpr 3): the seven-card grid, Kathie's brief with and without her artwork,
+  a brief with a screenshot, the unknown-slug state and reduced motion.
 
 - **2026-08-30**: p4·M5 "THE FUTURE PAGE, CURRENT AND REORGANISED" (app/) — every dated claim
   on `/future` was stale, and one of them was stale in TEN PLACES AT ONCE.
