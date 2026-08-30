@@ -67,7 +67,7 @@ Each row names the mechanism. Every one is in this repository.
 | **The fonts are local too.** | 12 `woff2` in `app/public/fonts/`. No CDN, no `fonts.googleapis`, no `fonts.bunny.net`. The count of third-party browser requests is zero and is gated at zero. |
 | **It works with JavaScript off.** | Every static route is prerendered to real HTML at build time by `app/scripts/prerender.mjs`. Tor Browser at its Safest setting reads this site whole. Live data enriches a page; it is never the price of admission. Gated by `app/verify-nojs.mjs` and `app/verify-degraded.mjs`. |
 | **No number is invented.** | See [Real values, or none](#real-values-or-none) below. |
-| **Usable at 390px, with a 12px type floor on phones.** | Below 720px `app/src/styles-legibility.css` lifts the label token to **12px**, and `app/verify-mobile.mjs` measures the *rendered* size of every visible text element on all 18 routes at 390 and at 320 — with **no class exemptions** — alongside tap targets and horizontal overflow. Above 720px there is no rendered floor and this file will not claim one: labels resolve to 11px and a few chip classes to 10.5. `app/verify-legibility.mjs` holds the other half, on the source rather than on the screen — it pins the six-step type scale and fails the build on any inline or SVG `fontSize` under **11px**. |
+| **Usable at 390px, with a 12px type floor on phones.** | Below 720px `app/src/styles-legibility.css` lifts the label token to **12px**, and `app/verify-mobile.mjs` measures the *rendered* size of every visible text element on all 18 routes at 390 and at 320 — with **no class exemptions** — alongside tap targets and horizontal overflow. Above 720px there is no rendered floor and this file will not claim one: labels resolve to 11px, and a handful of chip and marker classes sit lower still. `app/verify-legibility.mjs` holds the other half, on the source rather than on the screen — it pins the six-step type scale and fails the build on any inline or SVG `fontSize` under **11px**. |
 | **Reduced motion costs you no information.** | `app/verify-reduce.mjs` drives all 27 animated surfaces — 21 simulators and 6 mempool views — under `prefers-reduced-motion: reduce`, and fails on any *running* animation or on any SMIL element at all, with **no allowlist**. Its own header is careful about what that does and does not prove: stopping motion is necessary and not sufficient, because the frame a simulator freezes on is a claim about content rather than about movement. Those frozen frames are checked by reading them, not by counting animations. |
 
 ### Real values, or none
@@ -199,11 +199,18 @@ They are not chain data, not historical data, and not a prediction of anything.
 
 **The rule is the property, not the list.** A surface that invents a figure
 labels it; a surface that reports one names where it came from, through the
-provenance vocabulary every displayed figure on this site carries. That is what
-`app/verify-provenance.mjs` and `app/verify-prng.mjs` enforce, and it is why
-this paragraph deliberately does not enumerate: the previous version of this
-sentence scoped the rule to `/learn` and missed the explorer entirely, and a
-count would go stale the same way the next time a surface is added.
+provenance vocabulary its displayed figures carry. **Two gates hold two halves
+of that, and neither holds the whole.** `app/verify-prng.mjs` bans the inventing
+call outside the simulators. `app/verify-provenance.mjs` proves a provenance
+badge cannot claim a freshness it has no way to know — a hardcoded
+`fresh="live"` stays green through a total outage, so every surviving literal is
+listed in that gate with a reason, checked in both directions. **What neither
+gate asserts is that every figure carries a badge in the first place**: that is
+a convention this project holds itself to, not a build failure, and this file
+will not describe it as one. The paragraph deliberately does not enumerate the
+surfaces either: the previous version of this sentence scoped the rule to
+`/learn` and missed the explorer entirely, and a count would go stale the same
+way the next time a surface is added.
 
 The explorer is the one that most needs saying, because it wears an explorer's
 clothes — block tiles, confirmation depths, a fee ladder, a transaction feed —
