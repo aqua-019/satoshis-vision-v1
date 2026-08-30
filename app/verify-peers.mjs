@@ -631,6 +631,12 @@ try {
    * grid settling and the dialog arriving later; that is what the assertion
    * below measures, by giving it no settle time at all. */
   const preRendered = readFileSync(join(__dirname, 'dist', 'operate', 'peers', 'index.html'), 'utf8');
+  /* FLOORED, because an absence over an empty or emptied document is true and
+     useless — v6.1.3 shipped exactly that on /simulate. The floor is content
+     the same file must carry either way. */
+  const preBriefs = (preRendered.match(/data-peer-brief=/g) || []).length;
+  R.ok(preBriefs === expectedPartnerCount,
+    `§10 · the prerendered document actually carries its ${expectedPartnerCount} brief controls (${preBriefs}) — floor for the absence below`);
   R.ok(!/role="dialog"/.test(preRendered),
     '§10 · the prerendered document carries no dialog — one file serves all seven addresses, so the brief is opened by hydration and this gate says so rather than claiming a server-rendered first paint');
 
@@ -675,7 +681,11 @@ try {
     `§10 · clicking a brief control writes that brief's address (?p=${afterOpen.searchParams.get('p')})`);
 
   await page.keyboard.press('Escape');
-  await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+  /* Reported, not bare — the same shape this file's §2 note argues for, and it
+     was left bare here in the very changeset that wrote that note. */
+  const closed = await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 })
+    .then(() => true).catch(() => false);
+  R.ok(closed, '§10 · Escape closes the brief (precondition for the URL check below, and a bare wait here would abort the run rather than name the failure)');
   const afterClose = new URL(page.url());
   R.ok(afterClose.searchParams.get('p') === null && afterClose.pathname === '/operate/peers',
     `§10 · closing clears the param rather than pinning a closed brief into the URL (${afterClose.pathname}${afterClose.search})`);
@@ -696,6 +706,37 @@ try {
     `§10 · clicking the CARD BODY opens that card's brief (dialogs ${afterCard.dialogs}, brief ${afterCard.brief}) — it used to open the partner's site in a new tab`);
   R.ok(afterCard.href === `/operate/peers?p=${peerIds[0]}`,
     `§10 · …and the card click stayed on this origin, at the brief's address (${afterCard.href})`);
+
+  /* THE IN-APP CROSS-LINK, which is the assertion this release most needed and
+   * did not have. Moving the open-brief state into the URL made `onClose` write
+   * HISTORY, and every in-app destination in the dialog ran `onClose()` beside
+   * its navigation — so the close RACED the navigation and won: clicking "The
+   * Superstress hub · on this site" left the reader back on /operate/peers,
+   * having never reached the hub, with Back going FORWARD to the destination.
+   *
+   * NOTHING SAW IT. The full 39-gate chain was green, verify-peers was green at
+   * 59, and verify-future's own §8/§9/§10 all passed — because every one of
+   * them asserts what the dialog CONTAINS, and this is about what happens after
+   * you leave it. An assertion that follows the link is the only shape that
+   * catches it. */
+  await page.goto(`${BASE}/operate/peers?p=superbrain`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('[data-eco-brief="superbrain"]', { timeout: 8000 }).catch(() => {});
+  const xlink = page.locator('[role="dialog"] a.v6-res', { hasText: 'Superstress hub' });
+  const xn = await xlink.count();
+  R.ok(xn === 1,
+    `§10 · the Superbrain brief carries exactly one in-app cross-link to drive (${xn}) — floor: a zero here would make the assertion below pass over nothing`);
+  if (xn === 1) {
+    await xlink.first().click();
+    await page.waitForTimeout(1200);
+    const landed = new URL(page.url()).pathname;
+    R.ok(landed === '/operate/superstress',
+      `§10 · following an in-app cross-link OUT of a brief actually arrives (${landed}) — before this release's fix it landed back on /operate/peers, because the close wrote history and raced the navigation`);
+    await page.goBack();
+    await page.waitForTimeout(800);
+    const back = new URL(page.url());
+    R.ok(back.pathname === '/operate/peers' && back.searchParams.get('p') === 'superbrain',
+      `§10 · …and Back returns to the BRIEF the reader came from, not past it (${back.pathname}${back.search})`);
+  }
 
   /* ══ §11 · NO SCREENSHOT RESERVATION MAY SHIP (p4·M6b) ════════════════
    *

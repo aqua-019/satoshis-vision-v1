@@ -23,7 +23,7 @@
  */
 
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { V6Modal } from "./V6Modal";
 import { SIM_IDS, type EcoEntry } from "./data";
@@ -50,8 +50,41 @@ function simIdOf(simLink: string | undefined): string | null {
 
 export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const titleId = React.useId();
   const simId = simIdOf(e.simLink);
+
+  /* p4·M6b — CLOSE ONLY WHEN THE READER IS STAYING ON THIS PAGE.
+   *
+   * THE DEFECT THIS FIXES WAS INTRODUCED BY THE SAME RELEASE, and 39 green
+   * gates did not see it. Every in-app destination in this dialog used to run
+   * `onClose()` beside its navigation, on the sound rule that "a modal left
+   * open over the route it just sent you to is the defect one layer up". That
+   * was free while `onClose` was a React state reset. It stopped being free
+   * when /operate/peers moved its open-brief state into the URL: `onClose` is
+   * now `setPeer("")`, which WRITES HISTORY, so the close raced the navigation
+   * and won.
+   *
+   * Measured on the built branch before this fix — clicking "The Superstress
+   * hub · on this site →" inside the Superbrain brief:
+   *
+   *     before : /operate/peers?p=superbrain
+   *     after  : /operate/peers          <- never reached the hub
+   *     Back   : /operate/superstress    <- Back goes FORWARD to the destination
+   *
+   * Two pushes 5.8ms apart, the destination then the page you were already on.
+   * The reader followed a link and was returned to where they started.
+   *
+   * The dialog does not need closing when the destination is a DIFFERENT
+   * route: the route change unmounts this dialog's host page and the dialog
+   * with it. It DOES need closing for a same-page destination, which is the
+   * case the original rule was written for and which no entry uses today —
+   * kept because the next in-app link somebody adds may be one. */
+  const leaveOpenTo = (dest: string) => {
+    try { return new URL(dest, window.location.origin).pathname !== pathname; }
+    catch { return false; }
+  };
+  const closeUnlessLeaving = (dest: string) => { if (!leaveOpenTo(dest)) onClose(); };
 
   return (
     <V6Modal open={open} onClose={onClose} labelledBy={titleId}>
@@ -159,7 +192,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
               <button
                 type="button"
                 className="proto-btn"
-                onClick={() => { onClose(); navigate(`${R.LEARN_SIM}?p=` + simId); }}
+                onClick={() => { const d = `${R.LEARN_SIM}?p=` + simId; closeUnlessLeaving(d); navigate(d); }}
                 style={{ alignSelf: "flex-start", borderColor: e.c, color: e.c, boxShadow: `0 0 10px ${e.c}44` }}
               >
                 ▶ {e.simLabel}
@@ -183,7 +216,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                   type="button"
                   className="proto-btn"
                   data-eco-cta={e.id}
-                  onClick={() => { onClose(); navigate(e.ctaLink as string); }}
+                  onClick={() => { const d = e.ctaLink as string; closeUnlessLeaving(d); navigate(d); }}
                   style={{ alignSelf: "flex-start", borderColor: e.c, color: e.c, boxShadow: `0 0 10px ${e.c}44` }}
                 >
                   {e.ctaLabel} →
@@ -242,7 +275,14 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 broken: a shot that silently degrades to a placeholder is a
                 gate that can never go red, and verify-peers §9 asserts every
                 src resolves precisely so this branch is never reached. */}
-            {e.shot ? (
+            {/* p4·M6b — no inner `e.shot ?` here: the COLUMN above is now guarded
+                on the same expression, so an inner test could only encode a
+                state no entry can produce (wrapper rendered, figure absent).
+                It discriminated until this release, because the same div also
+                rendered the `slots` reservations and a slots-only entry took
+                it legitimately. Deleting the slots and guarding the column in
+                one release is what made it dead. */}
+            {(
               <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                 <img
                   src={e.shot.src}
@@ -261,7 +301,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                   captured {e.shot.captured}
                 </figcaption>
               </figure>
-            ) : null}
+            )}
             </div>
           ) : null}
         </div>
@@ -282,7 +322,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                  modal left open over the route it just sent you to is the
                  same defect one layer up. */
               href && href.startsWith("/") ? (
-                <Link key={label} className="v6-res" to={href} onClick={onClose}>
+                <Link key={label} className="v6-res" to={href} onClick={() => closeUnlessLeaving(href)}>
                   <span className="led" style={{ background: e.c, boxShadow: `0 0 6px ${e.c}` }} />{label} →
                 </Link>
               ) : href ? (
