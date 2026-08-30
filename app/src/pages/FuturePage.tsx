@@ -84,11 +84,12 @@ function splitProtocols() {
  * grew a 17px horizontal scroll — only when the proxy was down, which is the
  * state real visitors are in whenever it is.
  */
-function ProtocolBand({ items, kicker, note, section, onOpen, morph, popup }: {
+function ProtocolBand({ items, kicker, note, section, start, onOpen, morph, popup }: {
   items: readonly FutureProtocol[];
   kicker: string;
   note?: string;
   section: string;
+  start: number;
   onOpen: (id: string) => void;
   morph: string | null;
   popup: string | null;
@@ -100,7 +101,7 @@ function ProtocolBand({ items, kicker, note, section, onOpen, morph, popup }: {
       {note ? <p className="mono dim" style={{ margin: "0 0 12px", fontSize: "var(--fs-body)" }}>{note}</p> : null}
       <div className="v6-proto-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 14 }}>
         {items.map((p, i) => (
-          <div key={p.id} className="v6-stagger" style={{ ["--stagger-i" as never]: String(i), minWidth: 0 }}>
+          <div key={p.id} className="v6-stagger" style={{ ["--stagger-i" as never]: String(start + i), minWidth: 0 }}>
             <ProtocolCard p={p} onOpen={() => onOpen(p.id)} morphed={morph === p.id && popup !== p.id} />
           </div>
         ))}
@@ -124,6 +125,25 @@ export function FuturePage() {
   // Pure function of two module constants, so it is computed once rather than
   // per render — and never memoised on state it does not read.
   const bands = React.useMemo(splitProtocols, []);
+  // D0661 — the cascade is ONE sequence down the page, not one per band.
+  // `--stagger-i` is a GLOBAL index in the bands' own display order, DERIVED
+  // from their lengths rather than written down, so a card that moves between
+  // bands keeps the run contiguous and no literal can drift.
+  //
+  // This is a REGRESSION FIX and the numbers are worth keeping. The reorg
+  // split one grid into three, each restarting at 0, and `/future` measured
+  // delays [0, 45, 0, 0, 45]ms — five cards, TWO distinct, with two pairs
+  // firing simultaneously — against `/operate/peers`' untouched
+  // [0, 45, 90, 135, 180]. `verify-discrete` §5 owns this property and caught
+  // it at position 28 of the full e2e chain. NOTHING in this release's own
+  // gate could have: `data-future-section` markers pin where a section SITS
+  // and say nothing about how its children ARRIVE, so a reorg that preserves
+  // order can still break the cascade with every new assertion green.
+  const bandStart = {
+    next: 0,
+    live: bands.next.length,
+    horizon: bands.next.length + bands.live.length,
+  };
 
   // D0666 — the popups are no longer unmounted on close. V6Modal now plays an
   // exit before it removes itself, and it cannot do that if the component
@@ -212,7 +232,7 @@ export function FuturePage() {
           All of that now lives in <ProtocolBand> above, which the three bands
           share — the wrapper, the index and the grid are written once. */}
       <ProtocolBand
-        section="next" items={bands.next} onOpen={openProtocol} morph={morph} popup={popup}
+        section="next" start={bandStart.next} items={bands.next} onOpen={openProtocol} morph={morph} popup={popup}
         kicker="Landing next · one hard fork"
         note="FCMP++ and Carrot activate together. The working plan for the release is titled FCMP++/Carrot and merges both before a single activation task."
       />
@@ -258,14 +278,14 @@ export function FuturePage() {
             item. It arrives here by carrying a `live` sentence, not by being
             named. */}
         <ProtocolBand
-          section="live-protocols" items={bands.live} onOpen={openProtocol} morph={morph} popup={popup}
+          section="live-protocols" start={bandStart.live} items={bands.live} onOpen={openProtocol} morph={morph} popup={popup}
           kicker="…and one you can run on mainnet today"
         />
       </div>
 
       {/* BAND 3 · later forks. */}
       <ProtocolBand
-        section="horizon" items={bands.horizon} onOpen={openProtocol} morph={morph} popup={popup}
+        section="horizon" start={bandStart.horizon} items={bands.horizon} onOpen={openProtocol} morph={morph} popup={popup}
         kicker="Further out · later forks"
       />
 

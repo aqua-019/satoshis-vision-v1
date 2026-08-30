@@ -855,6 +855,24 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   with the rail. **`/future`'s section order was pinned by NOTHING**: zero `data-*`
   attributes, no gate reading a kicker, so a permutation preserving content shipped green
   through all 75 CI gates. Pinned now in document order, `verify-site` §12's idiom.
+  **AND THE REORG BROKE THE STAGGER CASCADE, WHICH THE FULL CHAIN CAUGHT AT POSITION 28 AND
+  THIS RELEASE'S OWN GATE STRUCTURALLY COULD NOT.** Each band restarts `--stagger-i` at 0, so
+  one cascade down the page became three, and `/future` measured delays
+  **[0, 45, 0, 0, 45]ms — five cards, TWO distinct, two pairs firing simultaneously** —
+  against `/operate/peers`' untouched [0, 45, 90, 135, 180, 225]. `verify-discrete` §5 owns
+  that property and reds on it by name. **NOTHING in `verify-future` could have seen it**:
+  `data-future-section` markers pin where a section SITS and say nothing about how its
+  children ARRIVE, so a reorg preserving content, order and membership breaks the cascade with
+  every new assertion green. That is this file's own narrower-subject family, arriving inside
+  the gate written to protect the very change that broke it. `--stagger-i` is a GLOBAL index
+  now, DERIVED from the bands' own lengths rather than written down, so a card moving between
+  bands keeps the run contiguous: **[0, 45, 90, 135, 180], 5 distinct, steps [45, 45, 45, 45]**,
+  and the reduce polarity still reads all-zero with zero animations. The two polarities came
+  from the REGRESSION rather than from a mutation, which is the strongest form of that
+  transcript and the only one that costs nothing to produce.
+  **AND THE CHAIN THAT FOUND IT ABORTED AT 28 OF 39, so eleven gates never ran** — the 27
+  green ones printed above the red are not a pass of the suite, they are the prefix of an
+  abort. Read the recorded exit, never the count of green lines.
   **THE STRESSNET BRIEF.** Slot 1 is satisfied and slot 2 deleted, under one rule rather than
   two special cases: a slot with an image ships and carries its date, a slot without one does
   not exist. Reusing `peer-superbrain.webp` is a DECISION — measured, `/future` opens exactly

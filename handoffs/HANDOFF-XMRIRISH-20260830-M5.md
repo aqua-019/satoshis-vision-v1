@@ -170,6 +170,11 @@ The 403 is REPO-SCOPED, not host-wide — the same host answers 200 for this rep
 earlier draft of this report said "api.github.com answers 403 here", which is the
 scope-of-a-premise defect stated one section above.
 
+**One regression, found by the full chain and fixed:** the three-band reorg restarted the
+D0661 stagger index per band, so `/future`'s five cards read [0, 45, 0, 0, 45]ms — two
+distinct delays, two pairs firing together. `--stagger-i` is now a global index derived from
+the bands' own lengths: [0, 45, 90, 135, 180], matching `/operate/peers` exactly.
+
 **M6b constraints honoured:** `EcoEntry.id` values are untouched; the only shape change is
 two optional additive fields (`ctaLink`/`ctaLabel`), ledgered in the PR body; slot deletion
 applies the general rule to the entry this PR touches and does NOT sweep Superbrain's two;
@@ -192,6 +197,12 @@ no placeholder added anywhere; no seventh peer.
   Extending the scenario to the width where the subject is NOT inert found a real defect.
 - **A plausible mechanism is not a measurement, even inside a correction.** I explained a
   gate defect with "two dialogs are mounted", which measurement refutes (max is one).
+- **A gate written FOR a change can be structurally blind to what that change breaks.** The
+  reorg's own new assertions pin where each section SITS; the cascade is about how its
+  children ARRIVE. Splitting one grid into three restarted `--stagger-i` per band and
+  `/future` measured [0, 45, 0, 0, 45]ms with every new assertion green. `verify-discrete`
+  §5 — a gate this release never touched — caught it at position 28 of the full chain. Run
+  the WHOLE chain, not the gate you just wrote.
 - **A reachability result is scoped to what it was measured on.** I wrote "api.github.com
   answers 403 here" from two third-party repo probes, in a session that was itself opening a
   PR through that host. Measured properly: 200 for this repo, 403 for the two source repos,
