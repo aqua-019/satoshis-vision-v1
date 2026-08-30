@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260830-M6b
 branch: claude/new-session-5b7hz3
-status: in_progress
+status: done
 written_by: claude-code (manual mode — prompt-driven)
 owner: claude-code
 ---
@@ -105,12 +105,61 @@ node verify-bundle.mjs
 
 ## 7 · REPORT
 
-status:
-pr:
-commits:
-deps added:
+status: done
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/203 (draft)
+commits: 8 on `claude/new-session-5b7hz3`, base `ce87559`
+deps added: none
+
+verification (shipping tree):
+  · `npx tsc --noEmit` exit 0
+  · `npm run build` exit 0
+  · `npm run verify:static` exit 0, no reds
+  · `npm run verify:e2e` **E2E_EXIT=0, 39 of 39 gates, zero reds** — read off the
+    log's own recorded exit, not the wrapper's
+  · `node verify-bundle.mjs` 32 passed · 0 failed
+  · verify-peers 44 → 64 · verify-future §8 6 → 12 · verify-origins +3 ·
+    verify-protocol 61 → 62
+  · six break tests (M1-M6), every one red where intended; M4 exposed a defect in
+    this release's own gate and M4b then reds 16 across five sections
+  · census RECOUNTED and UNCHANGED — 89 / 85 / 22 / 39 / 75 / 6 — instrument
+    controlled against six commits
+  · budgets residual ZERO on both halves; cssGz byte-identical; 76 = 76 chunks
+
 deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+  · §1 (badge) and §1b (medallion) NOT STARTED — neither asset exists in the
+    tree, the history or this session's uploads. Reported, not guessed.
+  · §4b's three options were moot: coverage measured 7/7, not the 4/7 the brief
+    asserted, so the click changed uniformly.
+  · §4e's sweep found SEVEN reservations, not two. The five on
+    /operate/superstress are NOT deleted: verify-superstress §6b asserts
+    `shotSlots >= 1` on them as a deliberate paired control.
+  · Kathie ships with NO screenshot (artwork undelivered) and no box claiming one.
+  · §2 LICENSE and §3 the X handle: reported in the PR, files untouched.
+
+notes for ARCHITECTURE.md patch: none — no new route, no new module, no new
+stylesheet rule.
+
+open questions (all in the PR body):
+  · LICENSE item 3 — two drafted replacements, operator's choice
+  · the canonical host (both apex and www answer; no <link rel="canonical"> exists)
+  · the X handle
+  · whether to delete the five /operate/superstress reservations in a follow-up
 
 ## 8 · LOOP FEEDBACK
+
+- 2026-08-30 · The brief's §4b named a hard dependency ("kyc.rip has NO EcoPopup,
+  Superbrain + XMRHUB are blank placeholders") that measurement refuted in one
+  command. Three of its options existed only to route around it.
+- 2026-08-30 · Three delivered assets and two cited documents (`INDEX-AND-ORDER.md`,
+  `claude/mockups/peers-grid-3x3.html`) were absent. p4·06 recorded the same
+  absence against the same mockup filename. A brief that says "the operator
+  approved X, read it" must carry X into the repo.
+- 2026-08-30 · Eight parallel readers missed the one gate that would have HUNG,
+  because the reader enumerating click-dependent gates never stated its grep
+  scope. A completeness critic found it. Keep the critic.
+- 2026-08-30 · The full 39-gate chain caught two defects that the single relevant
+  gate did not: a self-referential hex literal (verify-explorer, position 17) and
+  a hardcoded row count (verify-protocol, position 20). Run the whole chain.
+- 2026-08-30 · The pre-merge adversarial audit found a REAL regression this
+  release introduced that all 39 green gates missed — closing a brief wrote
+  history and raced the in-app navigation. Worth its cost.

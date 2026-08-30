@@ -975,13 +975,15 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   accents' own range was added before the answer meant anything.
   **BUDGETS: RESIDUAL ZERO ON BOTH HALVES, cssGz BYTE-IDENTICAL, NOTHING MINTED.** Paired per
   chunk STEM against a frozen build of `ce87559`: **73 of 77 slots SIZE-IDENTICAL**, four
-  moved — `repoPulse` **+1,391** (the chunk `data.ts` lands in) · `EcoPopup` **−416** (the
-  deleted slot markup paying for part of it) · `TrustedPeersPage` **+106** · the EAGER entry
-  **+3**, identified by reading `dist/index.html`'s own `<script src>` rather than by
+  moved — `repoPulse` **+1,384** (the chunk `data.ts` lands in) · `EcoPopup` **−277** (the
+  deleted slot markup, net of the navigation guard) · `TrustedPeersPage` **+106** · the EAGER
+  entry **+3**, identified by reading `dist/index.html`'s own `<script src>` rather than by
   basename, since the `index` stem holds two chunks and its lazy member is byte-identical at
-  2,253. Lazy 1,391 − 416 + 106 = **+1,081 = `lazyJsRaw`'s whole delta**; +1,081 + 3 =
-  **+1,084 = `totalJsRaw`'s whole delta**. **THE RE-MEASURE RULE FIRED**: an earlier reading
-  was −456 / +1,041 / +1,044, and a later CODE edit — 408468c's `e.shot ? "col-2" : undefined`
+  2,253. Lazy 1,384 − 277 + 106 = **+1,213 = `lazyJsRaw`'s whole delta**; +1,213 + 3 =
+  **+1,216 = `totalJsRaw`'s whole delta**. **THE RE-MEASURE RULE FIRED THREE TIMES, and every
+  ceiling was GREEN through all of them**: readings of −456 / +1,041 / +1,044, then −416 /
+  +1,081 / +1,084, then the shipping −277 / +1,213 / +1,216. The last move is the pre-merge
+  audit's own navigation fix, which is real code. The middle one was a CODE edit — 408468c's `e.shot ? "col-2" : undefined`
   conditional — moved `EcoPopup` by 40 B with every ceiling GREEN throughout. (A first draft
   of this sentence blamed "two later COMMENT edits", which is impossible: the build minifies,
   so no comment survives into any chunk — `grep -c 'p4·M6b' dist/assets/EcoPopup-*.js` is 0.
@@ -992,8 +994,8 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   three digits at identical length cost nothing. `cssGz` **BYTE-IDENTICAL at 18,586** against a 414 B
   margin — the release adds no stylesheet rule at all, which was the design constraint rather
   than the outcome. `CHUNK_COUNT` **76 = 76**. **NO CEILING RAISED, because none was crossed —
-  and the margin is said out loud: `/operate/peers` is now 105,249 of 106,000, a margin of
-  751 B**, which is where the eighth peer reds. **NOT "the tightest recorded" — that
+  and the margin is said out loud: `/operate/peers` is now 105,343 of 106,000, a margin of
+  657 B**, which is where the eighth peer reds. **NOT "the tightest recorded" — that
   superlative was written here and is false**: this file already records `/about/sources` at
   **642 B**, `/future` at **497 B** and `/future` again at **310 B**. It is the tightest
   margin on THIS route, which is a checkable claim and the one worth making.
@@ -1031,7 +1033,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   otherwise, and the failure was `verify-coldboot-live` §0a refusing a dist built before the
   last commit. The run was VOID, not a pass. `set -o pipefail`, and read the recorded exit.
   **NOT FIXED, and named**: the five `EmptySlot` reservations on `/operate/superstress`
-  (above); `/operate/peers`' 751 B margin; the three undelivered assets; `LICENSE` item 3,
+  (above); `/operate/peers`' 657 B margin; the three undelivered assets; `LICENSE` item 3,
   which names exchange widgets that no longer exist — quoted in the PR with two drafted
   replacements and **the file untouched**, because a licence is not a feature PR's to change;
   and the X handle, which stays the honest `X · handle pending` null because the operator has
