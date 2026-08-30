@@ -876,6 +876,128 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-30**: p4·M6 "THE HONESTY REPAIR" (README + app/) — six sentences and one
+  selector, in the file whose own thesis is *"an ethos you cannot check is a slogan."*
+  **TEN GATES GREEN, FIVE BREAK TESTS RED WHERE INTENDED, BUDGETS TO RESIDUAL ZERO AND A
+  CONTROLLED CENSUS — AND NONE OF IT COULD SEE ANY OF THIS**, because every one of these is
+  a CLAIM rather than a COMPUTATION. A gate suite proves what it asserts and says nothing
+  about the sentences wrapped around it. **The adversarial pass belongs before the report,
+  not after the merge.**
+  **THE BRIEF'S OWN REPLACEMENT FOR §1a WOULD HAVE BEEN FALSE IN THE SAME SHAPE AS THE
+  CLAIM IT REPLACED, and one measurement caught both.** The shipped row said "nothing under
+  12px"; measured at 1440 on `/about/site`, **130 visible sub-12px text nodes — 103 at 11px,
+  24 at 11.5px, 3 at 10.5px** — against **0 at 390**, which reproduces the brief's figure
+  exactly. So far so good. But the brief prescribed "a **hard 11px** type floor …
+  `verify-legibility.mjs` fails the build on any type under 11px", and BOTH halves of that
+  are wrong: the three 10.5px nodes are `.pill` (`styles-legibility.css:78`, with
+  `.rail h6`, `.stat .lbl` and `.proto-panel h6` at the same size), so there is **no hard
+  11px RENDERED floor above 720px**; and that gate's floor is on the **SOURCE** — the
+  six-step token scale plus inline and SVG `fontSize` literals — and it asserts nothing
+  about a rendered CSS selector, which CLAUDE.md already records in as many words. **A brief
+  that has correctly diagnosed a false claim can still prescribe a false one**, and the row
+  now says out loud that above 720px there is no rendered floor at all.
+  **§1b: A GATE WAS CITED FOR THE CLAIM ITS OWN HEADER DISCLAIMS.** `verify-reduce.mjs:54-55`
+  reads, verbatim, *"Do not add a 'no motion' assertion and call the contract discharged"* —
+  and the README cited it for "reduced motion loses no information". Split into its own row,
+  citing it for what it gates (27 surfaces, no running animation and no SMIL element, **no
+  allowlist**) and naming the limit it names for itself: a frozen frame is a claim about
+  content, checked by reading it.
+  **§1c: "RANDOMNESS EXISTS IN EXACTLY TWO PLACES" — THERE IS A THIRD, AND THE SENTENCE ALSO
+  CONTRADICTED ITSELF FOUR LINES LATER.** `useMarketHistory.ts:75` and `usePolling.ts:172`
+  each draw one number from **`crypto.getRandomValues`** per client and jitter their poll and
+  retry schedules against it; `usePolling.ts:162` states in the file that this is a real
+  entropy source and NOT the banned call. And the lead-in promised "neither of them renders a
+  value" directly above a bullet saying the simulators are *supposed* to. Reframed to what
+  the rule is actually about — **three sources, exactly one of which can reach a figure you
+  read, and it is the one that is meant to.** Both other bullets produce milliseconds to wait.
+  (Correction to the brief: it describes the second call site as "history sampling". Measured
+  — `jitterMsMH` is the twin of `usePolling`'s `jitterMs`. Both are schedule jitter.)
+  **§1e: TRUE FOR FETCHES, FALSE FOR CLICKS.** CSP governs subresources and connections and
+  does **not** govern top-level navigation, so "your browser reaches no third party" is false
+  the moment a reader follows an outbound link. The row is now "**no request leaves this
+  origin while you are on it**" with the carve-out named in the row rather than half-implied
+  two rows down.
+  **§2: A REMOVED CONTROL DESCRIBED IN THE PRESENT TENSE.** `app/README.md:252-260` still
+  said v6.1.2 "mounted the same Theme control directly on Main Home" and that "both toggles
+  render from one definition". p4·M2 removed that mount. Measured: `/` prerenders **zero**
+  `theme-toggle`, and a repo-wide sweep finds **one** mount (`DesignPanel.tsx:103`). Rewritten
+  to keep the history and lose the present tense, copying `ThemeToggle.tsx`'s own framing —
+  that docstring was already correct, which is the tell that only the README rotted.
+  **§3: A HEADER SENTENCE DESCRIBING A SEQUENCE THE PAGE HAD STOPPED RENDERING.**
+  `SitePage`'s `sub=` enumerated mission → **overview** → record → ethos → operator: the
+  order from BEFORE p4·M2 moved support second and the derived overview last. **Nothing could
+  see it** — §12 pins DOM order and is blind to prose; §1 reads the prerendered text and is
+  blind to order. **THE COUPLING IS REMOVED, NOT GATED**, and that is the decision rather than
+  the shortcut: a gate matching the sentence against the section list would pin the two
+  together forever and make every future reorder an edit in two places, which is the
+  two-lists-one-truth defect this file records repeatedly. A sentence that names no sequence
+  has no sequence left to rot. Verified first that nothing reads the string — the only hit
+  repo-wide is its own line.
+  **§4: THE WEIGHT ASSERTION REDDENED WITHOUT DISCRIMINATING, AND "42px vs 42px" WAS THE
+  SIGNATURE OF THE DEGENERACY RATHER THAN OF THE GATE WORKING.** Measured on this tree:
+  `[data-support-link] ~ a` matches **ZERO** elements and structurally always will — the CTA
+  is an only child of its `.chip-row`, so it has no following anchor sibling — so the whole
+  comparison rode on a **global** `a.v6-res` (2 matches, both 28px). That set is wider than
+  the claim ("bigger than the secondary links **beside** it") and it has a failure mode the
+  width hides: p4·M2's own break test gave the CTA `className="v6-res"`, which put the CTA
+  **into its own comparison set** and degenerated the assertion to `h > max(h, …)`, false
+  however the page renders. Now scoped by walking UP from `[data-site-section="support"]` to
+  the element that also holds the CTA, then `a:not([data-support-link])` — **the CTA can
+  never enter its own set**, so a red means the CTA actually got smaller. The non-vacuity
+  floor NAMES THE COUNT and requires **≥ 2**, because a set of 0 or 1 means the walk stopped
+  somewhere it should not have. It prints `2 in div.panel [Run a node · Mine Monero], tallest
+  28px` and `38px vs 28px`.
+  **FOUR BREAK TESTS, AND THE ONE THAT REFUSED IS THE FINDING.** GUARD 0 refused to start
+  unless the tree was clean and marker-free; every round proved its mutation applied by
+  `git diff`, treated a failed build as **VOID rather than a pass**, asserted a 200 from the
+  server before running, restored against the **COMMITTED BLOB**, swept for a bracketed
+  marker, and rebuilt between restore and re-measure.
+  **M-a REFUSED TO GO RED AND THE BRIEF'S PREDICTION WAS ARITHMETICALLY WRONG.** It says
+  dropping the CTA's inline `padding: "12px 20px"` will red §12 "and the message must show
+  the CTA's height BELOW the secondary max". Measured: **38px → 30px against 28px** — still
+  bigger, so the assertion is correctly green. `proto-btn` carries its own padding. The
+  mutation was too weak, not the gate blind. **M-a2** (`padding: 0, lineHeight: "10px"`)
+  crosses it and reds **`12px vs 28px`** with the floor still green at 2, which is what
+  proves the comparison had a real subject. · **M-b** the CTA given `className="v6-res"` →
+  reds **1** on the affordance, and **the weight line reads `42px vs 28px`, NOT an equal
+  pair** — that single line is the whole proof the self-inclusion is gone, since the old
+  selector produced 42-vs-42 on this exact mutation. · **M-c** the `sub=` line reverted to
+  the pre-reorder enumeration → **reds NOTHING**, exactly as required: §3 removed the
+  coupling rather than gating it, and adding a gate to make this red would undo the fix.
+  **AND REPORT THE SLACK, NOT THE TICK.** At ship the weight assertion passes by **10px**
+  (38 vs 28), so it absorbs an 8px shrink in silence — M-a *is* that measurement. That margin
+  is the size of the defect class the assertion cannot see, which is this file's own tolerance
+  doctrine arriving on the assertion this release rewrote.
+  **BUDGETS: ONE TERM, RESIDUAL ZERO, cssGz AND THE WHOLE EAGER HALF BYTE-IDENTICAL.**
+  `cssGz` **18,586 → 18,586** and `eagerJsRaw` **264,457 → 264,457**, which is the brief's own
+  test that nothing was added: this change introduces no module, no import and no stylesheet
+  rule. The single mover is the `sub=` string at **exactly −9 B** (93 → 84 bytes; 11 characters
+  saved less 2 for the em-dash), and −9 is `lazyJsRaw`'s WHOLE delta (990,623 → 990,614) and
+  `totalJsRaw`'s WHOLE delta (1,255,080 → 1,255,071). `CHUNK_COUNT` **76 = 76**. No ceiling
+  raised or approached. `verify-site` **81 passed · 0 failed, count UNCHANGED** — two
+  assertions rewritten, none added, which is the correct outcome for a release that sharpens
+  an assertion rather than adding one.
+  **THE SWEEP, NOT A SPOT-CHECK.** Every `verify-*.mjs` filename and every `app/`/`api/` path
+  cited in `README.md` resolves on disk (8 gates, 18 paths, zero misses). `"Main Home"` swept
+  repo-wide: `app/README.md:258` was the only remaining present-tense mount claim.
+  `"12px"` swept across every `.md`: `README.md:70` is now the only site-wide floor claim in
+  the repo's public prose, and it is true.
+  **NOT FIXED, and named.** `verify-mobile.mjs`'s own header says it measured "the fourteen
+  canonical routes" while it imports `ROUTES` from `scripts/routes.mjs` and runs **18** — the
+  same stale-prose family, in a file outside this PR's four. `claude/V2-VIEW-CONFORMANCE.md:256`
+  says "No text under 12px", but records the conflict in the next line and is a dated working
+  document. `handoffs/LOG.md:5` records "one `ThemeToggle` on Main Home and in ⌘ DESIGN" and is
+  correctly left: it is a dated record of what v6.1.2 did, and rewriting a dated measurement
+  falsifies it rather than refreshing it. **§1d needed nothing** — p4·M6b already re-scoped the
+  simulators clause to name `/operate/superstress/explorer`, so the brief's measurement of it
+  was true of `ce87559` and not of this branch; verified at HEAD before skipping.
+  **AND THIS LANDS IN PR #203 RATHER THAN ITS OWN PR**, because the session is pinned to one
+  branch. `SITE_PR` is NOT bumped and the LOG line records M6 under #203; the four-file claim
+  is proved for the substantive commit (`git diff --name-only HEAD~1 HEAD`), with the record
+  files named separately. **No human has seen the rendered result in a browser** — the `sub=`
+  line is the only visible change and it was read from the gate's own prerendered-text
+  assertion.
+
 - **2026-08-30**: p4·M6b "THE PEERS PAGE GETS ADDRESSES, AND THE PLACEHOLDERS GO" (app/ +
   README + CLAUDE.md) — a card that opened somebody else's site on first click now opens our
   brief, every brief has a URL a reader can post, and the reservation mechanism that rendered

@@ -847,3 +847,46 @@
   defect in this release's own gate** — a bare wait threw and killed the run at 8 assertions
   before §10 could speak; after the fix it reds 16 across five sections.
   verify-peers **44 → 59**.
+
+- XMRIRISH-20260830-M6 · done · p4·M6 "THE HONESTY REPAIR" — six claims in `README.md` /
+  `app/README.md` / `SitePage.tsx` that did not check out, and one `verify-site` §12
+  selector that reddened without discriminating. Shipped inside PR #203 (the session is
+  pinned to one branch), so `SITE_PR` stays 203 ·
+  https://github.com/aqua-019/satoshis-vision-v1/pull/203
+  **The whole point in one line: a gate suite proves what it asserts and says nothing about
+  the sentences wrapped around it.** Ten gates green, break tests red where intended,
+  budgets to residual zero — and none of it could see any of this.
+  **The brief's own replacement for §1a would have been false in the same shape as the claim
+  it replaced.** Measured 130 sub-12px nodes at 1440 on `/about/site` (103 @ 11 · 24 @ 11.5 ·
+  3 @ 10.5) against 0 at 390, reproducing the brief exactly — then measured its prescription
+  too: the three 10.5px nodes are `.pill`, so there is no hard 11px RENDERED floor above
+  720px, and `verify-legibility`'s floor is on the SOURCE (token scale + inline/SVG
+  `fontSize`), never on a rendered selector. The row now names two bands and says out loud
+  that above 720px there is no rendered floor.
+  §1b `verify-reduce.mjs` was cited for the claim its own header at `:54-55` disclaims in one
+  sentence · §1c a THIRD randomness source (`crypto.getRandomValues`, two call sites) and a
+  lead-in that contradicted itself four lines later · §1e CSP does not govern top-level
+  navigation, so the first row is now "no request leaves this origin **while you are on it**"
+  · §2 `app/README.md` still described p4·M2's removed Main Home ThemeToggle mount in the
+  present tense (measured: `/` prerenders ZERO `theme-toggle`, one mount in the tree) · §3
+  `SitePage`'s `sub=` enumerated the PRE-reorder section order and **the coupling is removed,
+  not gated** — a gate matching prose to the section list would pin them together forever.
+  §1d needed nothing: p4·M6b had already re-scoped the simulators clause.
+  §4: `[data-support-link] ~ a` matched **ZERO** and always will (the CTA is an only child of
+  its `.chip-row`), so the comparison rode on a global `a.v6-res` — which is how p4·M2's own
+  break test, by giving the CTA that class, put it into its own set and degenerated the
+  assertion to `h > max(h, …)`. **"42px vs 42px" was the signature of the degeneracy, not of
+  the gate working.** Now scoped by walking up from the section marker to the element holding
+  the CTA and self-excluded with `:not([data-support-link])`; the floor names the count and
+  requires ≥ 2. Prints `38px vs 28px`.
+  **M-a REFUSED TO GO RED and that is the finding**: the brief predicted dropping the CTA's
+  inline padding would put it below the secondary links; measured 38 → **30px against 28**,
+  so the assertion is correctly green — `proto-btn` carries its own padding. M-a2 crosses it
+  and reds `12px vs 28px`. M-b reds on affordance with the weight line at **42px vs 28px, NOT
+  an equal pair** — the whole proof the self-inclusion is gone. M-c (revert `sub=`) reds
+  NOTHING, as required. Slack reported rather than a tick: at ship the assertion passes by
+  10px, so it absorbs an 8px shrink silently.
+  Budgets: `cssGz` **BYTE-IDENTICAL at 18,586** and `eagerJsRaw` byte-identical at 264,457 —
+  no module, no import, no stylesheet rule. One term, the `sub=` string at exactly **−9 B**,
+  which is `lazyJsRaw`'s and `totalJsRaw`'s whole delta. Chunks 76 = 76. `verify-site` **81
+  passed · 0 failed, count unchanged** — two assertions rewritten, none added.
