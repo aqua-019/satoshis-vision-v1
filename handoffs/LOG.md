@@ -890,3 +890,52 @@
   no module, no import, no stylesheet rule. One term, the `sub=` string at exactly **−9 B**,
   which is `lazyJsRaw`'s and `totalJsRaw`'s whole delta. Chunks 76 = 76. `verify-site` **81
   passed · 0 failed, count unchanged** — two assertions rewritten, none added.
+
+- XMRIRISH-20260830-M6c · done · p4·M6c "THE ARTWORK IS NOT DATED, AND THE COLUMN WAS GATED
+  BY NOTHING" — shipped inside PR #203, so `SITE_PR` stays 203 ·
+  https://github.com/aqua-019/satoshis-vision-v1/pull/203
+  **The operator's dependency premise was false on this branch and checking it is what
+  released the medallion from one of its two holds.** The hold cited "verify-site §12 is
+  STILL the pre-M6 version… p4·M6 has not run (SitePage.tsx, verify-site.mjs and
+  app/README.md are all untouched)". Measured: `a5358b8` touches all three,
+  `verify-site.mjs:633` is `a:not([data-support-link])`, and it ran green in-chain at 19 of
+  39 printing `38px vs 28px`. **The medallion is still held on the operator's OTHER and
+  independent ground — it is not export-ready** (1206x1154, not square, no alpha, corners
+  rgb(19,18,16) against a rgb(5,5,5) ground). No placeholder shipped; the three landing
+  options are the operator's to pick.
+  **The date was a true fact about the wrong subject.** p4·M6b rendered "artwork · supplied
+  2026-08-30" — the day the file reached us, which beside six real capture dates reads as
+  the age of the artwork. `EcoShot` is a DISCRIMINATED UNION now, so the wrong state is
+  untypeable rather than unwritten: a date on artwork is **TS2353**, an undated capture is
+  **TS2322**, a `.captured` read that has not narrowed on `kind` is **TS2339** — each proven
+  by applying the mutation and running tsc. Caption names its source instead: "artwork ·
+  supplied by Kathie", derived from `name`.
+  **AND THE SHOT COLUMN WAS GATED BY NOTHING.** K2 (an entry's `shot` deleted structurally so
+  it compiles) left all 69 assertions GREEN; a scoped grep for the column across verify-peers,
+  verify-future and verify-origins returns zero. p4·M6b's `408468c` could have been reverted
+  in silence. New §9 BICONDITIONAL read from `getComputedStyle`, not the class name, with a
+  new `data-peer-body` handle. `verify-peers` **67 → 70**.
+  **Four break tests, and the two that stayed green are the finding.** K1 the caption re-dated
+  → 2 reds, and `no SUPPLIED image is captioned as a capture` STAYS GREEN — proof the two are
+  independent, since "supplied 2026-08-30" never says "captured". K2 → green, and
+  verify-origins reads **"6 of the 7 rendered briefs"** and PASSES, which is the derived count
+  demonstrated rather than asserted. K3 the column fix reverted → green, because a full roster
+  gives the biconditional no zero-track subject. **K4 = K2+K3 → 1 red** — the two conditions
+  are JOINTLY NECESSARY, p4·M3's two-defence result inverted.
+  **The 543px ceiling measured at three dprs, not predicted**: 1440 dpr1 asks 498 device px
+  and gets 543 — ratio **1.09, oversupplied**; dpr2 **0.545**; dpr3 **0.363**; 390 dpr2
+  **0.763**; 390 dpr3 **0.508**. The phone is better than the desktop at the same ratio
+  because the column is narrower. Read from the captures, the dpr-3 softness is far gentler
+  than the arithmetic predicts — flat cel art with heavy outlines, not a photograph. Not
+  upscaled. Reserved box 543x405 = native, so decode shifts nothing.
+  **Budgets: residual zero, two terms, and a public/ image is not JS** — the artwork shipped
+  in M6b and no asset moves here. `EcoPopup` +16, `repoPulse` −22 = **−6 = lazyJsRaw's whole
+  delta = totalJsRaw's whole delta**. `cssGz` BYTE-IDENTICAL 18,586 · eager entry
+  BYTE-IDENTICAL 101,542 · chunks 76 = 76. **Measured slack**: `/operate/peers` **473 B** ·
+  `/future` **833 B** · `cssGz` **414 B** · lazy **2,392 B** · total **2,935 B**.
+  **My own stem splitter was wrong in the way CLAUDE.md already records** — `rsplit('-',1)`
+  against a Vite hash whose alphabet CONTAINS the dash, reporting 37 stems moved where 2 did;
+  the spurious pairs cancel exactly, which is what makes it easy to miss.
+  Census RECOUNTED and UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6**, instrument controlled
+  against SIX commits, all reproducing exactly including the invocation arithmetic and the
+  six orphans by name.

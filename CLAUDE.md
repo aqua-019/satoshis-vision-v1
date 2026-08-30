@@ -876,6 +876,132 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-30**: p4·M6c "THE ARTWORK IS NOT DATED, AND THE COLUMN WAS GATED BY NOTHING"
+  (app/) — the operator ruled that supplied artwork "carries no capture date because it is
+  not a capture". Acting on it found a second, larger thing: the shot COLUMN branch p4·M6b
+  shipped had no witness anywhere in the suite.
+  **THE OPERATOR'S OWN DEPENDENCY PREMISE WAS FALSE ON THIS BRANCH, AND CHECKING IT IS WHAT
+  RELEASED THE MEDALLION FROM ONE OF ITS TWO HOLDS.** The instruction held the medallion
+  because "verify-site §12's weight selector is STILL the pre-M6 version that self-includes —
+  p4·M6 has not run (SitePage.tsx, verify-site.mjs and app/README.md are all untouched on
+  this branch)". Measured: `a5358b8` touches all three files, `verify-site.mjs:633` reads
+  `a:not([data-support-link])`, and the gate ran green IN-CHAIN at position 19 of 39 printing
+  `2 in div.panel [Run a node · Mine Monero]` and `38px vs 28px`. The stated dependency is
+  discharged. **THE MEDALLION IS STILL HELD**, on the operator's other and independent
+  ground — it is not export-ready — which is the half that does not depend on the premise.
+  **THE DATE WAS A TRUE FACT ABOUT THE WRONG SUBJECT.** p4·M6b shipped
+  `captured: "2026-08-30"` on the artwork entry, rendering "artwork · supplied 2026-08-30".
+  That is the day the file reached us — a fact about our inbox. Sitting in a column beside
+  six real capture dates, a reader takes it for the age of the ARTWORK, which nobody here
+  knows. A capture's date is established by this site in the act of taking one; for an image
+  somebody sent us there is no such act and nothing to date.
+  **THE FIX IS A TYPE, NOT A CONVENTION.** `EcoShot` is now a DISCRIMINATED UNION —
+  `{…, kind: "capture", captured: string} | {…, kind: "artwork"}` — so the wrong state is
+  UNTYPEABLE rather than merely unwritten. Proven on three axes rather than asserted, each
+  mutation applied and `tsc` run: a date on artwork is **TS2353**, an undated capture is
+  **TS2322**, and a `.captured` read that has not narrowed on `kind` is **TS2339**. An
+  optional `captured?` would have expressed the same intent and left `.captured` readable —
+  and therefore renderable — on an artwork entry. Same mechanism as `EcoSlot`'s deletion:
+  do not gate a state you can refuse to be able to express.
+  The caption names the source instead — **"artwork · supplied by Kathie"**, derived from
+  `name` — so it says where the image came from without publishing a date nobody established.
+  **AND THE SHOT COLUMN WAS GATED BY NOTHING, WHICH A BREAK TEST FOUND AND A GREP CONFIRMED.**
+  p4·M6b's `408468c` shipped `className={e.shot ? "col-2" : undefined}` so a brief with no
+  screenshot gets no track reserved for one. K2 — one entry's `shot` block deleted
+  structurally so the mutation COMPILES — left **all 69 assertions GREEN**: the column
+  collapsed correctly and nothing could see either state. A scoped grep for
+  `col-2|gridTemplateColumns|grid-template` across `verify-peers`, `verify-future` and
+  `verify-origins` returns **zero**. The fix could have been reverted in silence.
+  New §9 assertion, a BICONDITIONAL rather than two independent checks, because the failure
+  that matters is a DISAGREEMENT between the data and the layout. Read from
+  `getComputedStyle`, never from the class name — `col-2` is what the source writes, computed
+  tracks are what the reader gets, and a class that stopped resolving to a grid would leave a
+  class check green. New `data-peer-body` handle rather than a positional selector, on
+  `verify-orb`'s recorded ground.
+  **FOUR BREAK TESTS, AND THE TWO THAT STAYED GREEN ARE THE FINDING.**
+  · **K1** the artwork caption re-dated to p4·M6b's exact wording → **2 named reds**, and
+    `no SUPPLIED image is captioned as a capture` **stays GREEN** — which is the whole proof
+    the two caption assertions are independent rather than redundant: "artwork · supplied
+    2026-08-30" never says "captured", so the pre-existing check passes it cleanly and the
+    date would have shipped forever. One assertion forbids the WORD, the other the DIGITS.
+  · **K2** an entry loses its shot → green everywhere, and `verify-origins` reads
+    **"declares a screenshot for 6 of the 7 rendered briefs"** and PASSES. The derived count
+    moving is the proof it derives; a literal would have reddened here. RECOUNT, never edit
+    the literal to fit — demonstrated rather than asserted.
+  · **K3** the column fix reverted → **green**, because with a full roster the biconditional
+    has no zero-track subject.
+  · **K4 = K2 + K3** → **1 red**, `2 tracks for the 6 briefs that declare one, 0 for the 1
+    that do not`. **The two conditions are JOINTLY NECESSARY**: a shotless entry AND code
+    that reserves anyway. Neither mutation alone produces the defect, which is p4·M3's
+    two-defence result inverted — there two defences were independently SUFFICIENT, here two
+    conditions are jointly necessary. **BLIND SPOT STATED IN THE GATE**: on the shipping
+    roster all seven partners declare a shot, so the zero-track arm has no live subject and
+    is exercised only by K4.
+  **THE 543px CEILING, MEASURED AT THREE DEVICE PIXEL RATIOS RATHER THAN PREDICTED.**
+  Native 543x405 against the CSS box the reader actually gets:
+  · **1440 dpr1** — box 498.2x372.1, asks 498 device px, ratio **1.09** — OVERSUPPLIED, not
+    merely adequate.
+  · **1440 dpr2** — asks 996, ratio **0.545** · **1440 dpr3** — asks 1495, ratio **0.363**.
+  · **390 dpr2** — box 356x266, asks 712, ratio **0.763** · **390 dpr3** — asks 1068, **0.508**.
+  So the phone is MEANINGFULLY BETTER than the desktop at the same ratio, because the column
+  is narrower — which inverts the usual assumption and is worth recording.
+  **AND THE RENDER QUALIFIES THE CEILING RATHER THAN CONFIRMING IT.** Read from the captures
+  at dpr 3: the softness is real and far gentler than the arithmetic predicts, because this
+  is flat cel art with heavy black outlines rather than a photograph or a screenshot of text.
+  The outlines hold; what goes is the edge of the white sparkles and the KATHIE letterform.
+  A 0.363 ratio on a screenshot would be unreadable; on this it is soft. NOT upscaled — a
+  soft image and a soft image with more pixels in it look the same, and only one is honest
+  about its source. The reserved box attribute is **543x405 = native**, so decode shifts
+  nothing.
+  **BUDGETS: RESIDUAL ZERO, TWO TERMS, AND A public/ IMAGE IS NOT JS.** The artwork shipped
+  in p4·M6b and this release adds no asset, so nothing in the image accounting moves at all —
+  `public/` files sit in no chunk closure and are on no route's first-load budget. What moved
+  is source: `EcoPopup` **4,984 → 5,000 = +16** (the `data-peer-body` attribute and the
+  caption expression) and `repoPulse` — the chunk `data.ts` lands in — **27,704 → 27,682 =
+  −22** (one property gone; comments and types are erased by the build). **+16 − 22 = −6, and
+  −6 is `lazyJsRaw`'s WHOLE delta (990,614 → 990,608) and `totalJsRaw`'s WHOLE delta.**
+  `cssGz` **BYTE-IDENTICAL at 18,586**, the eager entry **BYTE-IDENTICAL at 101,542**,
+  `eagerJsRaw` **BYTE-IDENTICAL at 264,457**, `CHUNK_COUNT` **76 = 76**. No ceiling raised.
+  **MEASURED SLACK, NOT A TICK**, on every gate this release touched:
+  `/operate/peers` 105,527 of 106,000 — **473 B**, the tightest margin on this route and
+  where the eighth peer reds · `/future` 111,167 of 112,000 — **833 B** · `cssGz` 18,586 of
+  19,000 — **414 B** · `lazyJsRaw` **2,392 B** · `totalJsRaw` **2,935 B** · `eagerJsRaw`
+  **15,543 B**. `verify-peers` **67 → 70**; the column biconditional passes with **7 of 7 at
+  2 tracks and 0 of 0 at zero**, i.e. one arm is carrying it, which the message says out loud.
+  **AND MY OWN STEM SPLITTER WAS WRONG IN THE WAY THIS FILE ALREADY RECORDS.** The first
+  pairing used `filename.rsplit('-', 1)[0]`, and a Vite hash is 8 chars of `[A-Za-z0-9_-]` —
+  **the dash is IN the alphabet** — so it reported 37 stems moved where 2 did, splitting
+  `NodePage-C…` from `NodePage`. The arithmetic still summed to −6 because every spurious
+  pair cancels, which is exactly what makes the defect easy to miss. Strip the LAST
+  `-<8 chars>.js`, and the answer is two terms.
+  **CENSUS RECOUNTED AND UNCHANGED — 89 / 85 / 22 / 39 / 75 / 6** (81 invocations − 6
+  duplicates), the correct outcome for extending an e2e member in place. The instrument was
+  CONTROLLED against SIX commits before being trusted — `768ba13` 85/81/22/35/71/6,
+  `74bc561` 86/82/22/36/72/6, `0f00d26` 87/83/22/37/73/6, `e0c87ad` and `5854cbd` both
+  88/84/22/38/74/6, and `ce87559` 89/85/22/39/75/6 — all reproduced EXACTLY including the
+  invocation arithmetic and the six orphans by name.
+  **AND A BREAK SCRIPT LEFT THE TREE MUTATED, WHICH IS THIS FILE'S OWN RULE WALKED INTO.**
+  The `tsc` polarity script asserted its second anchor before restoring the first mutation,
+  threw on a wrong date literal, and exited with `captured: "2026-08-30"` still in `data.ts`.
+  Caught by checking `git status` rather than by assuming. **The restore belongs in a
+  `finally`, not at the end of the happy path** — every later script here does that, and the
+  M6c harness restores in `finally` and re-diffs against an in-memory snapshot (the tree
+  carried uncommitted edits, so `git checkout` had no correct target).
+  **NOT FIXED, and named**: the medallion (below); `verify-future` §G5 hardcodes
+  `/captured 20\d\d-\d\d-\d\d/` for the stressnet brief, which is CORRECT today because
+  stressnet is a capture, and would red for the right reason if it ever became artwork —
+  recorded rather than generalised; the `verify-reduce` 6-of-10 mempool gap from p4·M6.
+  **THE MEDALLION IS HELD, and the reason is now ONE reason rather than two.** Measured
+  again at HEAD: JPEG, **1206x1154 (not square)**, mode RGB (**no alpha**), corners
+  `rgb(19,18,16)` against `--bg-0` `rgb(5,5,5)`. It is not export-ready, and keying it out
+  here was refused on the operator's instruction and on the merits — soft edges and a glow
+  are how a clean emblem acquires a halo. The three landing options the operator set out
+  (circular mask at the outer ring · measure the placement ground first · a deliberate dark
+  plate and border) are theirs to pick; this release picks none and ships no placeholder,
+  which is §4e's rule applied to the release that wrote it.
+  **No human has seen the rendered result in a browser** — read from captures at 1440 dpr 1,
+  2 and 3 and 390 dpr 2 and 3.
+
 - **2026-08-30**: p4·M6 "THE HONESTY REPAIR" (README + app/) — six sentences and one
   selector, in the file whose own thesis is *"an ethos you cannot check is a slogan."*
   **TEN GATES GREEN, FIVE BREAK TESTS RED WHERE INTENDED, BUDGETS TO RESIDUAL ZERO AND A

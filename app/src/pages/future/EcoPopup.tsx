@@ -141,7 +141,16 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
             prose gets its full measure instead of a column's share. What it is
             NOT is a fix for the whitespace, and saying so here costs nothing
             while letting the next reader skip the re-measurement. */}
+        {/* p4·M6c — `data-peer-body` IS THE GATE'S HANDLE, and it exists because
+            the branch above was gated by NOTHING. A break test removing one
+            entry's shot left all 67 assertions green: the column collapsed
+            correctly and no assertion in the suite could see either state, so
+            this fix could have been reverted in silence. A stable attribute
+            rather than a positional selector, on `verify-orb`'s recorded
+            ground — a positional one starts passing for the wrong reason the
+            moment the markup moves. */}
         <div
+          data-peer-body={e.id}
           className={e.shot ? "col-2" : undefined}
           style={e.shot ? { gridTemplateColumns: "1.2fr 1fr", gap: 26 } : undefined}
         >
@@ -274,6 +283,14 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 a real <figure>/<figcaption> pair so the association survives
                 for a screen reader, where a sibling <div> would not.
 
+                AND ONLY A CAPTURE IS DATED (p4·M6c). `EcoShot` is a
+                discriminated union, so `.captured` exists on the capture arm
+                alone and this expression narrows on `kind` before it can read
+                one — an undated capture and a dated artwork are both compile
+                errors rather than review findings. The artwork caption names
+                the source instead, from `e.name`, so it says where the image
+                came from without publishing a date nobody here established.
+
                 NO onError FALLBACK, DELIBERATELY. A missing asset must look
                 broken: a shot that silently degrades to a placeholder is a
                 gate that can never go red, and verify-peers §9 asserts every
@@ -302,7 +319,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                   style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}
                 >
                   {e.shot.kind === "artwork"
-                    ? `artwork · supplied ${e.shot.captured}`
+                    ? `artwork · supplied by ${e.name}`
                     : `captured ${e.shot.captured}`}
                 </figcaption>
               </figure>

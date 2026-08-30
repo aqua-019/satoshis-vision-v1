@@ -501,11 +501,37 @@ try {
     `§9 · every shot declares kind capture|artwork (${shots.length - badKind.length} of ${shots.length}; ${shots.filter((h) => h.kind === 'capture').length} captures, ${shots.filter((h) => h.kind === 'artwork').length} artwork)`,
     badKind.map((h) => `${h.src}: ${JSON.stringify(h.kind)}`).join(', '));
 
-  const badDate = shots.filter((h) => !/^\d{4}-\d{2}-\d{2}$/.test(h.captured));
-  R.ok(badDate.length === 0,
-    `§9 · every shot carries an ISO capture date (${shots.length - badDate.length} of ${shots.length})`,
-    badDate.map((h) => `${h.src}: "${h.captured}"`).join(', ')
+  /* p4·M6c — THE DATE IS A PROPERTY OF A CAPTURE, NOT OF AN IMAGE, so this is
+     TWO assertions pointing in OPPOSITE directions where it used to be one
+     blanket rule. Until this release every shot had to carry a date, and the
+     one artwork entry rendered "artwork · supplied 2026-08-30" — the day the
+     file reached us, which is not a fact about the artwork and, sitting in a
+     column beside six real capture dates, reads to a reader as one.
+
+     `EcoShot` is a DISCRIMINATED UNION now, so both wrong states are compile
+     errors before they are gate failures (proven: a date on artwork is TS2353,
+     an undated capture is TS2322, and a `.captured` read that has not narrowed
+     on `kind` is TS2339). This is the SECOND instrument, and it is not
+     redundant — the parser reads SOURCE TEXT, so it still speaks if someone
+     ever loosens the type back to an optional field.
+
+     THE FLOOR IS ON THE CAPTURE SIDE because "every capture is dated" is
+     vacuously true of a parse that found no captures. The artwork side needs
+     no floor of its own: `badKind` above already fails unless every parsed
+     shot declares one of the two kinds, so caps + arts is the whole set. */
+  const caps = shots.filter((h) => h.kind === 'capture');
+  const arts = shots.filter((h) => h.kind === 'artwork');
+  const undatedCap = caps.filter((h) => !/^\d{4}-\d{2}-\d{2}$/.test(h.captured));
+  R.ok(caps.length >= 1 && undatedCap.length === 0,
+    `§9 · every CAPTURE carries an ISO date (${caps.length - undatedCap.length} of ${caps.length}; floor: at least one capture must exist or this is vacuous)`,
+    undatedCap.map((h) => `${h.src}: ${JSON.stringify(h.captured)}`).join(', ')
     + '  — undated, a screenshot of someone else\'s site silently claims to be current.');
+
+  const datedArt = arts.filter((h) => h.captured !== null && h.captured !== undefined);
+  R.ok(datedArt.length === 0,
+    `§9 · and NO artwork carries one (${arts.length} artwork, ${datedArt.length} dated)`,
+    datedArt.map((h) => `${h.src}: ${JSON.stringify(h.captured)}`).join(', ')
+    + '  — a supplied image\'s date is not this site\'s to state; we know when it reached us, not when it was made.');
 
   const alts = shots.map((h) => h.alt.trim());
   R.ok(alts.every((a) => a.length > 30) && new Set(alts).size === alts.length,
@@ -548,6 +574,17 @@ try {
         src: im ? im.getAttribute('src') : null,
         lazy: im ? im.getAttribute('loading') : null,
         cap: cap[0] || null,
+        /* p4·M6c — THE COLUMN BRANCH, read as a COMPUTED value rather than as
+           a class name. `col-2` is what the source writes; `grid-template-
+           columns` is what the reader gets, and a class that stopped resolving
+           to a grid would leave the class check green. "none" is the no-grid
+           answer, so track count 0 and 2 are the two real states. */
+        tracks: (() => {
+          const b = d ? d.querySelector(`[data-peer-body="${i}"]`) : null;
+          if (!b) return -1;
+          const t = getComputedStyle(b).gridTemplateColumns;
+          return !t || t === 'none' ? 0 : t.trim().split(/\s+/).length;
+        })(),
       };
     }, id));
     await page.keyboard.press('Escape');
@@ -587,6 +624,33 @@ try {
     strayImg.map((o) => `${o.id}: ${o.n} img`).join(', ')
     + '  — an image where the data declares none is a borrowed capture or a broken src, and both are worse than the absence.');
 
+  /* ── p4·M6c · THE SECOND COLUMN, WHICH WAS GATED BY NOTHING ──────────────
+     p4·M6b shipped `className={e.shot ? "col-2" : undefined}` so a brief with
+     no screenshot gets no track reserved for one. A break test removing one
+     entry's `shot` block found that change UNPROTECTED: the column collapsed
+     correctly, the derived counts all moved, and every one of the 69
+     assertions stayed GREEN. Nothing in the suite could tell the two layouts
+     apart, so the fix could have been reverted in silence — which is the
+     shape this repo keeps recording, a correct change with no witness.
+
+     THE ASSERTION IS A BICONDITIONAL, not two independent checks, because the
+     failure that matters is a DISAGREEMENT between the data and the layout:
+     a track reserved for an image that does not exist, or an image crammed
+     into a single column. Read from `getComputedStyle`, never from the class
+     name — `col-2` is what the source writes and the computed tracks are what
+     the reader gets, so a class that stopped resolving to a grid would leave a
+     class check green.
+
+     BLIND SPOT, STATED: on the shipping roster all seven partners declare a
+     shot, so the ZERO-track arm has no live subject and is exercised only by
+     the break test above. The count is printed on both sides so a reader can
+     see which arm is carrying the assertion rather than inferring it. */
+  const wrongTracks = shown.filter((o) => (declaresShot.has(o.id) ? o.tracks !== 2 : o.tracks !== 0));
+  R.ok(shown.length >= 1 && wrongTracks.length === 0,
+    `§9 · the shot COLUMN exists if and only if the shot does — 2 tracks for the ${withShot.length} briefs that declare one, 0 for the ${withoutShot.length} that do not`,
+    wrongTracks.map((o) => `${o.id}: declares ${declaresShot.has(o.id) ? 'a shot' : 'none'} but renders ${o.tracks} track(s)`).join(', ')
+    + '  — a track reserved for an image that does not exist is the reservation defect p4·M6b deleted the type for.');
+
   const undecoded = withShot.filter((o) => !o.decoded);
   R.ok(undecoded.length === 0,
     `§9 · every screenshot actually DECODED, at its intrinsic size (${withShot.filter((o) => o.decoded).length} of ${withShot.length}; sizes: ${[...new Set(withShot.map((o) => o.nat))].join(', ')})`,
@@ -602,22 +666,40 @@ try {
      defect waiting to happen: until p4·M6b every image here was a capture, so
      `/^captured <date>/` was both the rule and an accident of the roster. The
      first SUPPLIED image would have had to render "captured", claiming this
-     site photographed a page it never visited. Keyed on the declared kind now,
-     with the date still mandatory in both forms. */
+     site photographed a page it never visited. Keyed on the declared kind.
+
+     p4·M6c — AND THE TWO FORMS NO LONGER AGREE ABOUT DATES. A capture must
+     carry one; artwork must carry NONE and names its source instead. So the
+     artwork pattern is not "the same shape with a different noun" — it is a
+     different claim, and the date-absence half is asserted separately below
+     rather than left to the shape of one regex. */
   const kindOf = new Map(shots.map((h) => [h.src.replace(/^\/peers\/peer-|\.webp$/g, ''), h.kind]));
   const wantCap = (id) => (kindOf.get(id) === 'artwork'
-    ? /^artwork · supplied \d{4}-\d{2}-\d{2}$/i
+    ? /^artwork · supplied by \S/i
     : /^captured \d{4}-\d{2}-\d{2}$/i);
   const undated = withShot.filter((o) => !wantCap(o.id).test(o.cap || ''));
   R.ok(undated.length === 0,
-    `§9 · every image renders a DATED caption that matches what it is (${withShot.length - undated.length} of ${withShot.length}; e.g. "${withShot[0] ? withShot[0].cap : 'n/a'}")`,
-    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)} — expected ${kindOf.get(o.id) === 'artwork' ? 'artwork · supplied <date>' : 'captured <date>'}`).join(', '));
+    `§9 · every image renders a caption that matches what it is (${withShot.length - undated.length} of ${withShot.length}; e.g. "${withShot[0] ? withShot[0].cap : 'n/a'}")`,
+    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)} — expected ${kindOf.get(o.id) === 'artwork' ? 'artwork · supplied by <name>' : 'captured <date>'}`).join(', '));
 
   const artworkMiscalled = withShot.filter((o) => kindOf.get(o.id) === 'artwork' && /captured/i.test(o.cap || ''));
   R.ok(artworkMiscalled.length === 0,
     `§9 · no SUPPLIED image is captioned as a capture (${withShot.filter((o) => kindOf.get(o.id) === 'artwork').length} artwork on the page)`,
     artworkMiscalled.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', ')
     + '  — "captured" claims this site photographed the partner\'s surface. For art they sent us, that is simply untrue.');
+
+  /* p4·M6c — AND IT RENDERS NO DATE AT ALL. Distinct from the assertion above:
+     that one forbids the WORD "captured", this one forbids the DIGITS. A
+     caption reading "artwork · supplied 2026-08-30" passes the miscalled check
+     cleanly — it never says "captured" — and is exactly what shipped in
+     p4·M6b. Paired with a floor, because "no artwork is dated" is satisfied by
+     a page rendering no artwork. */
+  const artworkOnPage = withShot.filter((o) => kindOf.get(o.id) === 'artwork');
+  const artworkDated = artworkOnPage.filter((o) => /\d{4}-\d{2}-\d{2}/.test(o.cap || ''));
+  R.ok(artworkOnPage.length >= 1 && artworkDated.length === 0,
+    `§9 · and no SUPPLIED image renders a date (${artworkOnPage.length} artwork on the page, ${artworkDated.length} dated; floor: at least one must render or this is vacuous)`,
+    artworkDated.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', ')
+    + '  — beside six real capture dates, a supply date reads as the age of the artwork, which nobody here knows.');
 
   /* THE RESERVED BOX MUST BE THE IMAGE'S OWN SHAPE. The width/height attributes
      were a hardcoded 1000x625 while every image was that size; a supplied image

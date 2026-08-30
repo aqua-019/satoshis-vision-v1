@@ -139,33 +139,14 @@ export interface FutureProtocol {
  * and counts the requests, which is the half that catches an off-origin src
  * that happens to load.
  */
-export interface EcoShot {
+interface EcoShotBase {
   /** Same-origin, under /peers/. Never an absolute URL — see above. */
   src: string;
   alt: string;
-  /** ISO day, YYYY-MM-DD. What the caption dates — see `kind`. */
-  captured: string;
-  /**
-   * WHAT THIS IMAGE IS, and it is REQUIRED because the caption says it out
-   * loud and the two claims are not interchangeable (p4·M6b).
-   *
-   *   "capture" — a screenshot THIS SITE took of somebody else's surface.
-   *               Renders "captured <date>", and the date is the honesty: a
-   *               reading of another site starts aging the moment it is taken.
-   *   "artwork" — an image the partner SUPPLIED. Renders "artwork · supplied
-   *               <date>". Calling it "captured" would claim this site
-   *               photographed their page, which for supplied art is simply
-   *               untrue, and this page's whole subject is not claiming things
-   *               it did not do.
-   *
-   * A required union rather than an optional flag, so a seventh kind of
-   * evidence is a compile error and not a silent mislabel.
-   */
-  kind: "capture" | "artwork";
   /**
    * INTRINSIC PIXELS. Required, and it used to be a hardcoded 1000x625 in
-   * EcoPopup because all six captures happened to be exactly that. The first
-   * SUPPLIED image is 1000x776, so the shared constant became a per-entry
+   * EcoPopup because all six captures happened to be exactly that. The one
+   * SUPPLIED image is 543x405, so the shared constant became a per-entry
    * fact: the browser reserves this box before a byte arrives, and a wrong
    * one is a layout shift by construction against a repo that caps CLS at
    * 0.005.
@@ -173,6 +154,42 @@ export interface EcoShot {
   w: number;
   h: number;
 }
+
+/**
+ * WHAT THIS IMAGE IS — and it is a DISCRIMINATED UNION rather than a flag
+ * beside an always-present date, because the date is not a property of an
+ * image. It is a property of a CAPTURE.
+ *
+ *   "capture" — a screenshot THIS SITE took of somebody else's surface.
+ *               Renders "captured <date>". The date is the honesty: a reading
+ *               of another site starts aging the moment it is taken, and
+ *               undated it silently claims to be current.
+ *   "artwork" — an image the partner SUPPLIED. Renders "artwork · supplied by
+ *               <name>" and CARRIES NO DATE AT ALL.
+ *
+ * ── WHY ARTWORK IS UNDATED, AND WHY IT IS A UNION AND NOT AN OPTIONAL FIELD ──
+ * p4·M6b shipped `captured` on both arms and rendered "artwork · supplied
+ * 2026-08-30" for the one artwork entry. That date was true of when the file
+ * reached us and false as the thing the reader would take it for: sitting in
+ * the same column as six dated captures, it reads as an age for the ARTWORK,
+ * which nobody here knows. A capture's date is a fact this site established by
+ * taking it; a supplied image's is not ours to state.
+ *
+ * `captured?: string` would have expressed that too — and would have left
+ * `shot.captured` readable, and therefore renderable, on an artwork entry. The
+ * union makes the wrong state UNTYPEABLE: a date on an artwork is a compile
+ * error, an undated capture is a compile error, and a read of `.captured` that
+ * has not first narrowed on `kind` is a compile error. That is the same
+ * mechanism `EcoSlot`'s deletion used — do not gate a state you can refuse to
+ * be able to express.
+ */
+export type EcoShot =
+  | (EcoShotBase & {
+      kind: "capture";
+      /** ISO day, YYYY-MM-DD. Required on this arm and on no other. */
+      captured: string;
+    })
+  | (EcoShotBase & { kind: "artwork" });
 
 export interface EcoBlock {
   label: string;
@@ -1283,6 +1300,18 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
        partner sent, and calling it "captured" would claim a photograph of a
        page nobody photographed.
 
+       SO IT CARRIES NO DATE, and p4·M6b got that half wrong. It shipped
+       `captured: "2026-08-30"` rendering as "artwork · supplied 2026-08-30" —
+       the day the file reached us, which is a true fact about our inbox and
+       not a fact about the artwork. In a column beside six real capture dates
+       a reader takes it for the second. The date is a property of a CAPTURE,
+       established by this site in the act of taking one; for an image somebody
+       sent us there is no such act and nothing to date. The caption names the
+       source instead — "artwork · supplied by Kathie", derived from `name`, so
+       it says where the image came from without publishing a date nobody here
+       established. `EcoShot` is a discriminated union precisely so this cannot
+       drift back: see its declaration above.
+
        IT IS NOT RESTYLED. A bright pink banner on a dark page is a jolt, and
        the jolt is hers — she is the one entry here who makes pictures for a
        living, and dimming, tinting or framing her work to sit quietly inside
@@ -1318,7 +1347,10 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     shot: {
       src: "/peers/peer-kathie.webp",
       alt: "Kathie's own promotional artwork: three cartoon animals on a pink striped ground under the hand-lettered word KATHIE \u2014 two cats and a rabbit, the middle cat holding a Monero logo and the outer two each holding a heart.",
-      captured: "2026-08-30",
+      /* NO `captured`, and the union makes that structural rather than
+         remembered. p4·M6b rendered "artwork · supplied 2026-08-30"; the date
+         was the day the file reached us, which is not a fact about the artwork
+         and is not this site's to publish beside six real capture dates. */
       kind: "artwork",
       w: 543,
       h: 405,
