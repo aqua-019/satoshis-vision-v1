@@ -6,10 +6,20 @@
  * either page so neither has to import the other — and so TrustedPeersPage
  * never transitively pulls in FutureMini's canvas code.
  *
- * v6.0.1 addition: when the entry carries a `url`, the dialog grows a
- * VISIT <NAME> ↗ anchor. Partner cards now open the partner's own site on
- * body click, so this dialog is the in-site brief that click used to show —
- * nothing that was reachable before became unreachable.
+ * When the entry carries a `url`, the dialog grows a VISIT <NAME> ↗ anchor.
+ *
+ * p4·M6b — THAT ANCHOR IS NOW THE ONLY WAY OFF-SITE FROM A CARD BODY, and it
+ * matters more than it did. A partner card used to `window.open` the partner's
+ * site on body click; it opens THIS DIALOG now, so leaving is a second,
+ * deliberate click that a reader makes after reading who they are about to
+ * visit. See TrustedPeersPage's header for the argument.
+ *
+ * p4·M6b — THE RESERVATION SLOTS ARE GONE. This body used to render an
+ * `e.slots` array as dashed, captioned, empty boxes under the screenshot. A
+ * slot with no image in it reads as an image that failed to load, not as an
+ * artifact nobody has captured yet — so the type, the field and this markup
+ * were deleted together. See EcoShot's header in data.ts for the rule, and
+ * verify-peers §11 for the gate that keeps it.
  */
 
 import * as React from "react";
@@ -45,7 +55,12 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
 
   return (
     <V6Modal open={open} onClose={onClose} labelledBy={titleId}>
-      <div className="v6-modal-head">
+      {/* p4·M6b — `data-eco-brief` names WHICH entry this dialog is showing.
+          /operate/peers?p=<id> is a shareable address now, so a gate has to be
+          able to assert that a given slug opened the MATCHING brief rather than
+          merely that some dialog appeared. Matching on the rendered title text
+          would work today and break on the first copy edit; this cannot. */}
+      <div className="v6-modal-head" data-eco-brief={e.id}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
             <span className="v6-status" style={{ color: e.c }}>
@@ -216,18 +231,6 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 </figcaption>
               </figure>
             ) : null}
-            {e.slots.map((s, i) => (
-              <div
-                key={i}
-                style={{
-                  border: "1px dashed var(--ink-20)", height: s.h || 120,
-                  display: "grid", placeItems: "center",
-                  background: "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--text-primary) 1.5%, transparent) 0 10px, color-mix(in srgb, var(--text-primary) 4%, transparent) 10px 20px)",
-                }}
-              >
-                <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>{s.label}</span>
-              </div>
-            ))}
           </div>
         </div>
 

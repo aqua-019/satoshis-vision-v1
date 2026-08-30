@@ -100,19 +100,28 @@ export interface FutureProtocol {
   resources: readonly Resource[];
 }
 
-export interface EcoSlot {
-  label: string;
-  h?: number;
-}
-
 /**
  * A partner screenshot — a real capture, self-hosted, dated.
  *
- * WHY THIS IS NOT AN `EcoSlot` WITH A PICTURE IN IT. A slot is a RESERVATION:
- * a dashed box saying "this artifact has not arrived". A shot is the opposite
- * claim — the artifact arrived, here it is, and here is when it was taken. The
- * two cannot share a type, because the honest failure modes differ: an empty
- * slot is fine forever, an empty shot is a broken image.
+ * THERE IS NO LONGER AN EMPTY COUNTERPART, AND THAT IS THE POINT (p4·M6b).
+ * A reservation type used to sit beside this one, rendered as a dashed box
+ * captioned "screenshot · <thing>", meaning "this artifact has not arrived".
+ * It is gone — the type, the field and the markup — because on a live page a
+ * dashed empty box does not read as a reservation. It reads as an image that
+ * FAILED TO LOAD, which tells the reader the page is broken rather than that
+ * the picture was never taken. On a site whose whole discipline is honest
+ * absence, that is the one shape of absence that lies.
+ *
+ * So the rule is structural rather than remembered: A SCREENSHOT SLOT WITH AN
+ * IMAGE SHIPS, AND CARRIES ITS CAPTURE DATE. A SCREENSHOT SLOT WITHOUT AN
+ * IMAGE DOES NOT EXIST — an entry with no capture renders nothing at all, and
+ * there is no type left in which to express a pending one.
+ *
+ * p4·M5 stated that rule in this file's own words, ~200 lines below, while
+ * retiring the stressnet reservations. It was not applied to the Superbrain
+ * entry in the same pass, which went on rendering two empty boxes for another
+ * release — which is why the rule is now a deleted mechanism and a gate
+ * (verify-peers §11) rather than a paragraph.
  *
  * `captured` IS NOT DECORATION. A screenshot is a point-in-time reading of
  * somebody else's site, and it starts going stale the moment it is taken —
@@ -189,10 +198,10 @@ export interface EcoEntry {
    */
   ctaLink?: string;
   ctaLabel?: string;
-  /** One real, dated screenshot. Optional: an entry with none simply shows
-   *  its `slots`, which is the pre-p4·M3 behaviour unchanged. */
+  /** One real, dated screenshot. Optional — an entry with none renders
+   *  nothing in its place. See EcoShot's header for why there is no longer
+   *  an empty counterpart to fall back to. */
   shot?: EcoShot;
-  slots: readonly EcoSlot[];
   links: readonly EcoLink[];
 }
 
@@ -735,18 +744,18 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // tells them.
     ctaLink: R.OPERATE_SUPERSTRESS_EXPLORER,
     ctaLabel: "OPEN THE SIMULATED BETA-CHAIN EXPLORER",
-    // The two screenshot slots stay: screenshots were promised as-provided and
-    // still may arrive, so an honest reservation is still honest. The third
-    // slot — "telemetry endpoint · to be wired" — was retired in p3·19. A
-    // reserved box is a promise that the thing is coming, and this one is not:
-    // the chain is self-hosted and has no public endpoint by design. Note that
-    // EcoPopup renders every slot identically, so a slot cannot express
-    // "answered no" — the only honest form for that is prose, which body[2]
-    // now carries.
     // p4·M5 — ONE RESERVATION IS SATISFIED AND THE OTHER IS RETIRED, under one
     // rule rather than two special cases: a screenshot slot with an image
-    // ships and carries its capture date; a slot with no image does not
-    // exist. `slots: []` is the same state XMRHUB has carried since p4·M3.
+    // ships and carries its capture date; a slot with no image does not exist.
+    //
+    // p4·M6b — AND THAT RULE IS NOW STRUCTURAL. The reservation mechanism it
+    // was written against is gone entirely: no type, no field, no markup, so
+    // "a slot with no image" is not a state this file can express any more.
+    // The earlier note here recorded that a reserved box cannot say "answered
+    // no" — that a reservation reads as a promise the thing is coming, which
+    // for the telemetry endpoint was false by design. That reasoning is why
+    // the mechanism went; the prose it recommended (body[2]) is what carries
+    // the answer.
     //
     // SLOT 1 — "screenshot · umbrel node dashboard" — IS SATISFIED by the
     // capture below, and this is the decision rather than an inheritance. The
@@ -779,7 +788,6 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       alt: "The Superstress app's monitor tab on a Tor-only Umbrel node, running v0.19.0.0-beta.2.0: network TESTNET, difficulty 0, transaction count 0, database size 0 B, no top block yet and every connection count at zero — a node that has just been installed and has not begun syncing.",
       captured: "2026-08-18",
     },
-    slots: [],
     // p3·16 replaces the null "Umbrel node writeup" placeholder with the hub
     // that IS the Umbrel node writeup — the placeholder was a promise of a
     // page, and the page now exists on this site.
@@ -821,16 +829,17 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       alt: "The XMRHUB home page: a Monero portal with Buy, Swap, Directory, Learn, Social, Shop and Forum sections above a live XMR/USD chart.",
       captured: "2026-08-18",
     },
-    // BOTH slots retired, for two DIFFERENT reasons, and the difference is the
-    // rule this release applies uniformly across the four partners:
+    // BOTH reservations retired here in p4·M3, for two DIFFERENT reasons:
     //   · "screenshot · xmrhub directory" — SATISFIED. The capture above is it.
     //   · "embed · swap widget (iframe target pending)" — NEVER COMING, per the
     //     CSP note on body[1]. A reservation is honest right up until the thing
     //     it reserves is known not to exist; past that it is a promise, which
     //     is the one thing this page must not make.
-    // A screenshot reservation that has NOT been satisfied still stands — see
-    // Superbrain below, which keeps both of its.
-    slots: [],
+    // The closing line here used to read "a screenshot reservation that has NOT
+    // been satisfied still stands — see Superbrain below, which keeps both of
+    // its." p4·M6b deleted those two and the mechanism with them: an unsatisfied
+    // reservation does not read as a reservation on a live page, it reads as a
+    // broken image. See EcoShot's header.
     links: [["xmrhub.org", "https://xmrhub.org/index.html"], ["@XMRHub_org on X", "https://x.com/XMRHub_org"]],
   },
   {
@@ -870,7 +879,6 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // "panel embed · kyc.rip featured guides" retired on XMRHUB's second
     // ground: an EMBED of a third-party panel is a `frame-src` this site's CSP
     // does not grant and will not.
-    slots: [],
     links: [["kyc.rip", "https://kyc.rip/"], ["@kyc_rip on X", "https://x.com/kyc_rip"]],
   },
   {
@@ -916,7 +924,6 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       alt: "The xmr.club front page: \u201cNo-KYC services for the Monero economy\u201d beside a directory index, over a row of headline sponsors marked as paid placement.",
       captured: "2026-08-18",
     },
-    slots: [],
     links: [["xmr.club", "https://xmr.club/"], ["@xmr_club on X", "https://x.com/xmr_club"]],
   },
   {
@@ -978,10 +985,6 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       alt: "The Superstress app from the Superbrain store, running on a Tor-only testnet node: a monitor tab with network, difficulty, transaction-count and chain-info panels.",
       captured: "2026-08-18",
     },
-    slots: [
-      { label: "screenshot · umbrel community store listing", h: 130 },
-      { label: "screenshot · superbrain mining dashboard", h: 130 },
-    ],
     // Link[0]'s label doubles as the card footer's short "visit X" text
     // (TrustedPeersPage.tsx derives `primary` from links[0]) — kept short
     // like its siblings' domain-style labels (xmrhub.org, kyc.rip, xmr.club)
@@ -1048,7 +1051,6 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       alt: "The Monerica home page: a category sidebar beside sponsor listings, a mission statement about transacting freely and privately, and a legend of per-listing statuses.",
       captured: "2026-08-18",
     },
-    slots: [],
     links: [["monerica.com", "https://monerica.com/"], ["@MonericaProject on X", "https://x.com/MonericaProject"]],
   },
   {
@@ -1098,8 +1100,139 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       alt: "Privacy Gateway's mining pool page: a Cards / Swap / RPC node / Mining pool tab row above the pool address, a wallet-address field, a strip of pool statistics and a 24-hour hashrate chart.",
       captured: "2026-08-18",
     },
-    slots: [],
     links: [["privacygateway.io", "https://privacygateway.io/"], ["@Privacygateway_ on X", "https://x.com/Privacygateway_"]],
+  },
+  {
+    /* p4·M6b — KATHIE. The seventh PARTNER, and the one the other six do not
+       prepare a reader for: they are surfaces you visit, and this is somebody
+       who makes a thing and takes Monero for it.
+
+       ── WHAT WAS READ, AND WHERE ──────────────────────────────────────
+       TWO sources were reachable on 2026-08-23, and every clause below traces
+       to one of them.
+
+         1. xmrbazaar.com/user/kafi — her seller page. The bio is three words:
+            "i sell art". The listings are stickers: a lucky cat, a bear, a
+            piggy bank, a chopper, a birthday card, a sheet, and plain Monero
+            stickers sold in lots.
+
+         2. xmrchat.com/kath — a Monero TIPPING page, and the word matters. It
+            is not a portfolio. Its only heading is "Recent Tips" and it
+            carries NO self-description at all, so nothing here is sourced
+            from it except the fact it demonstrates by existing: she takes
+            tips in XMR, and it is where her outbound links are collected.
+
+       HER OWN SENTENCE IS QUOTED, NOT PARAPHRASED. "i sell art" is better
+       than anything that could be written over it, and a three-word bio is
+       itself a fact about a person. Rewriting it into a register she did not
+       use would be the marketing voice this file bans everywhere else.
+
+       ── WHAT IS NOT CLAIMED, AND WHY ──────────────────────────────────
+       THE OPERATOR'S LINE IS "XMR Artist — Physical Art, Stickers,
+       Merchandise." Of those three, one is measurable. Stickers are on the
+       page, in her own listings. "Physical art" and "merchandise" are
+       plausible — a sticker is arguably both — and nothing reachable says she
+       sells a painting or a shirt. The copy says stickers. If the range is
+       wider the listings will say so, and this entry can grow then.
+
+       THE DENOMINATION IS NOT ASSERTED EITHER, and that one is finer. XMR
+       Bazaar is a Monero marketplace and the listings carry prices, but
+       nobody in this chain read a price or its unit — so "priced in monero"
+       would be a PLATFORM INFERENCE wearing a measurement's clothes, and
+       `head` is the string a reader meets on the card face before opening
+       anything. Compare Privacy Gateway one entry up, which states PPLNS
+       because PPLNS is printed in the capture. Nothing here is printed in
+       anything anybody read.
+
+       X IS LINKED AND NEVER DESCRIBED. x.com/kathiful is
+       authentication-walled and this build could not read one post. The link
+       ships — the operator supplied it, and a reader may be logged in — but
+       no sentence anywhere characterises what is on it. Same standing rule as
+       the X row in AUTOMATION_ROWS: we can link it, we cannot read it, and we
+       do not pretend otherwise.
+
+       YOUTUBE AND TWITCH ARE DELIBERATELY ABSENT FROM `links`, and NOT merely
+       because the operator did not supply them — xmrchat links out to both,
+       which makes them sourced in the way this page cares about. They lose on
+       two grounds. First, no URL was captured, and this file's placeholder
+       for that case (a `null` href, rendered "link pending — send it over")
+       is the same dashed shape p4·M6b just deleted for screenshots, on the
+       finding that an unsatisfied reservation reads as breakage rather than
+       as honesty. Second, and this half would hold even with the URLs in
+       hand: a row in `links` is this site VOUCHING for a destination, and
+       vouching for a channel nobody here has watched is a claim about
+       content rather than a signpost. body[2] names xmrchat as where her
+       links are collected, one hop away, and lets the reader follow them
+       without this page asserting what is at the end.
+
+       NO COUNTS, on Monerica's rule two entries up — not of listings, not of
+       stock, and not of how many partners this page carries. The catalogue is
+       described by its CHARACTER and the named designs are what was on the
+       page on the read date, not an inventory. NO SUPERLATIVE: nothing here
+       calls her the first, the only or the best, because nothing reachable
+       could settle any of those, and an unattributed superlative is worse
+       than none. (Monerica's "oldest directory" is the counter-example that
+       proves the rule: it is the OPERATOR'S claim and is flagged as one.)
+
+       ── NO SCREENSHOT, SAID OUT LOUD ──────────────────────────────────
+       THIS ENTRY SHIPS WITH NO `shot`, AND THE ABSENCE IS DELIBERATE. The
+       artwork was never delivered to this build. `shot` has been optional
+       since p4·M3, and p4·M6b deleted the reservation mechanism outright — so
+       an entry with no capture renders NOTHING in its place rather than a
+       dashed box claiming one is coming. See EcoShot's header for the rule
+       and verify-peers §9, which asserts exactly this: an entry declaring no
+       shot must render zero images. When a capture arrives it lands here,
+       dated, like the other six. This paragraph exists so the next person to
+       open this file does not spend ten minutes deciding whether the picture
+       is missing or broken.
+
+       ── THE NAMING DECISIONS ──────────────────────────────────────────
+       `id` IS "kathie" — the display name, not either handle, because it
+       becomes /operate/peers?p=kathie and a shared URL cannot be renamed
+       later without breaking it. Both handles are third-party account names
+       on somebody else's platform ("kafi" on xmrbazaar, "kath" on xmrchat)
+       and either could change without her changing. Every existing id here is
+       name-derived for the same reason.
+
+       `url` IS THE XMR BAZAAR SELLER PAGE, chosen between three surfaces she
+       does not own. xmrchat is a TIP JAR — sending a reader there first asks
+       for money before showing them anything, and a page whose only heading
+       is "Recent Tips" cannot answer "who is this". X cannot be opened
+       without an account, which on a site read over Tor is close to no
+       destination at all. xmrbazaar is where the work is. "Primary site" here
+       means "where the work is", not "her domain", because there is no
+       domain.
+
+       `links[0]` IS "xmrbazaar.com" AND SHORT ON PURPOSE: TrustedPeersPage
+       derives the card footer's "visit X ↗" text from the first link with an
+       href, and p4·M3 measured what a long one does to that row. The
+       label/path mismatch is precedented — XMRHUB ships "xmrhub.org" against
+       an href of /index.html.
+
+       `c` IS MEASURED, NOT PICKED, on p4·M3's method and with its instrument
+       re-run. Against the eleven accents already carrying meaning in this
+       tree, #5eead4's smallest perceptual distance (CIEDE2000) is 16.91 — to
+       stressnet's green, with superbrain's cyan at 16.95 and carrot's at
+       19.50 — while the SMALLEST GAP BETWEEN TWO ACCENTS ALREADY SHIPPING is
+       4.36 (superbrain #22d3ee against carrot #5ed3f4). So it is roughly four
+       times as separable as a pair already in production. Contrast is 11.10:1
+       at worst across all three themes' grounds and their bg-2s. It sits in
+       the 142→188 hue gap, the widest this palette has left; #ff5cf0 (hue
+       305.5) was excluded by name, being p4·07's reserved betanet accent. */
+    id: "kathie", name: "Kathie", head: "stickers, on XMR Bazaar.",
+    kind: "Collaborator · artist", status: "PARTNER", c: "#5eead4",
+    url: "https://xmrbazaar.com/user/kafi",
+    blurb: "An artist selling Monero stickers on XMR Bazaar as kafi, under a seller bio three words long: \u201ci sell art\u201d.",
+    body: [
+      "Kathie sells stickers on XMR Bazaar as kafi, and her bio there is three words long: \u201ci sell art\u201d, lowercase. Among the designs on the seller page when it was read: a lucky cat, a bear, a piggy bank, a chopper, a birthday card and a sheet, alongside plain Monero stickers sold in lots. XMR Bazaar is a Monero marketplace; her listings sit on it.",
+      "The directories above index where Monero circulates. This is one of the places it actually does, one object at a time \u2014 the argument the rest of this site makes at protocol scale is that a currency is only a currency if somebody accepts it for something, and somebody selling a cat sticker to a stranger for XMR is that claim tested rather than argued. The others here are projects, services and directories; this one is a person.",
+      "Her tipping page at xmrchat.com/kath takes tips in XMR. It carries no description of her work \u2014 its only heading is \u201cRecent Tips\u201d \u2014 but it is where she collects her own outbound links, including destinations this build did not read. Her X account is linked below; it is behind a login wall, so nothing here describes what is on it.",
+    ],
+    links: [
+      ["xmrbazaar.com", "https://xmrbazaar.com/user/kafi"],
+      ["xmrchat.com/kath \u00b7 tips", "https://xmrchat.com/kath"],
+      ["@kathiful on X", "https://x.com/kathiful"],
+    ],
   },
 ];
 

@@ -12,7 +12,8 @@
 //      an explicit explanation naming the endpoint. Never blank.
 //   6. A reload inside 24h issues NO further /api/feeds requests.
 //   7. Zero CSP violations / zero cross-origin requests to api.github.com.
-//   8. The three partner cards open the correct partner sites in a new tab.
+//   8. The three partner cards open THEIR OWN in-site brief (never a new tab),
+//      the URL gains that brief's ?p= address, and closing clears it again.
 //   9. "our brief" opens the modal and does NOT navigate.
 //  10. The modal's VISIT button exists, is styled (a.proto-btn), and is safe.
 //  11. Every protocol card's simulator button lands on ITS OWN simulator
@@ -602,18 +603,49 @@ console.log('engine:', engine, '\n');
   const cards = page.locator('.panel').filter({ has: page.locator('h3') });
   // The partner cards ARE the assertion — wait on them, not on the network.
   await cards.first().waitFor({ timeout: 15000 });
-  const expect = { XMRHUB: 'xmrhub.org', 'kyc.rip': 'kyc.rip', 'xmr.club': 'xmr.club' };
+  /* 8 — p4·M6b · A PARTNER CARD OPENS OUR BRIEF, AT THAT PARTNER'S ADDRESS.
+   *
+   * THIS SECTION USED TO ASSERT THE OPPOSITE, and rewriting it was not
+   * optional. It read:
+   *
+   *     const [popup] = await Promise.all([
+   *       ctx.waitForEvent('page'),
+   *       card.click({ position: { x: 40, y: 90 } }),
+   *     ]);
+   *
+   * i.e. it waited for a NEW TAB per card. A card that no longer calls
+   * `window.open` fires no page event, so that `Promise.all` NEVER RESOLVES —
+   * the gate would have HUNG on its timeout and died before printing a single
+   * named red, which reads exactly like a broken harness rather than like a
+   * behaviour change. It is the only `waitForEvent('page')` in the tree.
+   *
+   * The claim the old section protected — "a reader can still reach the
+   * partner's own site" — is NOT dropped. It moves one click in, to the
+   * `VISIT ↗` anchor inside the dialog, and §10 below already asserts that
+   * anchor's href, target and rel. What is added here is the address: the
+   * brief a card opens must be THAT card's brief, and the URL must say so, or
+   * the shareable link is shareable and wrong. */
+  const expect = { XMRHUB: 'xmrhub', 'kyc.rip': 'kycrip', 'xmr.club': 'xmrclub' };
 
-  // 8 — each partner card opens the right site in a new tab
-  for (const [name, host] of Object.entries(expect)) {
+  for (const [name, slug] of Object.entries(expect)) {
     const card = cards.filter({ hasText: name }).first();
-    const [popup] = await Promise.all([
-      ctx.waitForEvent('page'),
-      card.click({ position: { x: 40, y: 90 } }),
-    ]);
-    ok(popup.url().includes(host), `8 · "${name}" card opens ${host} in a new tab (got ${popup.url()})`);
-    await popup.close();
-    ok(new URL(page.url()).pathname === '/operate/peers', `8 · "${name}" card click did not navigate the app away`);
+    await card.click({ position: { x: 40, y: 90 } });
+    const dlg = page.locator('[role="dialog"]');
+    await dlg.waitFor({ state: 'visible', timeout: 8000 });
+
+    const shown = await page.evaluate(() =>
+      document.querySelector('[data-eco-brief]')?.getAttribute('data-eco-brief') ?? null);
+    ok(shown === slug, `8 · "${name}" card opens ITS OWN brief, not merely some dialog (data-eco-brief=${shown})`);
+
+    const u = new URL(page.url());
+    ok(u.pathname === '/operate/peers', `8 · "${name}" card click did not navigate the app away (${u.pathname})`);
+    ok(u.searchParams.get('p') === slug,
+       `8 · "${name}" card click puts the brief's own address in the URL bar — ?p=${slug} (got ?p=${u.searchParams.get('p')})`);
+
+    await page.keyboard.press('Escape');
+    await dlg.waitFor({ state: 'hidden', timeout: 5000 });
+    ok(new URL(page.url()).searchParams.get('p') === null,
+       `8 · closing "${name}" clears ?p= rather than pinning a closed brief into the URL`);
   }
 
   // 9 — "our brief" opens the modal without navigating

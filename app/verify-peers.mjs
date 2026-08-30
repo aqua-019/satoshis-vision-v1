@@ -4,7 +4,7 @@
 //  no column assertion and never did.)
 //
 // Verifies the ecosystem entries land correctly, rendering:
-//   1. Six PARTNER cards (exact count from source parse)
+//   1. Seven PARTNER cards (exact count from source parse)
 //   2. Superbrain's GitHub repo URL in exact casing (case-sensitive)
 //   3. Install block with 4 ordered steps in <ol>
 //   4. Five app names rendered (Superbrain, SuperPay, MoneroSpace, Superstress, SuperAtomic)
@@ -13,6 +13,11 @@
 //   7. Mobile (390px): no h-scroll, no HTML text under 12px
 //   8. Reduced motion: cards render, zero running animations
 //   9. The partner screenshots: same-origin, resolvable, decoded, dated
+//  10. Every brief has its OWN address: /operate/peers?p=<id> opens it in a
+//      cold tab, a click writes it, a close clears it, an unknown slug is
+//      honest (p4·M6b)
+//  11. No brief renders a screenshot RESERVATION — a dashed, captioned, empty
+//      box. The mechanism was deleted; this is the gate that keeps it gone.
 //
 // CROSS-GATE DEPENDENCY: verify-future.mjs asserts the Superbrain pulse does NOT
 // appear on /future (counts exactly 9 data-pulse="live" on that page). This gate
@@ -49,7 +54,8 @@ const expectedPartnerCount = partnerMatches.length;
 
 R.ok(expectedPartnerCount > 0,
   '§1 · data.ts contains at least one PARTNER (instrument check)');
-/* p4·M3: 4 -> 6 (Monerica, Privacy Gateway). RECOUNTED, never incremented —
+/* p4·M3: 4 -> 6 (Monerica, Privacy Gateway). p4·M6b: 6 -> 7 (Kathie).
+   RECOUNTED, never incremented —
    `expectedPartnerCount` is parsed from data.ts above and every downstream
    assertion in this file compares against THAT, so this literal is the only
    place a human number appears. It is deliberately not derived: a gate whose
@@ -57,8 +63,8 @@ R.ok(expectedPartnerCount > 0,
    changing, which is the whole reason a second, hand-written figure exists
    here at all. If you moved this number without meaning to move it, that is
    the assertion doing its job. */
-R.ok(expectedPartnerCount === 6,
-  `§1 · data.ts declares exactly 6 PARTNER entries (parsed: ${expectedPartnerCount})`);
+R.ok(expectedPartnerCount === 7,
+  `§1 · data.ts declares exactly 7 PARTNER entries (parsed: ${expectedPartnerCount})`);
 
 // §5: Check RepoPulseReadout does not render any typed numbers as text content.
 // RepoPulseReadout was extracted into app/src/pages/future/repoPulse.tsx.
@@ -522,25 +528,217 @@ try {
     await page.waitForTimeout(260);
   }
 
-  R.ok(shown.length === expectedPartnerCount && shown.every((o) => o.n === 1),
-    `§9 · every brief renders exactly one screenshot (${shown.filter((o) => o.n === 1).length} of ${shown.length})`,
-    shown.filter((o) => o.n !== 1).map((o) => `${o.id}: ${o.n} img`).join(', '));
+  /* p4·M6b — THE ROSTER IS NO LONGER UNIFORM, so "every brief renders exactly
+   * one screenshot" is no longer the claim. `EcoShot` has been OPTIONAL since
+   * p4·M3; the seventh peer is simply the first entry to exercise that, because
+   * her artwork was never delivered. Asserting `n === 1` across the board would
+   * red on an honest absence and, worse, would pressure a future author into
+   * inventing a capture to satisfy a gate.
+   *
+   * The expectation is DERIVED from data.ts, by the same segmented parse
+   * verify-origins uses: an entry that DECLARES a shot must render exactly one,
+   * and an entry that declares none must render ZERO. That is strictly stronger
+   * than the old count — it also catches an image appearing where the data
+   * declares none, which is how a borrowed or hotlinked capture would arrive. */
+  const idMarks = [...dataContent.matchAll(/\bid:\s*"([a-z0-9]+)"/g)];
+  const declaresShot = new Set(idMarks.filter((m, i) =>
+    /\bshot:\s*\{/.test(dataContent.slice(m.index, (idMarks[i + 1] || { index: dataContent.length }).index))
+  ).map((m) => m[1]));
+  const withShot = shown.filter((o) => declaresShot.has(o.id));
+  const withoutShot = shown.filter((o) => !declaresShot.has(o.id));
 
-  const undecoded = shown.filter((o) => !o.decoded);
+  R.ok(withShot.length >= 6,
+    `§9 · ${withShot.length} of ${shown.length} briefs declare a screenshot (floor: if this parse found none, every check below would pass over an empty set)`);
+
+  const wrongCount = withShot.filter((o) => o.n !== 1);
+  R.ok(shown.length === expectedPartnerCount && wrongCount.length === 0,
+    `§9 · every brief that DECLARES a screenshot renders exactly one (${withShot.length - wrongCount.length} of ${withShot.length}; ${shown.length} briefs opened of ${expectedPartnerCount})`,
+    wrongCount.map((o) => `${o.id}: ${o.n} img`).join(', '));
+
+  const strayImg = withoutShot.filter((o) => o.n !== 0);
+  R.ok(strayImg.length === 0,
+    `§9 · every brief that declares NO screenshot renders no image at all (${withoutShot.length} such: ${withoutShot.map((o) => o.id).join(', ') || 'none'})`,
+    strayImg.map((o) => `${o.id}: ${o.n} img`).join(', ')
+    + '  — an image where the data declares none is a borrowed capture or a broken src, and both are worse than the absence.');
+
+  const undecoded = withShot.filter((o) => !o.decoded);
   R.ok(undecoded.length === 0,
-    `§9 · every screenshot actually DECODED, at its intrinsic size (${shown.filter((o) => o.decoded).length} of ${shown.length}; sizes: ${[...new Set(shown.map((o) => o.nat))].join(', ')})`,
+    `§9 · every screenshot actually DECODED, at its intrinsic size (${withShot.filter((o) => o.decoded).length} of ${withShot.length}; sizes: ${[...new Set(withShot.map((o) => o.nat))].join(', ')})`,
     undecoded.map((o) => o.id).join(', ')
     + '  — a 404 leaves the tag, the src and the alt all correct. Only a decode says the bytes arrived.');
 
-  const offOriginSrc = shown.filter((o) => !(o.src || '').startsWith('/peers/'));
+  const offOriginSrc = withShot.filter((o) => !(o.src || '').startsWith('/peers/'));
   R.ok(offOriginSrc.length === 0,
-    `§9 · every RENDERED src is same-origin too, not just the source literal (${shown.length - offOriginSrc.length} of ${shown.length})`,
+    `§9 · every RENDERED src is same-origin too, not just the source literal (${withShot.length - offOriginSrc.length} of ${withShot.length})`,
     offOriginSrc.map((o) => `${o.id}: ${o.src}`).join(', '));
 
-  const undated = shown.filter((o) => !/^captured \d{4}-\d{2}-\d{2}$/i.test(o.cap || ''));
+  const undated = withShot.filter((o) => !/^captured \d{4}-\d{2}-\d{2}$/i.test(o.cap || ''));
   R.ok(undated.length === 0,
-    `§9 · every screenshot renders its capture date beneath it (${shown.length - undated.length} of ${shown.length}; e.g. "${shown[0] ? shown[0].cap : 'n/a'}")`,
+    `§9 · every screenshot renders its capture date beneath it (${withShot.length - undated.length} of ${withShot.length}; e.g. "${withShot[0] ? withShot[0].cap : 'n/a'}")`,
     undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', '));
+
+  /* ══ §10 · EVERY BRIEF HAS ITS OWN ADDRESS (p4·M6b) ═══════════════════
+   *
+   * THE DEFECT THIS CLOSES: before this release all seven briefs shared one
+   * URL. Opening any of them left the address bar at /operate/peers, so a
+   * reader who copied it sent the recipient to the grid rather than to the
+   * brief they were reading. There was no way to share a partner at all.
+   *
+   * PER PEER, NOT ONCE. A single assertion on one peer proves the mechanism
+   * exists and says nothing whatever about the other six — and the failure
+   * mode that matters (a slug that opens the WRONG brief) is invisible unless
+   * every id is driven and the OPENED entry is identified. `data-eco-brief`
+   * carries that identity; matching on the rendered title would work today and
+   * break on the first copy edit.
+   *
+   * THE COLD-TAB CASE IS THE POINT. Each id below is loaded in a FRESH
+   * navigation, which is what a pasted link actually is — not a click followed
+   * by a URL read, which would pass even if the param were write-only. */
+  const peerIds = [...dataContent.matchAll(/\bid:\s*"([a-z0-9]+)"/g)]
+    .map((m, i, all) => ({
+      id: m[1],
+      seg: dataContent.slice(m.index, (all[i + 1] || { index: dataContent.length }).index),
+    }))
+    .filter((e) => /status:\s*"PARTNER"/.test(e.seg))
+    .map((e) => e.id);
+
+  R.ok(peerIds.length === expectedPartnerCount,
+    `§10 · parsed ${peerIds.length} PARTNER slugs to drive, matching the ${expectedPartnerCount} declared (floor: an empty list would make every check below vacuous)`,
+    peerIds.join(', '));
+
+  /* THE PRERENDERED DOCUMENT IS PARAM-BLIND, AND SAYING SO IS THE HONEST
+   * FORM OF "opens on first paint". /operate/peers prerenders to ONE file that
+   * serves all seven addresses, so the brief opens on the first CLIENT render
+   * after hydration — there is no server that could do otherwise on a static
+   * host. What must NOT happen is a rendered-then-corrected sequence, i.e. the
+   * grid settling and the dialog arriving later; that is what the assertion
+   * below measures, by giving it no settle time at all. */
+  const preRendered = readFileSync(join(__dirname, 'dist', 'operate', 'peers', 'index.html'), 'utf8');
+  R.ok(!/role="dialog"/.test(preRendered),
+    '§10 · the prerendered document carries no dialog — one file serves all seven addresses, so the brief is opened by hydration and this gate says so rather than claiming a server-rendered first paint');
+
+  const opened = [];
+  for (const id of peerIds) {
+    await page.goto(`${BASE}/operate/peers?p=${id}`, { waitUntil: 'domcontentloaded' });
+    const got = await page.waitForFunction(
+      () => document.querySelector('[data-eco-brief]')?.getAttribute('data-eco-brief') ?? null,
+      null, { timeout: 8000 },
+    ).then((h) => h.jsonValue()).catch(() => null);
+    opened.push({ id, got });
+  }
+  const wrongBrief = opened.filter((o) => o.got !== o.id);
+  R.ok(wrongBrief.length === 0,
+    `§10 · every one of the ${peerIds.length} slugs opens ITS OWN brief in a cold tab (${opened.length - wrongBrief.length} of ${opened.length}: ${peerIds.join(', ')})`,
+    wrongBrief.map((o) => `?p=${o.id} opened ${o.got}`).join(', ')
+    + '  — a slug that opens the wrong brief is a shareable link that is shareable and wrong.');
+
+  /* THE UNKNOWN SLUG. This is the case a broken shared link produces, and the
+   * one a fallback would quietly paper over: SimulatePage's v6.0.9 defect was
+   * exactly this — an unrecognised ?p= silently opened a DIFFERENT entry. */
+  await page.goto(`${BASE}/operate/peers?p=nosuchpeer`, { waitUntil: 'networkidle' });
+  const unknown = await page.evaluate(() => ({
+    dialogs: document.querySelectorAll('[role="dialog"]').length,
+    cards: document.querySelectorAll('[data-peer-brief]').length,
+    h1: document.querySelector('h1')?.textContent?.trim() ?? null,
+  }));
+  R.ok(unknown.dialogs === 0 && unknown.cards === expectedPartnerCount,
+    `§10 · an unknown slug degrades to the index — no dialog (${unknown.dialogs}), no error page, all ${unknown.cards} cards still rendered`);
+  R.ok(!!unknown.h1 && unknown.h1.length > 0,
+    `§10 · …and the page still has its own heading rather than a not-found state ("${(unknown.h1 || '').slice(0, 42)}")`);
+
+  /* THE ROUND TRIP: a click WRITES the address, a close CLEARS it. Without the
+   * clear half, `?p=` would be pinned onto a closed page and the canonical
+   * /operate/peers URL would stop existing once a reader opened anything. */
+  await page.goto(`${BASE}/operate/peers`, { waitUntil: 'networkidle' });
+  const first = peerIds[0];
+  await page.locator(`[data-peer-brief="${first}"]`).click();
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 });
+  const afterOpen = new URL(page.url());
+  R.ok(afterOpen.searchParams.get('p') === first,
+    `§10 · clicking a brief control writes that brief's address (?p=${afterOpen.searchParams.get('p')})`);
+
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('[role="dialog"]', { state: 'hidden', timeout: 5000 });
+  const afterClose = new URL(page.url());
+  R.ok(afterClose.searchParams.get('p') === null && afterClose.pathname === '/operate/peers',
+    `§10 · closing clears the param rather than pinning a closed brief into the URL (${afterClose.pathname}${afterClose.search})`);
+
+  /* THE CARD BODY ITSELF, which is the behaviour change this release makes.
+   * A card used to `window.open` the partner's site on body click. Clicking the
+   * card must now open the brief and must NOT navigate the app anywhere. */
+  await page.goto(`${BASE}/operate/peers`, { waitUntil: 'networkidle' });
+  const cardBox = page.locator('.v6-peer-grid .panel').first();
+  await cardBox.click({ position: { x: 40, y: 90 } });
+  await page.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
+  const afterCard = await page.evaluate(() => ({
+    dialogs: document.querySelectorAll('[role="dialog"]').length,
+    href: location.pathname + location.search,
+    brief: document.querySelector('[data-eco-brief]')?.getAttribute('data-eco-brief') ?? null,
+  }));
+  R.ok(afterCard.dialogs === 1 && afterCard.brief === peerIds[0],
+    `§10 · clicking the CARD BODY opens that card's brief (dialogs ${afterCard.dialogs}, brief ${afterCard.brief}) — it used to open the partner's site in a new tab`);
+  R.ok(afterCard.href === `/operate/peers?p=${peerIds[0]}`,
+    `§10 · …and the card click stayed on this origin, at the brief's address (${afterCard.href})`);
+
+  /* ══ §11 · NO SCREENSHOT RESERVATION MAY SHIP (p4·M6b) ════════════════
+   *
+   * A "slot" was a dashed, captioned, empty box meaning "this artifact has not
+   * arrived". The Superbrain brief shipped two of them ("screenshot · umbrel
+   * community store listing", "screenshot · superbrain mining dashboard") for
+   * several releases, and p4·M5 retired the stressnet pair while stating the
+   * rule in data.ts's own words — without applying it to the entry 200 lines
+   * below. That is why this is a gate and not a paragraph.
+   *
+   * THE RULE: a screenshot slot with an image ships and carries its capture
+   * date; a screenshot slot without an image DOES NOT EXIST. An empty labelled
+   * box reads as an image that failed to load, which tells a reader the page is
+   * broken rather than that the picture was never taken — on a site whose whole
+   * discipline is honest absence, it is the one shape of absence that lies.
+   *
+   * MEASURED ON THE RENDER, NOT ON THE SOURCE, and deliberately: the type and
+   * the field are deleted, so a source check would assert against a mechanism
+   * that no longer exists and pass forever without reading a page. This sweeps
+   * every opened brief for any element whose own text is a screenshot caption
+   * and which contains no <img>.
+   *
+   * PAIRED WITH A FLOOR, because it is an ABSENCE. If the sweep opened nothing,
+   * or if captions stopped being rendered at all, "zero placeholders" would be
+   * true of an empty set. The floor counts the SUBJECT that must exist in both
+   * states: the real, dated captions under the screenshots that DID arrive. */
+  const slotSweep = { boxes: [], captions: 0, briefs: 0 };
+  for (const id of peerIds) {
+    await page.goto(`${BASE}/operate/peers?p=${id}`, { waitUntil: 'networkidle' });
+    const seen = await page.evaluate(() => {
+      const d = document.querySelector('[role="dialog"]');
+      if (!d) return null;
+      const bad = [...d.querySelectorAll('*')]
+        .filter((el) => {
+          const t = (el.textContent || '').trim();
+          // `screenshot · <thing>` is the reservation caption. CSS uppercases
+          // it, so innerText would read "SCREENSHOT ·" — match case-insensitively
+          // and on textContent, which is the authored string either way.
+          if (!/^screenshot\s*[·:]/i.test(t)) return false;
+          if (t.length > 90) return false;          // a paragraph that merely mentions one
+          return el.querySelectorAll('img').length === 0
+              && (el.closest('figure') === null);   // a real <figcaption> lives in a figure
+        })
+        .map((el) => (el.textContent || '').trim().slice(0, 60));
+      return {
+        bad,
+        captions: d.querySelectorAll('figure figcaption').length,
+      };
+    });
+    if (seen) { slotSweep.briefs++; slotSweep.boxes.push(...seen.bad); slotSweep.captions += seen.captions; }
+  }
+
+  R.ok(slotSweep.briefs === peerIds.length,
+    `§11 · the sweep actually opened every brief (${slotSweep.briefs} of ${peerIds.length}) — a sweep that opened none would report zero placeholders truthfully and uselessly`);
+  R.ok(slotSweep.captions >= 6,
+    `§11 · …and the briefs it opened do render real dated screenshot captions (${slotSweep.captions}) — the paired positive, so "no reservation" cannot be satisfied by a page that renders no captions at all`);
+  R.ok(slotSweep.boxes.length === 0,
+    `§11 · NO brief renders a screenshot reservation — a captioned box with no image in it (${slotSweep.boxes.length} found across ${slotSweep.briefs} briefs)`,
+    slotSweep.boxes.join(' | ')
+    + '  — a slot with no image reads as a failed load, not as an artifact nobody has captured. See EcoShot in data.ts.');
 
   await page.close();
   await reducedMotionPage.close();

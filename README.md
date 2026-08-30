@@ -181,10 +181,23 @@ against your own node or another independent source.
 
 ### The simulators are simulated
 
-The interactive protocol demonstrations under `/learn` render **invented
-values by design**, in order to illustrate a mechanism. They are labelled as
-such throughout. They are not chain data, not historical data, and not a
-prediction of anything.
+Two surfaces render **invented values by design**, in order to illustrate a
+mechanism, and both are labelled as such throughout: the interactive protocol
+demonstrations at `/learn/sim`, and the beta-chain explorer at
+`/operate/superstress/explorer`. They are not chain data, not historical data,
+and not a prediction of anything.
+
+The explorer is the one that most needs saying, because it wears an explorer's
+clothes — block tiles, confirmation depths, a fee ladder, a transaction feed —
+and an explorer is normally a window onto a real chain. This one is a window
+onto a model. Its header reads `MODEL · WIND TUNNEL · NOTHING HERE WAS
+MEASURED`, its transaction ids are `sim:` followed by sixteen hex characters
+rather than a real sixty-four, and its chain is *seeded* rather than random, so
+the same block always shows the same contents.
+
+(This sentence used to scope the rule to "`/learn`", which named the simulators
+and missed the explorer entirely. A rule about what a page CLAIMS should not be
+scoped by the prefix its URL happens to have.)
 
 ### Your jurisdiction is your responsibility
 

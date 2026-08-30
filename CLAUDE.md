@@ -1957,6 +1957,17 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   crossed. **The `/about/site` row comment was ALREADY STALE AT BASE** — it read 96,252
   against a measured 96,448 — re-derived to 96,519; the other rows are left because a
   concurrent PR owns some of them.
+  **[p4·M6b ANNOTATION — 96,519 AND +71 WERE SUPERSEDED INSIDE p4·M2 ITSELF AND THIS
+  NOTE NEVER CAUGHT UP.** The tree carries 96,514 and +66, and `verify-bundle.mjs:1892`
+  states why in its own words: this note's figures were taken BEFORE `SITE_PR` 196 → 197
+  landed, and that commit moved the gzip by 5 B through the hash cascade while every RAW
+  budget stayed byte-identical. Both arithmetics are self-consistent — 96,448 + 71 = 96,519
+  and 96,448 + 66 = 96,514 — so this is not two wrong numbers, it is one number measured
+  twice on two trees, and the second measurement is the one that shipped.
+  **ANNOTATED RATHER THAN OVERWRITTEN**, on p4·01's rule: a dated measurement is a record
+  of what was true when it was taken, and rewriting it falsifies it rather than refreshing
+  it. Measured again at `ce87559`, five releases later: **96,527** — a third figure, from a
+  third tree, and not in conflict with either.]
   **CENSUS UNCHANGED — 88 / 84 / 22 / 38 / 74 / 6** — correct for a release that adds no
   gate FILE and extends an e2e member in place. The instrument was CONTROLLED against
   THREE commits with DIFFERENT recorded figures before being trusted, all reproduced

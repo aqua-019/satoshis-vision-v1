@@ -1896,13 +1896,28 @@ const ROUTE_BUDGET_GZ = {
      p4·01 both recorded. Nothing went red, which is exactly why the rule is
      re-derive after the last src commit rather than "check the gate is green".
      The +66 B against base is the section reorder's `data-site-section`
-     markers plus the support CTA, NET of a 13 B eager saving that reaches
-     every route (see the eagerJsRaw note — p4·M2 also removed Main Home's
+     markers plus the support CTA, NET of an eager saving that reaches every
+     route (see the eagerJsRaw note — p4·M2 also removed Main Home's
      ThemeToggle mount). The ceiling is UNCHANGED at 99,000 and was not
-     approached. Every OTHER route row's trailing figure is likewise ~13-23 B
-     stale for the same eager saving; they are deliberately left, because a
-     concurrent PR owns some of those rows and touching them is a guaranteed
-     conflict for no gate benefit. */
+     approached.
+
+     p4·M6b — "a 13 B eager saving" STOOD HERE AND WAS A FIGURE NOTHING
+     MEASURED. What p4·M2 actually recorded is the entry chunk moving
+     101,566 -> 101,533 = -33 B RAW, and per-route first-load deltas of -8 to
+     -23 B GZIP. 13 is neither: it is not the raw number, it is not any route's
+     gzip number, and it sits inside a range this same comment quotes as
+     "~13-23 B" two sentences later — so the paragraph disagreed with itself
+     about its own saving. NO SINGLE FIGURE DESCRIBES IT, which is the point:
+     raw and gzip are different quantities and the per-route effect is a range,
+     not a constant. Both are now stated as what they are. (The gzip half of
+     the eager delta is deliberately NOT quoted as one number here — it was
+     never measured on its own, and deriving it from a whole-bundle ratio would
+     be an inference wearing a measurement's clothes.)
+
+     Every OTHER route row's trailing figure is likewise ~8-23 B stale for the
+     same eager saving; they are deliberately left, because a concurrent PR
+     owns some of those rows and touching them is a guaranteed conflict for no
+     gate benefit. */
   '/about/site':             99_000, //  96,514
 };
 

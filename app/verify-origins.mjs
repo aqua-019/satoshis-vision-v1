@@ -234,19 +234,66 @@ await coldBootOffBrowser(b);
         [...document.querySelectorAll('[data-peer-brief]')].map((b) => b.getAttribute('data-peer-brief')));
       ok(ids.length >= 6,
          `2 · /operate/peers exposes ${ids.length} brief controls to open (floor: an unopened page issues no image request, so a zero here would make the sweep below vacuous)`);
-      let shotsSeen = 0;
+
+      /* p4·M6b — THE EXPECTED COUNT IS DERIVED, NOT ASSUMED UNIFORM.
+       *
+       * This read `shotsSeen === ids.length`, which silently assumed every
+       * partner carries a screenshot. `EcoShot` has been OPTIONAL since p4·M3
+       * ("an entry with none…"), so that equality was a true statement about
+       * the roster that happened to hold rather than an invariant — and the
+       * seventh peer, whose artwork was never delivered, is the first entry to
+       * falsify it. Left as it was, an honest absence would have read as a
+       * blocked or hotlinked image.
+       *
+       * So the expectation comes from data.ts: exactly those entries that
+       * DECLARE a shot must have loaded one, and every entry that declares none
+       * must render no <img> at all. That is strictly stronger than the old
+       * equality — it catches a shot that fails to load AND a shot appearing
+       * where the data declares none — and it no longer breaks when the roster
+       * stops being uniform. */
+      /* SEGMENTED, NOT A LOOKAHEAD, and that was measured rather than assumed.
+       * The obvious form — /id:\s*"(\w+)"[\s\S]{0,4000}?shot:\s*\{/ — was
+       * written first and tested against both parsers: it MISSES `stressnet`,
+       * whose entry carries ~50 lines of comment between its id and its shot,
+       * so a bounded window silently drops it. Harmless today (stressnet is
+       * not a PARTNER and never renders here) and exactly the defect
+       * verify-peers §9 records against its own earlier regex: a comment
+       * changes what the parser can see. Cutting the file at every `id:` and
+       * asking whether THAT segment declares a shot is exact at any comment
+       * length. */
+      const dataSrc = readFileSync(join(__dirname, 'src', 'pages', 'future', 'data.ts'), 'utf8');
+      const marks = [...dataSrc.matchAll(/\bid:\s*"([a-z0-9]+)"/g)];
+      const declaresShot = new Set(marks.filter((m, i) =>
+        /\bshot:\s*\{/.test(dataSrc.slice(m.index, (marks[i + 1] || { index: dataSrc.length }).index))
+      ).map((m) => m[1]));
+      const expectShot = ids.filter((i) => declaresShot.has(i));
+      ok(expectShot.length >= 6,
+         `2 · data.ts declares a screenshot for ${expectShot.length} of the ${ids.length} rendered briefs (floor: a parse that found none would make the sweep below vacuous)`);
+
+      let shotsSeen = 0, strays = [];
       for (const id of ids) {
         await p.click(`[data-peer-brief="${id}"]`).catch(() => {});
         await p.waitForSelector('[role="dialog"]', { timeout: 8000 }).catch(() => {});
-        await p.waitForFunction((i) => {
-          const im = document.querySelector(`img[data-peer-shot="${i}"]`);
-          return im && im.complete && im.naturalWidth > 0;
-        }, id, { timeout: 8000 }).then(() => { shotsSeen++; }).catch(() => {});
+        if (declaresShot.has(id)) {
+          await p.waitForFunction((i) => {
+            const im = document.querySelector(`img[data-peer-shot="${i}"]`);
+            return im && im.complete && im.naturalWidth > 0;
+          }, id, { timeout: 8000 }).then(() => { shotsSeen++; }).catch(() => {});
+        } else {
+          // The other half of the claim: an entry with no shot must render no
+          // image, rather than an <img> with a broken or borrowed src.
+          const imgs = await p.evaluate(() =>
+            document.querySelectorAll('[role="dialog"] img').length).catch(() => -1);
+          if (imgs !== 0) strays.push(`${id}:${imgs}`);
+        }
         await p.keyboard.press('Escape').catch(() => {});
         await p.waitForTimeout(220);
       }
-      ok(shotsSeen === ids.length,
-         `2 · and all ${ids.length} partner screenshots loaded and decoded while this listener was counting (${shotsSeen})`);
+      ok(shotsSeen === expectShot.length,
+         `2 · and all ${expectShot.length} declared partner screenshots loaded and decoded while this listener was counting (${shotsSeen})`);
+      ok(strays.length === 0,
+         `2 · every brief that declares NO screenshot renders no <img> at all (${ids.length - expectShot.length} such briefs)`,
+         strays.join(', ') + '  — an image where the data declares none is either a borrowed src or a broken one.');
     }
 
     /* p4·M5 — /future IS NOW THE SECOND ROUTE WHERE VISITING IT IS NOT ENOUGH,
