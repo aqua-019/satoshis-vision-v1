@@ -782,7 +782,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   figure. The boundary is `390/54 = 7.222…` (repeating), and `cw = 7.2222222` is still 56.
   A `cw` recorded to two decimals as "7.22" spans `[7.215, 7.225)`, of which only
   `[7.222…, 7.225)` — about **28%** — produces the flip, so the recorded number neither
-  establishes it nor rules it out. Swept 300-2560px, the two `cw` values disagree at 1,254
+  establishes it nor rules it out. Swept 300-2560px, the two `cw` values disagree at 1,216
   widths and **the nearest to 390 is 389**, where `cols` does go 56 → 55; 390 is not among
   them, and neither are the gated stages 320/360/430/550. **AND THE OTHER TWO HALVES OF THE
   OLD CLAIM ARE REFUTABLE EVEN GRANTING THE FLIP**: `narrowMarginCols` returns 4 for both 54
@@ -841,7 +841,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   present, NOT reverted: `styles-legibility.css:417` declares
   `[data-mem-view="classic"] { --fs-label: 13px; --fs-mono: 13px; }` with a literal-selector
   list at `:418-427`, inside the `@media (max-width: 720px)` block. The settled minimum sits
-  **seven lines away in the same block** — `:270` declares `:root { --fs-label: 12px }` under
+  **147 lines away, in the same `@media (max-width: 720px)` block** (`:270` against `:417`) — `:270` declares `:root { --fs-label: 12px }` under
   p4·02's adjudication ("BELOW 720px, NOTHING RENDERS UNDER 12px"). So **13 is a RAISE ABOVE
   the floor on ONE view, not a new site minimum**, and not a new rung either: `--fs-chart-label`
   is already 13px below 768. **THE LEAK CHECK IS A PROXY, SAID OUT LOUD**: `verify-memphone`
@@ -981,16 +981,22 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   basename, since the `index` stem holds two chunks and its lazy member is byte-identical at
   2,253. Lazy 1,391 − 416 + 106 = **+1,081 = `lazyJsRaw`'s whole delta**; +1,081 + 3 =
   **+1,084 = `totalJsRaw`'s whole delta**. **THE RE-MEASURE RULE FIRED**: an earlier reading
-  was −456 / +1,041 / +1,044, and two later COMMENT edits moved `EcoPopup` by 40 B with every
-  ceiling GREEN throughout — which is the entire content of the rule, a budget comment not
+  was −456 / +1,041 / +1,044, and a later CODE edit — 408468c's `e.shot ? "col-2" : undefined`
+  conditional — moved `EcoPopup` by 40 B with every ceiling GREEN throughout. (A first draft
+  of this sentence blamed "two later COMMENT edits", which is impossible: the build minifies,
+  so no comment survives into any chunk — `grep -c 'p4·M6b' dist/assets/EcoPopup-*.js` is 0.
+  The numbers were right and the mechanism was invented, which is the family this whole file
+  is about, arriving inside the paragraph reporting a re-measurement.) — which is the entire content of the rule, a budget comment not
   being gated by the budget it annotates. `SITE_PR` 202 → 203 contributed **exactly 0** to
   `eagerJsRaw` (264,457 either side), reproducing p4·01's and p4·M7's own measurement that
   three digits at identical length cost nothing. `cssGz` **BYTE-IDENTICAL at 18,586** against a 414 B
   margin — the release adds no stylesheet rule at all, which was the design constraint rather
   than the outcome. `CHUNK_COUNT` **76 = 76**. **NO CEILING RAISED, because none was crossed —
   and the margin is said out loud: `/operate/peers` is now 105,249 of 106,000, a margin of
-  751 B, the tightest this file has recorded** (p4·M4's 831 is the previous). That is where
-  the eighth peer reds.
+  751 B**, which is where the eighth peer reds. **NOT "the tightest recorded" — that
+  superlative was written here and is false**: this file already records `/about/sources` at
+  **642 B**, `/future` at **497 B** and `/future` again at **310 B**. It is the tightest
+  margin on THIS route, which is a checkable claim and the one worth making.
   **MY OWN "DEFECT FOUND BY LOOKING" WAS HALF WRONG, AND MEASURING IT IS WHAT CORRECTED ME.**
   Kathie's brief rendered with a wide empty band down its right side and I recorded it as
   "~40% dead space caused by the reserved second grid track". Measured at 1440 in both

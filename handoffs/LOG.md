@@ -827,7 +827,7 @@
   **4.36**. Budgets paired per stem: **73 of 77 slots size-identical**, four moved,
   **residual ZERO on both halves** (+1,081 lazy, +3 eager, +1,084 total), `cssGz`
   BYTE-IDENTICAL at 18,586, **76 = 76 chunks**; no ceiling raised because none was crossed,
-  and `/operate/peers`' margin is now **751 B**, the tightest recorded. Census RECOUNTED and
+  and `/operate/peers`' margin is now **751 B**, the tightest on that route. Census RECOUNTED and
   UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6** — with the instrument controlled against six
   commits, the sixth of which caught a NEW defect class: a block-scalar `run: |` step that a
   lazy capture under `/m` truncates at the first line end, which no historical control could

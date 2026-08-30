@@ -1228,7 +1228,7 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     id: "kathie", name: "Kathie", head: "stickers, on XMR Bazaar.",
     kind: "Collaborator · artist", status: "PARTNER", c: "#5eead4",
     url: "https://xmrbazaar.com/user/kafi",
-    blurb: "An artist selling Monero stickers on XMR Bazaar as kafi, under a seller bio three words long: \u201ci sell art\u201d.",
+    blurb: "An artist selling stickers on XMR Bazaar as kafi, under a seller bio three words long: \u201ci sell art\u201d.",
     body: [
       "Kathie sells stickers on XMR Bazaar as kafi, and her bio there is three words long: \u201ci sell art\u201d, lowercase. Among the designs on the seller page when it was read: a lucky cat, a bear, a piggy bank, a chopper, a birthday card and a sheet, alongside plain Monero stickers sold in lots. XMR Bazaar is a Monero marketplace; her listings sit on it.",
       "The directories above index where Monero circulates. This is one of the places it actually does, one object at a time \u2014 the argument the rest of this site makes at protocol scale is that a currency is only a currency if somebody accepts it for something, and somebody selling a cat sticker to a stranger for XMR is that claim tested rather than argued. The others here are projects, services and directories; this one is a person.",

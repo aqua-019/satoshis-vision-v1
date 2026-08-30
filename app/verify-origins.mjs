@@ -280,8 +280,19 @@ await coldBootOffBrowser(b);
             return im && im.complete && im.naturalWidth > 0;
           }, id, { timeout: 8000 }).then(() => { shotsSeen++; }).catch(() => {});
         } else {
-          // The other half of the claim: an entry with no shot must render no
-          // image, rather than an <img> with a broken or borrowed src.
+          /* The other half of the claim: an entry with no shot must render no
+             image, rather than an <img> with a broken or borrowed src.
+             MEASURE THE DIALOG BEFORE MEASURING ITS IMAGES. The click above is
+             `.catch`-swallowed and the wait after it is too, so on a page where
+             the control cannot be reached this branch would count the images in
+             a dialog that never opened — find zero, push no stray, and print
+             GREEN with a message byte-identical to the healthy one. Reproduced
+             during this release's own pre-merge audit by disabling one brief
+             control's pointer events. The floor is the same shape verify-peers
+             §11 uses: count the SUBJECT, which exists in both polarities. */
+          const opened = await p.evaluate(() =>
+            document.querySelectorAll('[role="dialog"]').length).catch(() => -1);
+          if (opened !== 1) { strays.push(`${id}:no-dialog(${opened})`); continue; }
           const imgs = await p.evaluate(() =>
             document.querySelectorAll('[role="dialog"] img').length).catch(() => -1);
           if (imgs !== 0) strays.push(`${id}:${imgs}`);

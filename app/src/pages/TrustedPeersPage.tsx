@@ -26,8 +26,11 @@
  *     the card, which did the same thing the anchor did. Both halves still
  *     hold, with the destinations swapped — a near-miss on `visit ↗` now lands
  *     on the card, which opens the brief: in-site, dismissible, and not a
- *     navigation the reader did not ask for. There is no longer ANY control on
- *     this page whose near-miss sends a reader off-site.
+ *     navigation the reader did not ask for. The destructive near-miss the 44px
+ *     floor was built for is gone. (Narrowed deliberately: in the WRAPPED
+ *     footer state at 390 a tap well below the button can still reach the
+ *     `visit ↗` anchor — pre-existing geometry, byte-identical to base, and
+ *     recorded at the control itself.)
  *
  * 2 · `?p=<id>` MAKES A BRIEF SHAREABLE. Before this, all seven briefs shared
  *     one address: opening any of them left the URL at /operate/peers, so
@@ -229,6 +232,22 @@ export function TrustedPeersPage() {
                         SAME THING the anchor does — open the partner's site.
                         Missing it costs nothing. Only this button's near-miss
                         is destructive, so only this button is enlarged.
+
+                        [p4·M6b — THE PREMISE OF THE PARAGRAPH ABOVE IS NO
+                        LONGER TRUE, AND ITS CONCLUSION STILL IS. The card no
+                        longer opens the partner's site, so a near-miss on the
+                        anchor lands on a card that opens the BRIEF — in-site,
+                        dismissible, and not a navigation the reader did not
+                        ask for. The asymmetry inverts in the SAFE direction
+                        and the anchor still needs no enlarging. The dated
+                        measurement above is left as written, per this repo's
+                        rule that rewriting one falsifies it; this bracket is
+                        the marker that says to check its date before quoting
+                        it. Residual, measured and NOT fixed: in the WRAPPED
+                        footer state at 390 a tap ~10px below this button can
+                        still land on the anchor and open a new tab — that
+                        geometry is byte-identical to base and is not this
+                        release's.]
 
                         NO NEW CSS RULE: `cssGz` runs a 416 B margin and this
                         page's idiom is inline style throughout. */}
