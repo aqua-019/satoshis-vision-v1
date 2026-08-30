@@ -982,7 +982,28 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   repo-wide: `app/README.md:258` was the only remaining present-tense mount claim.
   `"12px"` swept across every `.md`: `README.md:70` is now the only site-wide floor claim in
   the repo's public prose, and it is true.
-  **NOT FIXED, and named.** `verify-mobile.mjs`'s own header says it measured "the fourteen
+  **AND THE SWEEP FOUND TWO MORE CLAIMS AFTER THE FIRST SIX WERE FIXED — one of them in the
+  sentence p4·M6b wrote to fix another instance of the same thing.** §5 says sweep rather than
+  spot-check, and reading every gate citation in `README.md` against what that gate actually
+  asserts is what turned them up. (a) *"the provenance vocabulary every displayed figure on
+  this site carries. That is what `verify-provenance.mjs` and `verify-prng.mjs` enforce"* —
+  measured against that gate's own assertions, it proves the freshness vocabulary is TOTAL
+  (`freshSuffix`'s default calls `assertNever`) and that a badge cannot claim a freshness it
+  has no way to know (the `fresh="live"` literal ban, allowlisted with reasons, checked both
+  directions). **Not one of its assertions says every displayed figure carries a badge.**
+  `verify-prng` genuinely holds the invent side, so the sentence now says which gate holds
+  which half and says out loud that the every-figure-has-a-badge part is a convention rather
+  than a build failure. (b) The reduced-motion row I had just written said the gate drives
+  **all** 27 animated surfaces. Measured: `verify-reduce.mjs:70`'s `MEM` list is a HAND-COPIED
+  six against a registry of **TEN** (`mempool-meta.ts`), so `orbital`, `abyss`, `pulse` and
+  `circuit` — every canvas view added since v6.1.3 — **are not driven by the reduced-motion
+  gate at all.** The row now says "6 of the 10" and names the hand-copy as a limit. **Widening
+  that list is NOT done here**: it is a fifth file, it adds four surfaces to a gate that has
+  found running-animation defects before, and three of its original five defects were exactly
+  this shape — it needs its own break tests. **A correction can be true about its own subject
+  and overclaim about the mechanism cited beside it**, and only reading the gate catches that.
+  **NOT FIXED, and named.** The `verify-reduce` mempool coverage gap above — 6 of 10 views.
+  `verify-mobile.mjs`'s own header says it measured "the fourteen
   canonical routes" while it imports `ROUTES` from `scripts/routes.mjs` and runs **18** — the
   same stale-prose family, in a file outside this PR's four. `claude/V2-VIEW-CONFORMANCE.md:256`
   says "No text under 12px", but records the conflict in the next line and is a dated working
