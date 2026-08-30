@@ -476,7 +476,7 @@ try {
     }
     const body = dataContent.slice(m.index, i + 1);
     const f = (k) => (body.match(new RegExp(k + ':\\s*"((?:[^"\\\\]|\\\\.)*)"')) || [, null])[1];
-    shots.push({ src: f('src'), alt: f('alt') || '', captured: f('captured') });
+    shots.push({ src: f('src'), alt: f('alt') || '', captured: f('captured'), kind: f('kind') });
   }
 
   R.ok(shots.length >= 6,
@@ -492,6 +492,14 @@ try {
   R.ok(missing.length === 0,
     `§9 · every shot src resolves to a real file under public/ (${shots.length - missing.length} of ${shots.length})`,
     missing.map((h) => h.src).join(', '));
+
+  /* p4·M6b — EVERY SHOT DECLARES WHAT IT IS. Six are screenshots this site
+     took; the seventh is artwork the partner supplied. The caption says which,
+     so a missing or invented `kind` is a mislabel waiting to render. */
+  const badKind = shots.filter((h) => h.kind !== 'capture' && h.kind !== 'artwork');
+  R.ok(badKind.length === 0,
+    `§9 · every shot declares kind capture|artwork (${shots.length - badKind.length} of ${shots.length}; ${shots.filter((h) => h.kind === 'capture').length} captures, ${shots.filter((h) => h.kind === 'artwork').length} artwork)`,
+    badKind.map((h) => `${h.src}: ${JSON.stringify(h.kind)}`).join(', '));
 
   const badDate = shots.filter((h) => !/^\d{4}-\d{2}-\d{2}$/.test(h.captured));
   R.ok(badDate.length === 0,
@@ -536,6 +544,7 @@ try {
         n: d ? d.querySelectorAll('img').length : -1,
         decoded: !!im && im.naturalWidth > 0,
         nat: im ? `${im.naturalWidth}x${im.naturalHeight}` : null,
+        box: im ? `${im.getAttribute('width')}x${im.getAttribute('height')}` : null,
         src: im ? im.getAttribute('src') : null,
         lazy: im ? im.getAttribute('loading') : null,
         cap: cap[0] || null,
@@ -589,10 +598,34 @@ try {
     `§9 · every RENDERED src is same-origin too, not just the source literal (${withShot.length - offOriginSrc.length} of ${withShot.length})`,
     offOriginSrc.map((o) => `${o.id}: ${o.src}`).join(', '));
 
-  const undated = withShot.filter((o) => !/^captured \d{4}-\d{2}-\d{2}$/i.test(o.cap || ''));
+  /* THE CAPTION MUST MATCH THE KIND, and asserting one fixed wording was the
+     defect waiting to happen: until p4·M6b every image here was a capture, so
+     `/^captured <date>/` was both the rule and an accident of the roster. The
+     first SUPPLIED image would have had to render "captured", claiming this
+     site photographed a page it never visited. Keyed on the declared kind now,
+     with the date still mandatory in both forms. */
+  const kindOf = new Map(shots.map((h) => [h.src.replace(/^\/peers\/peer-|\.webp$/g, ''), h.kind]));
+  const wantCap = (id) => (kindOf.get(id) === 'artwork'
+    ? /^artwork · supplied \d{4}-\d{2}-\d{2}$/i
+    : /^captured \d{4}-\d{2}-\d{2}$/i);
+  const undated = withShot.filter((o) => !wantCap(o.id).test(o.cap || ''));
   R.ok(undated.length === 0,
-    `§9 · every screenshot renders its capture date beneath it (${withShot.length - undated.length} of ${withShot.length}; e.g. "${withShot[0] ? withShot[0].cap : 'n/a'}")`,
-    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', '));
+    `§9 · every image renders a DATED caption that matches what it is (${withShot.length - undated.length} of ${withShot.length}; e.g. "${withShot[0] ? withShot[0].cap : 'n/a'}")`,
+    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)} — expected ${kindOf.get(o.id) === 'artwork' ? 'artwork · supplied <date>' : 'captured <date>'}`).join(', '));
+
+  const artworkMiscalled = withShot.filter((o) => kindOf.get(o.id) === 'artwork' && /captured/i.test(o.cap || ''));
+  R.ok(artworkMiscalled.length === 0,
+    `§9 · no SUPPLIED image is captioned as a capture (${withShot.filter((o) => kindOf.get(o.id) === 'artwork').length} artwork on the page)`,
+    artworkMiscalled.map((o) => `${o.id}: ${JSON.stringify(o.cap)}`).join(', ')
+    + '  — "captured" claims this site photographed the partner\'s surface. For art they sent us, that is simply untrue.');
+
+  /* THE RESERVED BOX MUST BE THE IMAGE'S OWN SHAPE. The width/height attributes
+     were a hardcoded 1000x625 while every image was that size; a supplied image
+     of a different shape reserves the wrong box and shifts layout on decode. */
+  const wrongBox = withShot.filter((o) => o.nat && o.box && o.nat !== o.box);
+  R.ok(wrongBox.length === 0,
+    `§9 · every image reserves its OWN intrinsic box, not a shared constant (${withShot.length - wrongBox.length} of ${withShot.length}; ${[...new Set(withShot.map((o) => o.nat))].join(', ')})`,
+    wrongBox.map((o) => `${o.id}: decoded ${o.nat} but reserved ${o.box}`).join(', '));
 
   /* ══ §10 · EVERY BRIEF HAS ITS OWN ADDRESS (p4·M6b) ═══════════════════
    *

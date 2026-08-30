@@ -143,8 +143,35 @@ export interface EcoShot {
   /** Same-origin, under /peers/. Never an absolute URL — see above. */
   src: string;
   alt: string;
-  /** ISO day, YYYY-MM-DD. Rendered verbatim as "captured <date>". */
+  /** ISO day, YYYY-MM-DD. What the caption dates — see `kind`. */
   captured: string;
+  /**
+   * WHAT THIS IMAGE IS, and it is REQUIRED because the caption says it out
+   * loud and the two claims are not interchangeable (p4·M6b).
+   *
+   *   "capture" — a screenshot THIS SITE took of somebody else's surface.
+   *               Renders "captured <date>", and the date is the honesty: a
+   *               reading of another site starts aging the moment it is taken.
+   *   "artwork" — an image the partner SUPPLIED. Renders "artwork · supplied
+   *               <date>". Calling it "captured" would claim this site
+   *               photographed their page, which for supplied art is simply
+   *               untrue, and this page's whole subject is not claiming things
+   *               it did not do.
+   *
+   * A required union rather than an optional flag, so a seventh kind of
+   * evidence is a compile error and not a silent mislabel.
+   */
+  kind: "capture" | "artwork";
+  /**
+   * INTRINSIC PIXELS. Required, and it used to be a hardcoded 1000x625 in
+   * EcoPopup because all six captures happened to be exactly that. The first
+   * SUPPLIED image is 1000x776, so the shared constant became a per-entry
+   * fact: the browser reserves this box before a byte arrives, and a wrong
+   * one is a layout shift by construction against a repo that caps CLS at
+   * 0.005.
+   */
+  w: number;
+  h: number;
 }
 
 export interface EcoBlock {
@@ -787,6 +814,9 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       src: "/peers/peer-superbrain.webp",
       alt: "The Superstress app's monitor tab on a Tor-only Umbrel node, running v0.19.0.0-beta.2.0: network TESTNET, difficulty 0, transaction count 0, database size 0 B, no top block yet and every connection count at zero — a node that has just been installed and has not begun syncing.",
       captured: "2026-08-18",
+      kind: "capture",
+      w: 1000,
+      h: 625,
     },
     // p3·16 replaces the null "Umbrel node writeup" placeholder with the hub
     // that IS the Umbrel node writeup — the placeholder was a promise of a
@@ -828,6 +858,9 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       src: "/peers/peer-xmrhub.webp",
       alt: "The XMRHUB home page: a Monero portal with Buy, Swap, Directory, Learn, Social, Shop and Forum sections above a live XMR/USD chart.",
       captured: "2026-08-18",
+      kind: "capture",
+      w: 1000,
+      h: 625,
     },
     // BOTH reservations retired here in p4·M3, for two DIFFERENT reasons:
     //   · "screenshot · xmrhub directory" — SATISFIED. The capture above is it.
@@ -875,6 +908,9 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       src: "/peers/peer-kycrip.webp",
       alt: "The kyc.rip home page: a FINANCIAL PRIVACY banner beside a no-KYC exchange panel, above two operator-built tools.",
       captured: "2026-08-18",
+      kind: "capture",
+      w: 1000,
+      h: 625,
     },
     // "panel embed · kyc.rip featured guides" retired on XMRHUB's second
     // ground: an EMBED of a third-party panel is a `frame-src` this site's CSP
@@ -923,6 +959,9 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       src: "/peers/peer-xmrclub.webp",
       alt: "The xmr.club front page: \u201cNo-KYC services for the Monero economy\u201d beside a directory index, over a row of headline sponsors marked as paid placement.",
       captured: "2026-08-18",
+      kind: "capture",
+      w: 1000,
+      h: 625,
     },
     links: [["xmr.club", "https://xmr.club/"], ["@xmr_club on X", "https://x.com/xmr_club"]],
   },
@@ -984,6 +1023,9 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       src: "/peers/peer-superbrain.webp",
       alt: "The Superstress app from the Superbrain store, running on a Tor-only testnet node: a monitor tab with network, difficulty, transaction-count and chain-info panels.",
       captured: "2026-08-18",
+      kind: "capture",
+      w: 1000,
+      h: 625,
     },
     // Link[0]'s label doubles as the card footer's short "visit X" text
     // (TrustedPeersPage.tsx derives `primary` from links[0]) — kept short
@@ -1050,6 +1092,9 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       src: "/peers/peer-monerica.webp",
       alt: "The Monerica home page: a category sidebar beside sponsor listings, a mission statement about transacting freely and privately, and a legend of per-listing statuses.",
       captured: "2026-08-18",
+      kind: "capture",
+      w: 1000,
+      h: 625,
     },
     links: [["monerica.com", "https://monerica.com/"], ["@MonericaProject on X", "https://x.com/MonericaProject"]],
   },
@@ -1099,6 +1144,9 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       src: "/peers/peer-privacygateway.webp",
       alt: "Privacy Gateway's mining pool page: a Cards / Swap / RPC node / Mining pool tab row above the pool address, a wallet-address field, a strip of pool statistics and a 24-hour hashrate chart.",
       captured: "2026-08-18",
+      kind: "capture",
+      w: 1000,
+      h: 625,
     },
     links: [["privacygateway.io", "https://privacygateway.io/"], ["@Privacygateway_ on X", "https://x.com/Privacygateway_"]],
   },
@@ -1229,6 +1277,30 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     kind: "Collaborator · artist", status: "PARTNER", c: "#5eead4",
     url: "https://xmrbazaar.com/user/kafi",
     blurb: "An artist selling stickers on XMR Bazaar as kafi, under a seller bio three words long: \u201ci sell art\u201d.",
+    /* THE ARTWORK IS SUPPLIED, NOT CAPTURED, and `kind` carries that so the
+       caption can say it. The other six images on this page are screenshots
+       this site took of somebody else's surface; this one is an image the
+       partner sent, and calling it "captured" would claim a photograph of a
+       page nobody photographed.
+
+       IT IS NOT RESTYLED. A bright pink banner on a dark page is a jolt, and
+       the jolt is hers — she is the one entry here who makes pictures for a
+       living, and dimming, tinting or framing her work to sit quietly inside
+       our palette would be editing a partner's art to suit our own. It renders
+       at its own colours, in the same bordered figure the six captures use.
+
+       TWO VERSIONS WERE SUPPLIED (1133x879 and 543x405); the larger is the
+       source, so the 1000px-wide render is a downscale rather than an upscale.
+       1000x776 at 32,078 B sits inside the register the six captures set
+       (9,050 - 53,936 B). */
+    shot: {
+      src: "/peers/peer-kathie.webp",
+      alt: "Kathie's own promotional artwork: three cartoon animals on a pink striped ground under the hand-lettered word KATHIE \u2014 two cats and a rabbit, the middle cat holding a Monero logo and the outer two each holding a heart.",
+      captured: "2026-08-30",
+      kind: "artwork",
+      w: 1000,
+      h: 776,
+    },
     body: [
       "Kathie sells stickers on XMR Bazaar as kafi, and her bio there is three words long: \u201ci sell art\u201d, lowercase. Among the designs on the seller page when it was read: a lucky cat, a bear, a piggy bank, a chopper, a birthday card and a sheet, alongside plain Monero stickers sold in lots. XMR Bazaar is a Monero marketplace; her listings sit on it.",
       "The directories above index where Monero circulates. This is one of the places it actually does, one object at a time \u2014 the argument the rest of this site makes at protocol scale is that a currency is only a currency if somebody accepts it for something, and somebody selling a cat sticker to a stranger for XMR is that claim tested rather than argued. The others here are projects, services and directories; this one is a person.",

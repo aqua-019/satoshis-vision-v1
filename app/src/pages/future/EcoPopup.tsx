@@ -251,8 +251,11 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
             {/* p4·M3 — THE REAL SCREENSHOT.
                 Four things here are load-bearing and none is styling:
 
-                `width`/`height` ARE THE INTRINSIC PIXELS (every capture is
-                1000x625), so the browser reserves the aspect-ratio box before
+                `width`/`height` ARE THE INTRINSIC PIXELS, read PER SHOT since
+                p4·M6b — they were a hardcoded 1000x625 while every image here
+                was a capture at exactly that size, and the first SUPPLIED
+                image (1000x776) made the shared constant a per-entry fact. The
+                browser reserves the aspect-ratio box before
                 a byte of image arrives and the paragraph beside it never
                 jumps. Without them a lazy image is a layout shift by
                 construction, which this repo caps at 0.005.
@@ -287,8 +290,8 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 <img
                   src={e.shot.src}
                   alt={e.shot.alt}
-                  width={1000}
-                  height={625}
+                  width={e.shot.w}
+                  height={e.shot.h}
                   loading="lazy"
                   decoding="async"
                   data-peer-shot={e.id}
@@ -298,7 +301,9 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                   className="mono"
                   style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}
                 >
-                  captured {e.shot.captured}
+                  {e.shot.kind === "artwork"
+                    ? `artwork · supplied ${e.shot.captured}`
+                    : `captured ${e.shot.captured}`}
                 </figcaption>
               </figure>
             )}
