@@ -848,94 +848,67 @@
   before §10 could speak; after the fix it reds 16 across five sections.
   verify-peers **44 → 59**.
 
-- XMRIRISH-20260830-M6 · done · p4·M6 "THE HONESTY REPAIR" — six claims in `README.md` /
-  `app/README.md` / `SitePage.tsx` that did not check out, and one `verify-site` §12
-  selector that reddened without discriminating. Shipped inside PR #203 (the session is
-  pinned to one branch), so `SITE_PR` stays 203 ·
-  https://github.com/aqua-019/satoshis-vision-v1/pull/203
-  **The whole point in one line: a gate suite proves what it asserts and says nothing about
-  the sentences wrapped around it.** Ten gates green, break tests red where intended,
-  budgets to residual zero — and none of it could see any of this.
-  **The brief's own replacement for §1a would have been false in the same shape as the claim
-  it replaced.** Measured 130 sub-12px nodes at 1440 on `/about/site` (103 @ 11 · 24 @ 11.5 ·
-  3 @ 10.5) against 0 at 390, reproducing the brief exactly — then measured its prescription
-  too: the three 10.5px nodes are `.pill`, so there is no hard 11px RENDERED floor above
-  720px, and `verify-legibility`'s floor is on the SOURCE (token scale + inline/SVG
-  `fontSize`), never on a rendered selector. The row now names two bands and says out loud
-  that above 720px there is no rendered floor.
-  §1b `verify-reduce.mjs` was cited for the claim its own header at `:54-55` disclaims in one
-  sentence · §1c a THIRD randomness source (`crypto.getRandomValues`, two call sites) and a
-  lead-in that contradicted itself four lines later · §1e CSP does not govern top-level
-  navigation, so the first row is now "no request leaves this origin **while you are on it**"
-  · §2 `app/README.md` still described p4·M2's removed Main Home ThemeToggle mount in the
-  present tense (measured: `/` prerenders ZERO `theme-toggle`, one mount in the tree) · §3
-  `SitePage`'s `sub=` enumerated the PRE-reorder section order and **the coupling is removed,
-  not gated** — a gate matching prose to the section list would pin them together forever.
-  §1d needed nothing: p4·M6b had already re-scoped the simulators clause.
-  §4: `[data-support-link] ~ a` matched **ZERO** and always will (the CTA is an only child of
-  its `.chip-row`), so the comparison rode on a global `a.v6-res` — which is how p4·M2's own
-  break test, by giving the CTA that class, put it into its own set and degenerated the
-  assertion to `h > max(h, …)`. **"42px vs 42px" was the signature of the degeneracy, not of
-  the gate working.** Now scoped by walking up from the section marker to the element holding
-  the CTA and self-excluded with `:not([data-support-link])`; the floor names the count and
-  requires ≥ 2. Prints `38px vs 28px`.
-  **M-a REFUSED TO GO RED and that is the finding**: the brief predicted dropping the CTA's
-  inline padding would put it below the secondary links; measured 38 → **30px against 28**,
-  so the assertion is correctly green — `proto-btn` carries its own padding. M-a2 crosses it
-  and reds `12px vs 28px`. M-b reds on affordance with the weight line at **42px vs 28px, NOT
-  an equal pair** — the whole proof the self-inclusion is gone. M-c (revert `sub=`) reds
-  NOTHING, as required. Slack reported rather than a tick: at ship the assertion passes by
-  10px, so it absorbs an 8px shrink silently.
-  Budgets: `cssGz` **BYTE-IDENTICAL at 18,586** and `eagerJsRaw` byte-identical at 264,457 —
-  no module, no import, no stylesheet rule. One term, the `sub=` string at exactly **−9 B**,
-  which is `lazyJsRaw`'s and `totalJsRaw`'s whole delta. Chunks 76 = 76. `verify-site` **81
-  passed · 0 failed, count unchanged** — two assertions rewritten, none added.
 
 - XMRIRISH-20260830-M6c · done · p4·M6c "THE ARTWORK IS NOT DATED, AND THE COLUMN WAS GATED
   BY NOTHING" — shipped inside PR #203, so `SITE_PR` stays 203 ·
   https://github.com/aqua-019/satoshis-vision-v1/pull/203
-  **The operator's dependency premise was false on this branch and checking it is what
-  released the medallion from one of its two holds.** The hold cited "verify-site §12 is
-  STILL the pre-M6 version… p4·M6 has not run (SitePage.tsx, verify-site.mjs and
-  app/README.md are all untouched)". Measured: `a5358b8` touches all three,
-  `verify-site.mjs:633` is `a:not([data-support-link])`, and it ran green in-chain at 19 of
-  39 printing `38px vs 28px`. **The medallion is still held on the operator's OTHER and
-  independent ground — it is not export-ready** (1206x1154, not square, no alpha, corners
-  rgb(19,18,16) against a rgb(5,5,5) ground). No placeholder shipped; the three landing
-  options are the operator's to pick.
-  **The date was a true fact about the wrong subject.** p4·M6b rendered "artwork · supplied
-  2026-08-30" — the day the file reached us, which beside six real capture dates reads as
-  the age of the artwork. `EcoShot` is a DISCRIMINATED UNION now, so the wrong state is
-  untypeable rather than unwritten: a date on artwork is **TS2353**, an undated capture is
-  **TS2322**, a `.captured` read that has not narrowed on `kind` is **TS2339** — each proven
-  by applying the mutation and running tsc. Caption names its source instead: "artwork ·
-  supplied by Kathie", derived from `name`.
-  **AND THE SHOT COLUMN WAS GATED BY NOTHING.** K2 (an entry's `shot` deleted structurally so
-  it compiles) left all 69 assertions GREEN; a scoped grep for the column across verify-peers,
-  verify-future and verify-origins returns zero. p4·M6b's `408468c` could have been reverted
-  in silence. New §9 BICONDITIONAL read from `getComputedStyle`, not the class name, with a
-  new `data-peer-body` handle. `verify-peers` **67 → 70**.
+  **A measurement is scoped to WHEN it was taken, not only to what it measured** — the
+  release's own lesson, and the standing scope-of-an-absence rule one axis over. p4·M6b swept
+  for three delivered assets at session start, found none, and restated that one reading as
+  fact for four hours; two of the three had arrived 79 and 106 minutes later. #202 recorded
+  that a reachability result is scoped to what it was measured ON. Same shape, time axis.
+  **The date was a true fact about the wrong subject.** "artwork · supplied 2026-08-30" is
+  the day the file reached us; beside six real capture dates a reader takes it for the age of
+  the artwork. `EcoShot` is a DISCRIMINATED UNION now, so the wrong state is untypeable, each
+  axis proven by applying the mutation and running tsc: a date on artwork **TS2353**, an
+  undated capture **TS2322**, a `.captured` read not narrowed on `kind` **TS2339**. Caption
+  names its source instead — "artwork · supplied by Kathie", derived from `name`.
+  **And the shot column was gated by nothing.** K2 (an entry's `shot` deleted structurally so
+  it compiles) left all 69 assertions GREEN, and a scoped grep for the column across
+  verify-peers, verify-future and verify-origins returns zero — p4·M6b's `408468c` could have
+  been reverted in silence. New §9 BICONDITIONAL read from `getComputedStyle`, not the class
+  name, with a new `data-peer-body` handle. `verify-peers` **67 → 70**.
   **Four break tests, and the two that stayed green are the finding.** K1 the caption re-dated
-  → 2 reds, and `no SUPPLIED image is captioned as a capture` STAYS GREEN — proof the two are
-  independent, since "supplied 2026-08-30" never says "captured". K2 → green, and
-  verify-origins reads **"6 of the 7 rendered briefs"** and PASSES, which is the derived count
-  demonstrated rather than asserted. K3 the column fix reverted → green, because a full roster
-  gives the biconditional no zero-track subject. **K4 = K2+K3 → 1 red** — the two conditions
-  are JOINTLY NECESSARY, p4·M3's two-defence result inverted.
-  **The 543px ceiling measured at three dprs, not predicted**: 1440 dpr1 asks 498 device px
-  and gets 543 — ratio **1.09, oversupplied**; dpr2 **0.545**; dpr3 **0.363**; 390 dpr2
-  **0.763**; 390 dpr3 **0.508**. The phone is better than the desktop at the same ratio
-  because the column is narrower. Read from the captures, the dpr-3 softness is far gentler
-  than the arithmetic predicts — flat cel art with heavy outlines, not a photograph. Not
-  upscaled. Reserved box 543x405 = native, so decode shifts nothing.
-  **Budgets: residual zero, two terms, and a public/ image is not JS** — the artwork shipped
-  in M6b and no asset moves here. `EcoPopup` +16, `repoPulse` −22 = **−6 = lazyJsRaw's whole
-  delta = totalJsRaw's whole delta**. `cssGz` BYTE-IDENTICAL 18,586 · eager entry
-  BYTE-IDENTICAL 101,542 · chunks 76 = 76. **Measured slack**: `/operate/peers` **473 B** ·
-  `/future` **833 B** · `cssGz` **414 B** · lazy **2,392 B** · total **2,935 B**.
-  **My own stem splitter was wrong in the way CLAUDE.md already records** — `rsplit('-',1)`
-  against a Vite hash whose alphabet CONTAINS the dash, reporting 37 stems moved where 2 did;
-  the spurious pairs cancel exactly, which is what makes it easy to miss.
+  → 2 reds, and `no SUPPLIED image is captioned as a capture` STAYS GREEN, proving the two are
+  independent since "supplied 2026-08-30" never says "captured" — one forbids the WORD, the
+  other the DIGITS. K2 → green, and verify-origins reads **"6 of the 7 rendered briefs"** and
+  PASSES: the derived count moving is the proof it derives. K3 the column fix reverted → green,
+  because a full roster gives the biconditional no zero-track subject. **K4 = K2+K3 → 1 red**:
+  the two conditions are JOINTLY NECESSARY, p4·M3's two-defence result inverted.
+  **The artwork ships at 1133x879, 55,798 B**, replacing a 543x405 at 25,216 B. Measured at
+  the render size the two masters are EQUIVALENT in edge detail (3.30% vs 3.23% strong-edge at
+  a 996-device-pixel box), so the 1133 carries no meaningful extra detail — it is still the
+  right file because a dpr-2 reader asks ~996 px, which 1133 covers at ratio **1.14**
+  (downsample) and 543 at **0.55** (upsample). **No dpr ceiling left to record**; the earlier
+  caveat described the 543 file and went with it.
+  **Encoded in Chromium, no new dependency** — drawImage to a canvas plus toDataURL, since the
+  gates already ship a browser. **Lossless was tried first and lost badly, against the
+  prediction**: `toDataURL("image/webp", 1)` IS genuinely lossless (canvas round trip maxDiff
+  **0**, pixel-identical) and weighs **456,843 B against q=0.92's 55,798 B — a factor of 8.2**.
+  Flat cel art usually does compress smaller lossless; this file does not, because the supplied
+  master is a JPEG carrying **23,098 unique colours** where authored flat art would be in the
+  hundreds, and lossless must preserve every bit of that noise. Ringing measured against the
+  lossless reference through ONE decoder: in the 7.1% of pixels within 3px of a hard edge, mean
+  **2.655 of 255**, max 20; away from edges 1.007. The first ringing measurement was the WRONG
+  INSTRUMENT — Chromium-encoded WebP against a libjpeg-decoded source, reading decoder
+  disagreement as encoding loss on a file already proven pixel-identical.
+  **Budgets, all green, MEASURED SLACK not ticks**: `/operate/peers` **472 B** (0.45%) ·
+  `/future` **834 B** (0.74%) · `lazyJsRaw` **2,382 B** (0.24%) · `totalJsRaw` **2,925 B**
+  (0.23%) · `cssGz` **414 B** (2.18%) · `eagerJsRaw` **15,543 B**. `cssGz` BYTE-IDENTICAL at
+  18,586 and the eager half byte-identical at 264,457 — no stylesheet rule, no module, and a
+  `public/` asset is in no chunk closure, so the +30,582 B of image costs no route budget.
+  **FORWARD CONSTRAINT, said now rather than discovered as a red**: `/operate/peers` is the
+  tightest margin on the board at 472 B, down from 1,577 B at #202. Kathie's own entry cost
+  ~1,091 B — MORE than the margin now left — so **the next peer added to this route needs a
+  raise**. Planning that arithmetic up front is what #199 and #201 each lost a round to.
+  **p4·M6 is NOT in this release and was reverted out of it** — four of its sections were taken
+  here in error and removed on the operator's instruction. It is a separate PR whose whole
+  proof is zero bytes moved against a four-file diff, and this branch moves bytes across
+  thirteen files, so its break tests cannot run here. README.md, app/README.md, SitePage.tsx
+  and verify-site.mjs are byte-identical to the p4·M6b head `32c4bb5`, verified per file; §1d
+  survives because p4·M6b already landed it. Consequence worth stating: **verify-site §12 is
+  again the pre-M6 self-including selector, so the medallion's hold is correct on BOTH grounds**
+  — the §12 prerequisite and the asset's own format.
   Census RECOUNTED and UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6**, instrument controlled
-  against SIX commits, all reproducing exactly including the invocation arithmetic and the
-  six orphans by name.
+  against SIX commits, all reproducing exactly including the invocation arithmetic and the six
+  orphans by name.

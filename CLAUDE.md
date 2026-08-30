@@ -877,18 +877,16 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 ## Session Notes
 
 - **2026-08-30**: p4·M6c "THE ARTWORK IS NOT DATED, AND THE COLUMN WAS GATED BY NOTHING"
-  (app/) — the operator ruled that supplied artwork "carries no capture date because it is
-  not a capture". Acting on it found a second, larger thing: the shot COLUMN branch p4·M6b
-  shipped had no witness anywhere in the suite.
-  **THE OPERATOR'S OWN DEPENDENCY PREMISE WAS FALSE ON THIS BRANCH, AND CHECKING IT IS WHAT
-  RELEASED THE MEDALLION FROM ONE OF ITS TWO HOLDS.** The instruction held the medallion
-  because "verify-site §12's weight selector is STILL the pre-M6 version that self-includes —
-  p4·M6 has not run (SitePage.tsx, verify-site.mjs and app/README.md are all untouched on
-  this branch)". Measured: `a5358b8` touches all three files, `verify-site.mjs:633` reads
-  `a:not([data-support-link])`, and the gate ran green IN-CHAIN at position 19 of 39 printing
-  `2 in div.panel [Run a node · Mine Monero]` and `38px vs 28px`. The stated dependency is
-  discharged. **THE MEDALLION IS STILL HELD**, on the operator's other and independent
-  ground — it is not export-ready — which is the half that does not depend on the premise.
+  (app/) — the seventh peer's artwork ships at a real size, undated because it is not a
+  capture, and the column branch p4·M6b shipped gets the witness it never had.
+  **A MEASUREMENT IS SCOPED TO WHEN IT WAS TAKEN, NOT ONLY TO WHAT IT MEASURED.** This
+  release's own lesson, and it is the standing scope-of-an-absence rule one axis over.
+  p4·M6b swept for three delivered assets at session start, found none, and restated that
+  one reading as fact in its note, its LOG line and its PR body for four hours. **Two of the
+  three had arrived in the meantime** — 79 and 106 minutes after the sweep — and were found
+  only because the operator asked. #202 recorded that a reachability result is scoped to what
+  it was measured ON; this is the same shape on the TIME axis. In a session that runs for
+  hours, an absence needs a timestamp beside it or it needs re-running.
   **THE DATE WAS A TRUE FACT ABOUT THE WRONG SUBJECT.** p4·M6b shipped
   `captured: "2026-08-30"` on the artwork entry, rendering "artwork · supplied 2026-08-30".
   That is the day the file reached us — a fact about our inbox. Sitting in a column beside
@@ -902,248 +900,101 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   **TS2322**, and a `.captured` read that has not narrowed on `kind` is **TS2339**. An
   optional `captured?` would have expressed the same intent and left `.captured` readable —
   and therefore renderable — on an artwork entry. Same mechanism as `EcoSlot`'s deletion:
-  do not gate a state you can refuse to be able to express.
-  The caption names the source instead — **"artwork · supplied by Kathie"**, derived from
-  `name` — so it says where the image came from without publishing a date nobody established.
-  **AND THE SHOT COLUMN WAS GATED BY NOTHING, WHICH A BREAK TEST FOUND AND A GREP CONFIRMED.**
-  p4·M6b's `408468c` shipped `className={e.shot ? "col-2" : undefined}` so a brief with no
-  screenshot gets no track reserved for one. K2 — one entry's `shot` block deleted
-  structurally so the mutation COMPILES — left **all 69 assertions GREEN**: the column
-  collapsed correctly and nothing could see either state. A scoped grep for
+  do not gate a state you can refuse to be able to express. The caption names the source
+  instead — **"artwork · supplied by Kathie"**, derived from `name`.
+  **AND THE SHOT COLUMN WAS GATED BY NOTHING, WHICH A BREAK TEST FOUND AND A GREP
+  CONFIRMED.** p4·M6b's `408468c` shipped `className={e.shot ? "col-2" : undefined}` so a
+  brief with no screenshot gets no track reserved for one. K2 — one entry's `shot` block
+  deleted structurally so the mutation COMPILES — left **all 69 assertions GREEN**: the
+  column collapsed correctly and nothing could see either state. A scoped grep for
   `col-2|gridTemplateColumns|grid-template` across `verify-peers`, `verify-future` and
   `verify-origins` returns **zero**. The fix could have been reverted in silence.
   New §9 assertion, a BICONDITIONAL rather than two independent checks, because the failure
   that matters is a DISAGREEMENT between the data and the layout. Read from
   `getComputedStyle`, never from the class name — `col-2` is what the source writes, computed
   tracks are what the reader gets, and a class that stopped resolving to a grid would leave a
-  class check green. New `data-peer-body` handle rather than a positional selector, on
-  `verify-orb`'s recorded ground.
+  class check green. New `data-peer-body` handle rather than a positional selector.
   **FOUR BREAK TESTS, AND THE TWO THAT STAYED GREEN ARE THE FINDING.**
   · **K1** the artwork caption re-dated to p4·M6b's exact wording → **2 named reds**, and
     `no SUPPLIED image is captioned as a capture` **stays GREEN** — which is the whole proof
     the two caption assertions are independent rather than redundant: "artwork · supplied
     2026-08-30" never says "captured", so the pre-existing check passes it cleanly and the
-    date would have shipped forever. One assertion forbids the WORD, the other the DIGITS.
+    date would have shipped forever. One forbids the WORD, the other the DIGITS.
   · **K2** an entry loses its shot → green everywhere, and `verify-origins` reads
     **"declares a screenshot for 6 of the 7 rendered briefs"** and PASSES. The derived count
     moving is the proof it derives; a literal would have reddened here. RECOUNT, never edit
     the literal to fit — demonstrated rather than asserted.
   · **K3** the column fix reverted → **green**, because with a full roster the biconditional
     has no zero-track subject.
-  · **K4 = K2 + K3** → **1 red**, `2 tracks for the 6 briefs that declare one, 0 for the 1
-    that do not`. **The two conditions are JOINTLY NECESSARY**: a shotless entry AND code
-    that reserves anyway. Neither mutation alone produces the defect, which is p4·M3's
-    two-defence result inverted — there two defences were independently SUFFICIENT, here two
-    conditions are jointly necessary. **BLIND SPOT STATED IN THE GATE**: on the shipping
-    roster all seven partners declare a shot, so the zero-track arm has no live subject and
-    is exercised only by K4.
-  **THE 543px CEILING, MEASURED AT THREE DEVICE PIXEL RATIOS RATHER THAN PREDICTED.**
-  Native 543x405 against the CSS box the reader actually gets:
-  · **1440 dpr1** — box 498.2x372.1, asks 498 device px, ratio **1.09** — OVERSUPPLIED, not
-    merely adequate.
-  · **1440 dpr2** — asks 996, ratio **0.545** · **1440 dpr3** — asks 1495, ratio **0.363**.
-  · **390 dpr2** — box 356x266, asks 712, ratio **0.763** · **390 dpr3** — asks 1068, **0.508**.
-  So the phone is MEANINGFULLY BETTER than the desktop at the same ratio, because the column
-  is narrower — which inverts the usual assumption and is worth recording.
-  **AND THE RENDER QUALIFIES THE CEILING RATHER THAN CONFIRMING IT.** Read from the captures
-  at dpr 3: the softness is real and far gentler than the arithmetic predicts, because this
-  is flat cel art with heavy black outlines rather than a photograph or a screenshot of text.
-  The outlines hold; what goes is the edge of the white sparkles and the KATHIE letterform.
-  A 0.363 ratio on a screenshot would be unreadable; on this it is soft. NOT upscaled — a
-  soft image and a soft image with more pixels in it look the same, and only one is honest
-  about its source. The reserved box attribute is **543x405 = native**, so decode shifts
-  nothing.
-  **BUDGETS: RESIDUAL ZERO, TWO TERMS, AND A public/ IMAGE IS NOT JS.** The artwork shipped
-  in p4·M6b and this release adds no asset, so nothing in the image accounting moves at all —
-  `public/` files sit in no chunk closure and are on no route's first-load budget. What moved
-  is source: `EcoPopup` **4,984 → 5,000 = +16** (the `data-peer-body` attribute and the
-  caption expression) and `repoPulse` — the chunk `data.ts` lands in — **27,704 → 27,682 =
-  −22** (one property gone; comments and types are erased by the build). **+16 − 22 = −6, and
-  −6 is `lazyJsRaw`'s WHOLE delta (990,614 → 990,608) and `totalJsRaw`'s WHOLE delta.**
-  `cssGz` **BYTE-IDENTICAL at 18,586**, the eager entry **BYTE-IDENTICAL at 101,542**,
-  `eagerJsRaw` **BYTE-IDENTICAL at 264,457**, `CHUNK_COUNT` **76 = 76**. No ceiling raised.
-  **MEASURED SLACK, NOT A TICK**, on every gate this release touched:
-  `/operate/peers` 105,527 of 106,000 — **473 B**, the tightest margin on this route and
-  where the eighth peer reds · `/future` 111,167 of 112,000 — **833 B** · `cssGz` 18,586 of
-  19,000 — **414 B** · `lazyJsRaw` **2,392 B** · `totalJsRaw` **2,935 B** · `eagerJsRaw`
-  **15,543 B**. `verify-peers` **67 → 70**; the column biconditional passes with **7 of 7 at
-  2 tracks and 0 of 0 at zero**, i.e. one arm is carrying it, which the message says out loud.
-  **AND MY OWN STEM SPLITTER WAS WRONG IN THE WAY THIS FILE ALREADY RECORDS.** The first
-  pairing used `filename.rsplit('-', 1)[0]`, and a Vite hash is 8 chars of `[A-Za-z0-9_-]` —
-  **the dash is IN the alphabet** — so it reported 37 stems moved where 2 did, splitting
-  `NodePage-C…` from `NodePage`. The arithmetic still summed to −6 because every spurious
-  pair cancels, which is exactly what makes the defect easy to miss. Strip the LAST
-  `-<8 chars>.js`, and the answer is two terms.
-  **CENSUS RECOUNTED AND UNCHANGED — 89 / 85 / 22 / 39 / 75 / 6** (81 invocations − 6
-  duplicates), the correct outcome for extending an e2e member in place. The instrument was
-  CONTROLLED against SIX commits before being trusted — `768ba13` 85/81/22/35/71/6,
-  `74bc561` 86/82/22/36/72/6, `0f00d26` 87/83/22/37/73/6, `e0c87ad` and `5854cbd` both
-  88/84/22/38/74/6, and `ce87559` 89/85/22/39/75/6 — all reproduced EXACTLY including the
-  invocation arithmetic and the six orphans by name.
+  · **K4 = K2 + K3** → **1 red**. **The two conditions are JOINTLY NECESSARY**: a shotless
+    entry AND code that reserves anyway. Neither mutation alone produces the defect, which is
+    p4·M3's two-defence result inverted — there two defences were independently SUFFICIENT.
+    **BLIND SPOT STATED IN THE GATE**: on the shipping roster all seven partners declare a
+    shot, so the zero-track arm is exercised only by K4.
+  **THE ARTWORK SHIPS AT 1133x879, AND WHICH MASTER TO USE TOOK TWO MEASUREMENTS THAT
+  DISAGREED.** Two files were supplied, the same artwork at two sizes with different framing
+  (1.341 against 1.289 — crops of one another rather than pure rescalings, which is what made
+  the first comparison hard to read and produced an earlier note calling the 1133 an upscale).
+  Measured AT THE RENDER SIZE the two are **EQUIVALENT**: the 1133 downscaled to a
+  996-device-pixel box reads strong-edge **3.30%** against the 543 upscaled to the same box at
+  **3.23%**. So the 1133 carries no meaningful extra detail. **IT IS STILL THE RIGHT FILE, for
+  a reason that does not depend on that**: a dpr-2 reader asks for ~996 device px, which 1133
+  covers at ratio **1.14** (the browser DOWNSAMPLES) and 543 covers at **0.55** (the browser
+  UPSAMPLES). More pixels than needed is never worse than fewer, whoever interpolated them —
+  and there is consequently **no dpr ceiling left to record**, so the caveat the 543 file
+  needed is gone with it.
+  **ENCODED IN CHROMIUM, NO NEW DEPENDENCY** — the gates already ship a browser, so the
+  conversion is `drawImage` to a canvas plus `toDataURL`. **LOSSLESS WAS TRIED FIRST AND LOST
+  BADLY, and the prediction was the other way round.** `toDataURL("image/webp", 1)` IS
+  genuinely lossless here — the canvas round trip reads **maxDiff 0, pixel-identical** — and
+  it weighs **456,843 B against q=0.92's 55,798 B, a factor of 8.2**. Flat cel art with a
+  small palette usually does come out smaller lossless; this file does not, **because the
+  supplied master is a JPEG**. Measured: **23,098 unique colours**, where digitally authored
+  flat art would be in the hundreds. Lossless must preserve every bit of that ringing and
+  block noise, so the property the prediction rested on had been destroyed before the file
+  reached us. **THE RINGING IT COSTS IS MEASURED**: against the lossless reference through
+  ONE decoder, in the 7.1% of pixels within 3px of a hard edge, mean error **2.655 of 255**,
+  max 20; away from edges 1.007. **AND THE FIRST RINGING MEASUREMENT WAS THE WRONG
+  INSTRUMENT** — it compared a Chromium-encoded WebP against a libjpeg-decoded source and so
+  read DECODER DISAGREEMENT as encoding loss, reporting a band error of 4.099 for a file
+  already proven pixel-identical. One decoder on both sides, or the number means nothing.
+  **NOT FIXED, and named**: the medallion, and the xmr.club badge, both below; `verify-future`
+  §G5 hardcodes `/captured 20\d\d-\d\d-\d\d/` for the stressnet brief, which is CORRECT
+  today because stressnet is a capture and would red for the right reason if it became
+  artwork — recorded rather than generalised.
+  **`/operate/peers` IS NOW THE TIGHTEST ROUTE MARGIN ON THE BOARD, AND THAT IS A FORWARD
+  CONSTRAINT RATHER THAN A FIGURE.** It sits at a margin measured below, down from 1,577 B at
+  #202. The image costs the route NOTHING — a `public/` asset is in no chunk closure — so the
+  ~1,091 B went to Kathie's entry, her blurb and the `?p=` wiring. **Kathie's own entry cost
+  MORE than the margin now left, so the next peer added to this route needs a raise.** Said
+  here so the next session plans that arithmetic instead of discovering it as a red, which is
+  what cost #199 and #201 a round each.
+  **THE FULL 39-CHAIN IS THE CHECK, NOT THE AFFECTED GATES.** #202's stagger regression was
+  caught by `verify-discrete` §5 — a gate that release did not touch and would never have
+  listed as affected — while every new assertion in it stayed green. This release's image
+  moves `verify-origins`' declared-screenshot count and flips the no-column-reserved branch,
+  so the blast radius is wider than the file list.
   **AND A BREAK SCRIPT LEFT THE TREE MUTATED, WHICH IS THIS FILE'S OWN RULE WALKED INTO.**
   The `tsc` polarity script asserted its second anchor before restoring the first mutation,
   threw on a wrong date literal, and exited with `captured: "2026-08-30"` still in `data.ts`.
   Caught by checking `git status` rather than by assuming. **The restore belongs in a
-  `finally`, not at the end of the happy path** — every later script here does that, and the
-  M6c harness restores in `finally` and re-diffs against an in-memory snapshot (the tree
-  carried uncommitted edits, so `git checkout` had no correct target).
-  **NOT FIXED, and named**: the medallion (below); `verify-future` §G5 hardcodes
-  `/captured 20\d\d-\d\d-\d\d/` for the stressnet brief, which is CORRECT today because
-  stressnet is a capture, and would red for the right reason if it ever became artwork —
-  recorded rather than generalised; the `verify-reduce` 6-of-10 mempool gap from p4·M6.
-  **THE MEDALLION IS HELD, and the reason is now ONE reason rather than two.** Measured
-  again at HEAD: JPEG, **1206x1154 (not square)**, mode RGB (**no alpha**), corners
-  `rgb(19,18,16)` against `--bg-0` `rgb(5,5,5)`. It is not export-ready, and keying it out
-  here was refused on the operator's instruction and on the merits — soft edges and a glow
-  are how a clean emblem acquires a halo. The three landing options the operator set out
-  (circular mask at the outer ring · measure the placement ground first · a deliberate dark
-  plate and border) are theirs to pick; this release picks none and ships no placeholder,
-  which is §4e's rule applied to the release that wrote it.
-  **No human has seen the rendered result in a browser** — read from captures at 1440 dpr 1,
-  2 and 3 and 390 dpr 2 and 3.
-
-- **2026-08-30**: p4·M6 "THE HONESTY REPAIR" (README + app/) — six sentences and one
-  selector, in the file whose own thesis is *"an ethos you cannot check is a slogan."*
-  **TEN GATES GREEN, FIVE BREAK TESTS RED WHERE INTENDED, BUDGETS TO RESIDUAL ZERO AND A
-  CONTROLLED CENSUS — AND NONE OF IT COULD SEE ANY OF THIS**, because every one of these is
-  a CLAIM rather than a COMPUTATION. A gate suite proves what it asserts and says nothing
-  about the sentences wrapped around it. **The adversarial pass belongs before the report,
-  not after the merge.**
-  **THE BRIEF'S OWN REPLACEMENT FOR §1a WOULD HAVE BEEN FALSE IN THE SAME SHAPE AS THE
-  CLAIM IT REPLACED, and one measurement caught both.** The shipped row said "nothing under
-  12px"; measured at 1440 on `/about/site`, **130 visible sub-12px text nodes — 103 at 11px,
-  24 at 11.5px, 3 at 10.5px** — against **0 at 390**, which reproduces the brief's figure
-  exactly. So far so good. But the brief prescribed "a **hard 11px** type floor …
-  `verify-legibility.mjs` fails the build on any type under 11px", and BOTH halves of that
-  are wrong: the three 10.5px nodes are `.pill` (`styles-legibility.css:78`, with
-  `.rail h6`, `.stat .lbl` and `.proto-panel h6` at the same size), so there is **no hard
-  11px RENDERED floor above 720px**; and that gate's floor is on the **SOURCE** — the
-  six-step token scale plus inline and SVG `fontSize` literals — and it asserts nothing
-  about a rendered CSS selector, which CLAUDE.md already records in as many words. **A brief
-  that has correctly diagnosed a false claim can still prescribe a false one**, and the row
-  now says out loud that above 720px there is no rendered floor at all.
-  **§1b: A GATE WAS CITED FOR THE CLAIM ITS OWN HEADER DISCLAIMS.** `verify-reduce.mjs:54-55`
-  reads, verbatim, *"Do not add a 'no motion' assertion and call the contract discharged"* —
-  and the README cited it for "reduced motion loses no information". Split into its own row,
-  citing it for what it gates (27 surfaces, no running animation and no SMIL element, **no
-  allowlist**) and naming the limit it names for itself: a frozen frame is a claim about
-  content, checked by reading it.
-  **§1c: "RANDOMNESS EXISTS IN EXACTLY TWO PLACES" — THERE IS A THIRD, AND THE SENTENCE ALSO
-  CONTRADICTED ITSELF FOUR LINES LATER.** `useMarketHistory.ts:75` and `usePolling.ts:172`
-  each draw one number from **`crypto.getRandomValues`** per client and jitter their poll and
-  retry schedules against it; `usePolling.ts:162` states in the file that this is a real
-  entropy source and NOT the banned call. And the lead-in promised "neither of them renders a
-  value" directly above a bullet saying the simulators are *supposed* to. Reframed to what
-  the rule is actually about — **three sources, exactly one of which can reach a figure you
-  read, and it is the one that is meant to.** Both other bullets produce milliseconds to wait.
-  (Correction to the brief: it describes the second call site as "history sampling". Measured
-  — `jitterMsMH` is the twin of `usePolling`'s `jitterMs`. Both are schedule jitter.)
-  **§1e: TRUE FOR FETCHES, FALSE FOR CLICKS.** CSP governs subresources and connections and
-  does **not** govern top-level navigation, so "your browser reaches no third party" is false
-  the moment a reader follows an outbound link. The row is now "**no request leaves this
-  origin while you are on it**" with the carve-out named in the row rather than half-implied
-  two rows down.
-  **§2: A REMOVED CONTROL DESCRIBED IN THE PRESENT TENSE.** `app/README.md:252-260` still
-  said v6.1.2 "mounted the same Theme control directly on Main Home" and that "both toggles
-  render from one definition". p4·M2 removed that mount. Measured: `/` prerenders **zero**
-  `theme-toggle`, and a repo-wide sweep finds **one** mount (`DesignPanel.tsx:103`). Rewritten
-  to keep the history and lose the present tense, copying `ThemeToggle.tsx`'s own framing —
-  that docstring was already correct, which is the tell that only the README rotted.
-  **§3: A HEADER SENTENCE DESCRIBING A SEQUENCE THE PAGE HAD STOPPED RENDERING.**
-  `SitePage`'s `sub=` enumerated mission → **overview** → record → ethos → operator: the
-  order from BEFORE p4·M2 moved support second and the derived overview last. **Nothing could
-  see it** — §12 pins DOM order and is blind to prose; §1 reads the prerendered text and is
-  blind to order. **THE COUPLING IS REMOVED, NOT GATED**, and that is the decision rather than
-  the shortcut: a gate matching the sentence against the section list would pin the two
-  together forever and make every future reorder an edit in two places, which is the
-  two-lists-one-truth defect this file records repeatedly. A sentence that names no sequence
-  has no sequence left to rot. Verified first that nothing reads the string — the only hit
-  repo-wide is its own line.
-  **§4: THE WEIGHT ASSERTION REDDENED WITHOUT DISCRIMINATING, AND "42px vs 42px" WAS THE
-  SIGNATURE OF THE DEGENERACY RATHER THAN OF THE GATE WORKING.** Measured on this tree:
-  `[data-support-link] ~ a` matches **ZERO** elements and structurally always will — the CTA
-  is an only child of its `.chip-row`, so it has no following anchor sibling — so the whole
-  comparison rode on a **global** `a.v6-res` (2 matches, both 28px). That set is wider than
-  the claim ("bigger than the secondary links **beside** it") and it has a failure mode the
-  width hides: p4·M2's own break test gave the CTA `className="v6-res"`, which put the CTA
-  **into its own comparison set** and degenerated the assertion to `h > max(h, …)`, false
-  however the page renders. Now scoped by walking UP from `[data-site-section="support"]` to
-  the element that also holds the CTA, then `a:not([data-support-link])` — **the CTA can
-  never enter its own set**, so a red means the CTA actually got smaller. The non-vacuity
-  floor NAMES THE COUNT and requires **≥ 2**, because a set of 0 or 1 means the walk stopped
-  somewhere it should not have. It prints `2 in div.panel [Run a node · Mine Monero], tallest
-  28px` and `38px vs 28px`.
-  **FOUR BREAK TESTS, AND THE ONE THAT REFUSED IS THE FINDING.** GUARD 0 refused to start
-  unless the tree was clean and marker-free; every round proved its mutation applied by
-  `git diff`, treated a failed build as **VOID rather than a pass**, asserted a 200 from the
-  server before running, restored against the **COMMITTED BLOB**, swept for a bracketed
-  marker, and rebuilt between restore and re-measure.
-  **M-a REFUSED TO GO RED AND THE BRIEF'S PREDICTION WAS ARITHMETICALLY WRONG.** It says
-  dropping the CTA's inline `padding: "12px 20px"` will red §12 "and the message must show
-  the CTA's height BELOW the secondary max". Measured: **38px → 30px against 28px** — still
-  bigger, so the assertion is correctly green. `proto-btn` carries its own padding. The
-  mutation was too weak, not the gate blind. **M-a2** (`padding: 0, lineHeight: "10px"`)
-  crosses it and reds **`12px vs 28px`** with the floor still green at 2, which is what
-  proves the comparison had a real subject. · **M-b** the CTA given `className="v6-res"` →
-  reds **1** on the affordance, and **the weight line reads `42px vs 28px`, NOT an equal
-  pair** — that single line is the whole proof the self-inclusion is gone, since the old
-  selector produced 42-vs-42 on this exact mutation. · **M-c** the `sub=` line reverted to
-  the pre-reorder enumeration → **reds NOTHING**, exactly as required: §3 removed the
-  coupling rather than gating it, and adding a gate to make this red would undo the fix.
-  **AND REPORT THE SLACK, NOT THE TICK.** At ship the weight assertion passes by **10px**
-  (38 vs 28), so it absorbs an 8px shrink in silence — M-a *is* that measurement. That margin
-  is the size of the defect class the assertion cannot see, which is this file's own tolerance
-  doctrine arriving on the assertion this release rewrote.
-  **BUDGETS: ONE TERM, RESIDUAL ZERO, cssGz AND THE WHOLE EAGER HALF BYTE-IDENTICAL.**
-  `cssGz` **18,586 → 18,586** and `eagerJsRaw` **264,457 → 264,457**, which is the brief's own
-  test that nothing was added: this change introduces no module, no import and no stylesheet
-  rule. The single mover is the `sub=` string at **exactly −9 B** (93 → 84 bytes; 11 characters
-  saved less 2 for the em-dash), and −9 is `lazyJsRaw`'s WHOLE delta (990,623 → 990,614) and
-  `totalJsRaw`'s WHOLE delta (1,255,080 → 1,255,071). `CHUNK_COUNT` **76 = 76**. No ceiling
-  raised or approached. `verify-site` **81 passed · 0 failed, count UNCHANGED** — two
-  assertions rewritten, none added, which is the correct outcome for a release that sharpens
-  an assertion rather than adding one.
-  **THE SWEEP, NOT A SPOT-CHECK.** Every `verify-*.mjs` filename and every `app/`/`api/` path
-  cited in `README.md` resolves on disk (8 gates, 18 paths, zero misses). `"Main Home"` swept
-  repo-wide: `app/README.md:258` was the only remaining present-tense mount claim.
-  `"12px"` swept across every `.md`: `README.md:70` is now the only site-wide floor claim in
-  the repo's public prose, and it is true.
-  **AND THE SWEEP FOUND TWO MORE CLAIMS AFTER THE FIRST SIX WERE FIXED — one of them in the
-  sentence p4·M6b wrote to fix another instance of the same thing.** §5 says sweep rather than
-  spot-check, and reading every gate citation in `README.md` against what that gate actually
-  asserts is what turned them up. (a) *"the provenance vocabulary every displayed figure on
-  this site carries. That is what `verify-provenance.mjs` and `verify-prng.mjs` enforce"* —
-  measured against that gate's own assertions, it proves the freshness vocabulary is TOTAL
-  (`freshSuffix`'s default calls `assertNever`) and that a badge cannot claim a freshness it
-  has no way to know (the `fresh="live"` literal ban, allowlisted with reasons, checked both
-  directions). **Not one of its assertions says every displayed figure carries a badge.**
-  `verify-prng` genuinely holds the invent side, so the sentence now says which gate holds
-  which half and says out loud that the every-figure-has-a-badge part is a convention rather
-  than a build failure. (b) The reduced-motion row I had just written said the gate drives
-  **all** 27 animated surfaces. Measured: `verify-reduce.mjs:70`'s `MEM` list is a HAND-COPIED
-  six against a registry of **TEN** (`mempool-meta.ts`), so `orbital`, `abyss`, `pulse` and
-  `circuit` — every canvas view added since v6.1.3 — **are not driven by the reduced-motion
-  gate at all.** The row now says "6 of the 10" and names the hand-copy as a limit. **Widening
-  that list is NOT done here**: it is a fifth file, it adds four surfaces to a gate that has
-  found running-animation defects before, and three of its original five defects were exactly
-  this shape — it needs its own break tests. **A correction can be true about its own subject
-  and overclaim about the mechanism cited beside it**, and only reading the gate catches that.
-  **NOT FIXED, and named.** The `verify-reduce` mempool coverage gap above — 6 of 10 views.
-  `verify-mobile.mjs`'s own header says it measured "the fourteen
-  canonical routes" while it imports `ROUTES` from `scripts/routes.mjs` and runs **18** — the
-  same stale-prose family, in a file outside this PR's four. `claude/V2-VIEW-CONFORMANCE.md:256`
-  says "No text under 12px", but records the conflict in the next line and is a dated working
-  document. `handoffs/LOG.md:5` records "one `ThemeToggle` on Main Home and in ⌘ DESIGN" and is
-  correctly left: it is a dated record of what v6.1.2 did, and rewriting a dated measurement
-  falsifies it rather than refreshing it. **§1d needed nothing** — p4·M6b already re-scoped the
-  simulators clause to name `/operate/superstress/explorer`, so the brief's measurement of it
-  was true of `ce87559` and not of this branch; verified at HEAD before skipping.
-  **AND THIS LANDS IN PR #203 RATHER THAN ITS OWN PR**, because the session is pinned to one
-  branch. `SITE_PR` is NOT bumped and the LOG line records M6 under #203; the four-file claim
-  is proved for the substantive commit (`git diff --name-only HEAD~1 HEAD`), with the record
-  files named separately. **No human has seen the rendered result in a browser** — the `sub=`
-  line is the only visible change and it was read from the gate's own prerendered-text
-  assertion.
+  `finally`, not at the end of the happy path.**
+  **AND MY OWN STEM SPLITTER WAS WRONG IN THE WAY THIS FILE ALREADY RECORDS.** The first
+  budget pairing used `filename.rsplit('-', 1)[0]`, and a Vite hash is 8 chars of
+  `[A-Za-z0-9_-]` — **the dash is IN the alphabet** — so it reported 37 stems moved where 2
+  did. The arithmetic still summed correctly because every spurious pair cancels, which is
+  exactly what makes the defect easy to miss. Strip the LAST `-<8 chars>.js`.
+  **p4·M6 IS NOT IN THIS RELEASE AND WAS REVERTED OUT OF IT.** Four of its sections were
+  taken here in error and then removed on the operator's instruction: it is a separate PR
+  whose entire proof is that it moves ZERO bytes against a FOUR-file diff, and this branch
+  moves bytes across thirteen files, so its break tests cannot run here at all. `README.md`,
+  `app/README.md`, `SitePage.tsx` and `verify-site.mjs` are byte-identical to the p4·M6b head
+  `32c4bb5`, verified per file. **§1d survives because it was already landed by p4·M6b** and
+  is correct. **A consequence worth stating: `verify-site` §12 is again the pre-M6
+  self-including selector, so the medallion's hold is correct on BOTH of its grounds** — the
+  §12 prerequisite and the asset's own format — where for a few commits it rested only on the
+  second.
+  **No human has seen the rendered result in a browser.**
 
 - **2026-08-30**: p4·M6b "THE PEERS PAGE GETS ADDRESSES, AND THE PLACEHOLDERS GO" (app/ +
   README + CLAUDE.md) — a card that opened somebody else's site on first click now opens our

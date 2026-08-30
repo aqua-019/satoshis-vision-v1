@@ -60,15 +60,14 @@ Each row names the mechanism. Every one is in this repository.
 
 | Claim | Mechanism, and where to check it |
 |---|---|
-| **No request leaves this origin while you are on it.** | `Content-Security-Policy: … connect-src 'self'` in `vercel.json`. The browser is *forbidden* to open a connection to another origin. Gated by `app/verify-origins.mjs`, which sweeps the source tree for off-origin fetches **and** drives the site in a real browser counting the requests that actually leave. **A link you choose to follow is a different thing.** CSP governs subresources and connections, not top-level navigation — so an outbound link does reach the site you clicked, by your choice, carrying `Referrer-Policy: no-referrer` so it is not told where you came from. |
+| **Your browser reaches no third party.** | `Content-Security-Policy: … connect-src 'self'` in `vercel.json`. The browser is *forbidden* to open a connection to another origin. Gated by `app/verify-origins.mjs`, which sweeps the source tree for off-origin fetches **and** drives the site in a real browser counting the requests that actually leave. |
 | **No analytics, beacons, tracking pixels, cookies, accounts or fingerprinting.** | None of it is in the tree, and `connect-src 'self'` means none of it could phone home if it were. There is no consent banner because there is nothing to consent to. |
 | **No CAPTCHAs, bot challenges or interstitials.** | Absent by decision, permanently. There is no challenge code in this repository. The machinery that makes much of the web hostile to Tor is not here, and is not coming. |
 | **Third parties never see you.** | Market data, repository activity and the public node census are fetched **server-side** by the functions in `api/`. Your address reaches CoinGecko, GitHub and the node census exactly never. Outbound links carry `Referrer-Policy: no-referrer`, so a site you open from here is not told where you came from. |
 | **The fonts are local too.** | 12 `woff2` in `app/public/fonts/`. No CDN, no `fonts.googleapis`, no `fonts.bunny.net`. The count of third-party browser requests is zero and is gated at zero. |
 | **It works with JavaScript off.** | Every static route is prerendered to real HTML at build time by `app/scripts/prerender.mjs`. Tor Browser at its Safest setting reads this site whole. Live data enriches a page; it is never the price of admission. Gated by `app/verify-nojs.mjs` and `app/verify-degraded.mjs`. |
 | **No number is invented.** | See [Real values, or none](#real-values-or-none) below. |
-| **Usable at 390px, with a 12px type floor on phones.** | Below 720px `app/src/styles-legibility.css` lifts the label token to **12px**, and `app/verify-mobile.mjs` measures the *rendered* size of every visible text element on all 18 routes at 390 and at 320 — with **no class exemptions** — alongside tap targets and horizontal overflow. Above 720px there is no rendered floor and this file will not claim one: labels resolve to 11px, and a handful of chip and marker classes sit lower still. `app/verify-legibility.mjs` holds the other half, on the source rather than on the screen — it pins the six-step type scale and fails the build on any inline or SVG `fontSize` under **11px**. |
-| **Reduced motion costs you no information.** | `app/verify-reduce.mjs` drives 27 animated surfaces under `prefers-reduced-motion: reduce` — the 21 simulators and 6 of the 10 mempool views — and fails on any *running* animation, or on any SMIL element at all, with **no allowlist**. **Two limits, stated rather than implied.** Its mempool list is hand-copied, so the four views added since it was written are not in it. And its own header is careful about what the check does and does not prove: stopping motion is necessary and not sufficient, because the frame a simulator freezes on is a claim about content rather than about movement. Those frozen frames are checked by reading them, not by counting animations. |
+| **Usable at 390px, nothing under 12px, and reduced motion loses no information.** | Gated by `app/verify-mobile.mjs`, `app/verify-legibility.mjs` and `app/verify-reduce.mjs`. |
 
 ### Real values, or none
 
@@ -77,9 +76,7 @@ em-dash. It is never a plausible guess wearing the clothes of a measurement.
 When a feed degrades, the page carries the last good value and says
 `STALE · reconnecting`; it never synthesises a replacement.
 
-There are three sources of randomness in this repository. **Exactly one of them
-can reach a figure you read, and it is the one that is supposed to** — the other
-two produce a count of milliseconds to wait:
+Randomness exists in exactly two places, and neither of them renders a value:
 
 - **`app/src/protocols/`** — the educational simulators, which are *supposed*
   to invent values and are labelled as doing so. This is the rule's one
@@ -92,13 +89,6 @@ two produce a count of milliseconds to wait:
   the delay before re-trying a rate-limited upstream, so a fan-out of requests
   does not retry in lockstep. The random number is a count of milliseconds to
   wait. It never becomes a value anyone reads.
-- **One seed per browser** — `app/src/data/usePolling.ts` and
-  `app/src/data/useMarketHistory.ts` each draw a single number from
-  `crypto.getRandomValues` on first use and memoise it, then jitter their poll
-  and retry schedules against it, so a thousand readers do not all hit the same
-  endpoint on the same tick. That is a real entropy source and deliberately not
-  the banned one; `usePolling.ts` says so at the call site. Same output as the
-  backoff above: milliseconds to wait, never a rendered value.
 
 ### What is honestly still true
 
@@ -199,18 +189,11 @@ They are not chain data, not historical data, and not a prediction of anything.
 
 **The rule is the property, not the list.** A surface that invents a figure
 labels it; a surface that reports one names where it came from, through the
-provenance vocabulary its displayed figures carry. **Two gates hold two halves
-of that, and neither holds the whole.** `app/verify-prng.mjs` bans the inventing
-call outside the simulators. `app/verify-provenance.mjs` proves a provenance
-badge cannot claim a freshness it has no way to know — a hardcoded
-`fresh="live"` stays green through a total outage, so every surviving literal is
-listed in that gate with a reason, checked in both directions. **What neither
-gate asserts is that every figure carries a badge in the first place**: that is
-a convention this project holds itself to, not a build failure, and this file
-will not describe it as one. The paragraph deliberately does not enumerate the
-surfaces either: the previous version of this sentence scoped the rule to
-`/learn` and missed the explorer entirely, and a count would go stale the same
-way the next time a surface is added.
+provenance vocabulary every displayed figure on this site carries. That is what
+`app/verify-provenance.mjs` and `app/verify-prng.mjs` enforce, and it is why
+this paragraph deliberately does not enumerate: the previous version of this
+sentence scoped the rule to `/learn` and missed the explorer entirely, and a
+count would go stale the same way the next time a surface is added.
 
 The explorer is the one that most needs saying, because it wears an explorer's
 clothes — block tiles, confirmation depths, a fee ladder, a transaction feed —

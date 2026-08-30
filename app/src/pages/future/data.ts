@@ -1318,32 +1318,51 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
        our palette would be editing a partner's art to suit our own. It renders
        at its own colours, in the same bordered figure the six captures use.
 
-       SHIPPED AT ITS NATIVE 543x405, AND THE FIRST ATTEMPT GOT THAT WRONG.
-       Two files were supplied — 543x405 PNG and 1133x879 JPEG — and the larger
-       was taken as the source on the assumption that larger means better. It
-       does not: measured, the 1133 JPEG is an UPSCALE that carries no detail
-       beyond the 543 master and has been softened further by JPEG. Strong-edge
-       pixels and mean gradient step, at native size:
+       SHIPPED AT 1133x879, AND WHICH MASTER TO USE TOOK TWO MEASUREMENTS.
+       Two files were supplied — a 543x405 PNG and a 1133x879 JPEG, the same
+       artwork at two sizes with slightly different framing (1.341 against
+       1.289, so they are crops of one another rather than pure rescalings,
+       which is what made the first comparison hard to read).
 
-         PNG 543                          4.23%   95.4   <- the real master
-         JPG 1133 (was the source)        1.91%   56.1
-         control: PNG upscaled to 1133    2.29%   62.1   <- the JPEG is SOFTER
-         control: a real 1000px capture   3.31%   84.2
+       MEASURED AT THE RENDER SIZE, the two are EQUIVALENT in edge detail —
+       downscaling the 1133 to a 996-device-pixel box and upscaling the 543 to
+       the same box give strong-edge 3.30% against 3.23%. So the 1133 does not
+       carry meaningfully more real detail; it is close to an upscale.
 
-       The JPEG scores BELOW a deliberate upscale of the PNG, which is what
-       settles it. So the master is 543x405 and it ships at 543x405 — rendering
-       it at 1000 would manufacture detail nobody captured, which is the same
-       failure one layer down from inventing a figure.
+       THE 1133 IS STILL THE RIGHT FILE, AND THE REASON DOES NOT DEPEND ON
+       THAT. The shot column is ~498 CSS px, so a dpr-2 reader asks for ~996
+       device px. 1133 covers that at a ratio of 1.14 and the browser
+       DOWNSAMPLES; 543 covers it at 0.55 and the browser UPSAMPLES. Handing
+       the browser more pixels than it needs is never worse than handing it
+       fewer, whoever interpolated them. There is therefore no dpr ceiling left
+       to record — the earlier note about one described the 543 file and is
+       gone with it.
 
-       KNOWN LIMIT, RECORDED RATHER THAN HIDDEN: the shot column is ~498 CSS px
-       wide here, so 543 native is comfortable at dpr 1 and SOFT above it — at
-       dpr 2 the reader is asking for ~996 device px and getting 543. It is not
-       upscaled to paper over that; a soft image and a soft image with more
-       pixels in it look the same and only one of them is honest about its
-       source. If a larger master arrives, it replaces this file and this
-       paragraph goes.
+       ENCODED IN CHROMIUM, NO NEW DEPENDENCY — the gates already ship a
+       browser, so the conversion is drawImage to a canvas plus toDataURL.
+       Adding an image library to this repo for a one-off would be a real
+       dependency change and would not belong in a release about peers.
 
-       25,216 B, inside the register the six captures set (9,050 - 53,936 B). */
+       LOSSLESS WAS TRIED FIRST AND LOST BADLY, which is worth recording
+       because the prediction was the other way. `toDataURL("image/webp", 1)`
+       IS genuinely lossless here — the canvas round trip reads maxDiff 0,
+       pixel-identical — and it weighs 456,843 B against q=0.92's 55,798 B,
+       a factor of 8.2. Flat cel art with a small palette usually does come
+       out smaller lossless; this file does not, because THE SUPPLIED MASTER
+       IS A JPEG and already carries ringing and 8x8 block noise. Measured:
+       23,098 unique colours, where digitally authored flat art would be in
+       the hundreds. Lossless must preserve every bit of that noise. The
+       property the prediction rested on had been destroyed before the file
+       reached us.
+
+       THE RINGING IT COSTS IS MEASURED, NOT WAVED AT. Against the lossless
+       reference through one decoder, in the 7.1% of pixels lying within 3px
+       of a hard edge: mean error 2.655 of 255, max 20. Away from edges, 1.007.
+
+       55,798 B, just above the 9,050 - 53,936 B register the six captures
+       set — 30,582 B more than the 543 file it replaces, which costs no route
+       JS budget (public/ assets are in no chunk closure) but is a real
+       transfer for a reader who opens this brief. */
     shot: {
       src: "/peers/peer-kathie.webp",
       alt: "Kathie's own promotional artwork: three cartoon animals on a pink striped ground under the hand-lettered word KATHIE \u2014 two cats and a rabbit, the middle cat holding a Monero logo and the outer two each holding a heart.",
@@ -1352,8 +1371,8 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
          was the day the file reached us, which is not a fact about the artwork
          and is not this site's to publish beside six real capture dates. */
       kind: "artwork",
-      w: 543,
-      h: 405,
+      w: 1133,
+      h: 879,
     },
     body: [
       "Kathie sells stickers on XMR Bazaar as kafi, and her bio there is three words long: \u201ci sell art\u201d, lowercase. Among the designs on the seller page when it was read: a lucky cat, a bear, a piggy bank, a chopper, a birthday card and a sheet, alongside plain Monero stickers sold in lots. XMR Bazaar is a Monero marketplace; her listings sit on it.",

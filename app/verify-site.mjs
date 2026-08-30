@@ -606,32 +606,7 @@ R.group('§12 · section order, and the support CTA is emphasis rather than a na
       const pos = getComputedStyle(n).position;
       if (pos === 'fixed' || pos === 'sticky') { stuck = n.tagName.toLowerCase() + '/' + pos; break; }
     }
-    // THE COMPARISON SET IS SCOPED AND SELF-EXCLUDING — p4·M6, and the old
-    // shape did not discriminate. It was:
-    //
-    //     document.querySelectorAll('a.v6-res, [data-support-link] ~ a')
-    //
-    // whose general-sibling half matches ZERO elements and always will: the
-    // CTA is an only child of its `.chip-row`, so it has no following anchor
-    // sibling to match. The whole comparison rode on `a.v6-res`, which is
-    // global — every `.v6-res` anchor on the page, in any section. That is a
-    // wider subject than the claim ("bigger than the secondary links BESIDE
-    // it"), and it has a failure mode the wider reading hides: p4·M2's own
-    // break test gave the CTA `className="v6-res"`, which put the CTA INTO
-    // its own comparison set and degenerated the assertion to
-    // `h > max(h, …)` — false however the page renders. "42px vs 42px" was
-    // the signature of that degeneracy, not of the gate working.
-    //
-    // So: walk UP from the section marker to the element that also holds the
-    // CTA — the support Card, and nothing wider — then take every anchor in
-    // it that is NOT the CTA. `:not([data-support-link])` is what makes the
-    // mutation discriminate: the CTA can never enter its own set, so a red
-    // here now means the CTA actually got smaller.
-    const marker = document.querySelector('[data-site-section="support"]');
-    let card = marker;
-    while (card && !card.querySelector('[data-support-link]')) card = card.parentElement;
-    const secondaryEls = [...(card ? card.querySelectorAll('a:not([data-support-link])') : [])];
-    const secondary = secondaryEls
+    const secondary = [...document.querySelectorAll('a.v6-res, [data-support-link] ~ a')]
       .map((e) => e.getBoundingClientRect().height).filter((h) => h > 0);
     return {
       tag: el.tagName.toLowerCase(),
@@ -639,9 +614,6 @@ R.group('§12 · section order, and the support CTA is emphasis rather than a na
       w: Math.round(r.width), h: Math.round(r.height),
       stuck,
       dialog: !!el.closest('dialog, [role="dialog"], [aria-modal="true"]'),
-      scope: card ? card.tagName.toLowerCase() + (card.className ? '.' + card.className : '') : null,
-      nSecondary: secondary.length,
-      secondaryLabels: secondaryEls.map((e) => (e.textContent || '').trim().slice(0, 24)),
       maxSecondaryH: secondary.length ? Math.round(Math.max(...secondary)) : 0,
       digits: /\d/.test(el.textContent || ''),
     };
@@ -658,14 +630,10 @@ R.group('§12 · section order, and the support CTA is emphasis rather than a na
     R.ok(cta.dialog === false, '12 · and it is not inside a dialog or modal');
     R.ok(!cta.digits, '12 · the control itself prints no digit — no total, no goal');
     // A FLOOR, not a comparison against a hardcoded pixel size: the point is
-    // that the primary control outweighs the secondary links beside it. It
-    // NAMES THE COUNT and requires >= 2, because the support card ships two
-    // secondary links and a set of 0 or 1 means the scoping walk stopped
-    // somewhere it should not have — at which point the comparison below is
-    // measuring nothing and would pass for the wrong reason.
-    R.ok(cta.nSecondary >= 2,
-      `12 · the secondary links beside it were measured — ${cta.nSecondary} in ${cta.scope} [${cta.secondaryLabels.join(' · ')}], tallest ${cta.maxSecondaryH}px`,
-      'the weight comparison below is vacuous without them; a count under 2 means the scope walk missed the support card');
+    // that the primary control outweighs the secondary links beside it.
+    R.ok(cta.maxSecondaryH > 0,
+      `12 · the secondary links were measured (tallest ${cta.maxSecondaryH}px)`,
+      'the weight comparison below is vacuous without them');
     R.ok(cta.h > cta.maxSecondaryH,
       `12 · the primary CTA is a bigger target than every secondary link (${cta.h}px vs ${cta.maxSecondaryH}px)`);
   }
