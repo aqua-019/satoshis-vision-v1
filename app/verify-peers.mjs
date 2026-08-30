@@ -242,7 +242,11 @@ try {
     `§6 · Live pulse renders issue count (issues: 7)`);
 
   // Close modal
-  await page.locator('[role="dialog"] .v6-x').click();
+  /* p4·M6b — `.catch` for the same reason as the wait at §2: this closes a
+     dialog that a broken tree never opened, and an unguarded click there burns
+     Playwright's 30s default and then THROWS, taking §10 and §11 down with it.
+     A close that cannot happen is not this section's assertion. */
+  await page.locator('[role="dialog"] .v6-x').click().catch(() => {});
 
   // §6b: Degradation test — mock a 500 response
   await page.route('**/api/feeds*', route => {
