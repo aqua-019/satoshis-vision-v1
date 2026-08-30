@@ -299,8 +299,27 @@ try {
    * and a stale one is worse here than elsewhere, because a reader checking
    * this gate would have gone looking for a half-empty second row that no
    * longer exists. The property is still `rows === 2`: the grid FLOWS into as
-   * many rows as it needs and never pads a short one. */
-  R.ok(d && d.rows === 2, `and the grid FLOWS into full rows rather than padding one (${d ? d.rows : '?'} rows of 3, ${d ? d.items : '?'} cards)`);
+   * many rows as it needs and never pads a short one.
+   *
+   * p4·M6b — AND THAT LAST SENTENCE WAS TRUE OF THE PROPERTY AND FALSE OF THE
+   * ASSERTION, which is why this went red on the seventh partner. `rows === 2`
+   * is not "as many rows as it needs"; it is a literal that happened to equal
+   * ceil(6 / 3). p4·M3 saw the hazard exactly — it wrote that "the number it
+   * asserts (2) happened to stay correct" — corrected the MESSAGE and left the
+   * LITERAL. Seven cards in three columns is 3 + 3 + 1, and a short last row is
+   * the DESIGNED behaviour (`.v6-peer-grid` flows and deliberately never pads;
+   * an empty cell is honest, a placeholder partner would not be).
+   *
+   * DERIVED NOW, and that is not a retreat from this repo's "recount, never
+   * edit the literal to fit" rule — it is that rule applied to the right
+   * subject. The ROSTER SIZE is pinned by a hand-written literal in
+   * verify-peers §1 (`expectedPartnerCount === 7`), which is where an
+   * unintended roster change must be caught. What THIS assertion owns is a
+   * LAYOUT property that has to hold for any n: the grid occupies exactly
+   * ceil(n / tracks) rows, so there is no padded row and no orphaned one. A
+   * literal here cannot express that and reds on every roster change instead. */
+  const wantRows = d ? Math.ceil(d.items / d.tracks) : -1;
+  R.ok(d && d.rows === wantRows, `and the grid FLOWS into exactly the rows it needs and pads none (${d ? d.rows : '?'} rows for ${d ? d.items : '?'} cards in ${d ? d.tracks : '?'} columns, expected ${wantRows})`);
 
   const t = await cols(1000, 900);
   R.ok(t && t.tracks === 2, `1000 (the 769-1199 tablet band): ${t ? t.tracks : 'no grid'} columns`);
