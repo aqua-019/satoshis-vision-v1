@@ -706,7 +706,12 @@ const BUDGETS = {
      eagerJsRaw 280,000 + lazyJsRaw 986,000 = 1,266,000 against this line's
      1,251,000, so the "sum of the two real budgets" construction has now been
      lapsed for thirteen releases. */
-  totalJsRaw: 1_251_000,  // p4·M8: built 1,246,370 on the FINAL tree, margin 4,630.
+  totalJsRaw: 1_258_000,  // p4·M5: built 1,253,165 on the FINAL tree, margin 4,835 (0.38%).
+  //   Moved WITH lazyJsRaw and by the same 7,000, so the gap between the two
+  //   holds at 265,000 — the construction p4·M8 recorded. eagerJsRaw is
+  //   untouched at 280,000 and did not need to move: this release adds SIX
+  //   BYTES to the eager entry (101,533 -> 101,539), which is the footer's
+  //   corrected fork date and nothing else.
   //   Attribution, paired per stem against an isolated 74bc561 worktree: 67 of
   //   74 stems SIZE-IDENTICAL; ProtocolDetail 0 -> 7,851 (a minted chunk) and
   //   FuturePage -7,463 — the extraction proving itself a MOVE and not a copy;
@@ -1385,7 +1390,16 @@ const BUDGETS = {
      to one lazy view and one lazy shared component should read as. Chunk count
      76 = 76, nothing minted: `useLadderAnchor.ts` is a new module but every one
      of its importers is already inside classic's chunk group. */
-  lazyJsRaw: 986_000,   // p4·M8: built 981,923 on the FINAL tree, margin 4,077 (base 979,556).
+  lazyJsRaw: 993_000,   // p4·M5: built 988,712 on the FINAL tree, margin 4,288 (0.43%).
+  //   The whole +6,789 is attributed and reconciles to the byte against an
+  //   ISOLATED worktree build of 9fcc24a: repoPulse +2,923 (the chunk data.ts
+  //   lands in — the audit finding, Carrot's re-derivation and Cuprate's
+  //   release are all prose in that one module), FuturePage +1,804 (three
+  //   bands where there was one grid), ProtocolDetail +1,332 (the review
+  //   block and the runnable-today line), EcoPopup +504 (the second CTA), and
+  //   six copy-edit deltas of 86/69/38/26/6/1 across the surfaces carrying the
+  //   corrected fork date. 65 of 74 stems are SIZE-IDENTICAL and the residual
+  //   is ZERO. Nothing was minted: 76 chunks both sides.
   //   RE-DERIVED after the LAST src commit, not after the last green run: the
   //   first measurement read 952,561 and three later commits (SITE_PR, a
   //   stylesheet comment repair, two copy fixes) moved it by 65 B. Nothing
@@ -1699,7 +1713,20 @@ const ROUTE_BUDGET_GZ = {
   //   ProtocolDetail. It is the cheapest new route in the Phase 4 series
   //   because it mints almost no markup of its own — the body is a component
   //   that already existed and the data is FUTURE_PROTOCOLS unchanged.
-  '/future/protocol':       106_000, // 102,561
+  '/future/protocol':       109_000, // p4·M5: built 105,718, margin 3,282 (3.01%).
+  //   RAISED WHILE GREEN, and the reason is the same one p4·02 gave for cssGz.
+  //   The audit finding and Carrot's re-derivation land in ProtocolDetail and
+  //   in data.ts's chunk, both of which this route carries, and they took the
+  //   margin from 1,587 B to 287 B — 0.27%, the tightest row in the table.
+  //   A ceiling a single word of copy can cross is not strictness, it is a
+  //   detector that has stopped detecting: the next author gets a red that
+  //   says nothing about whether anything regressed. 3% restores it to the
+  //   band every other row on this page sits in.
+  //
+  //   NOT RAISED, and said out loud: `/future` holds at 112,000 with 1,597 B
+  //   and `/operate/peers` at 106,000 with 1,587 B. Both are tight and neither
+  //   was crossed — p4·06 left `/future` at 497 B on exactly this reasoning
+  //   and named it instead. That is where the next touch to either reds.
   '/operate/node':           92_000, //  83,305
   // p4·04: NEW ROW — the 15th route. Built 97,918 on the FINAL tree, margin
   //  3,082. Set from measurement, never by eye, for the reason the row below
