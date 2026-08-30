@@ -934,15 +934,28 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   literal `links[]` row p4·07 wrote, and the destination is now a primary control, so it went
   red against a page satisfying the intent more strongly. Re-asserted affordance-agnostically.
   **BUDGETS: RESIDUAL ZERO, cssGz BYTE-IDENTICAL, NOTHING MINTED.** Paired per chunk STEM
-  against an ISOLATED worktree build of `9fcc24a`: **65 of 74 stems SIZE-IDENTICAL**;
-  `repoPulse` +2,923 · `FuturePage` +1,804 · `ProtocolDetail` +1,332 · `EcoPopup` +504 plus
-  six copy deltas = **+6,795, which IS `totalRaw`'s whole delta**. `cssGz` **BYTE-IDENTICAL at
-  18,586** — no stylesheet rule at all. The eager entry moves **SIX BYTES** (101,533 →
-  101,539), the footer's corrected date and nothing else. `CHUNK_COUNT` **76 = 76**.
-  `lazyJsRaw` 986,000 → **993,000** and `totalJsRaw` 1,251,000 → **1,258,000** move together
-  by 7,000 so their gap holds at 265,000. **`/future/protocol` 106,000 → 109,000 RAISED WHILE
-  GREEN** at 287 B / 0.27% — p4·02's own ground, that a ceiling one word of copy can cross has
-  stopped detecting. NOT raised and named: `/future` 1,597 B and `/operate/peers` 1,587 B.
+  against an ISOLATED worktree build of `9fcc24a`: **63 of 74 stems SIZE-IDENTICAL**, eleven
+  moved — `repoPulse` +2,923 · `FuturePage` +1,927 · `ProtocolDetail` +1,332 · `EcoPopup` +504
+  · `fcmp` +86 · `MoneroPage` +69 · `MarketsThesisPage` +38 · `EducationPage` +26 · `index`
+  (the eager entry) +6 · `NetworkPage` +6 · `reactor` +1 = **+6,918, which IS `totalRaw`'s
+  whole delta, RESIDUAL ZERO**. `cssGz` **BYTE-IDENTICAL at 18,586** — no stylesheet rule at
+  all. The eager entry moves **SIX BYTES** (101,533 → 101,539), the footer's corrected date and
+  nothing else. `CHUNK_COUNT` **76 = 76**. `lazyJsRaw` 986,000 → **993,000** (built 988,834,
+  margin 4,166) and `totalJsRaw` 1,251,000 → **1,258,000** (built 1,253,288, margin 4,712) move
+  together by 7,000 so their gap holds at 265,000. **`/future/protocol` 106,000 → 109,000
+  RAISED WHILE GREEN** at 279 B / 0.26% — p4·02's own ground, that a ceiling one word of copy
+  can cross has stopped detecting. NOT raised and named: `/future` 1,538 B and `/operate/peers`
+  1,577 B.
+  **AND THIS PARAGRAPH'S FIRST VERSION DISAGREED WITH ITSELF, which is this file's own
+  two-figures defect arriving in the arithmetic whose entire job is reconciling.** It read
+  "65 of 74 SIZE-IDENTICAL" while naming four stems "plus six copy deltas" — ten moved, which
+  is 64, not 65, so neither figure could be right and the sentence refuted itself in one line.
+  Measured on the final tree: **eleven** moved and **seven** of them are copy deltas, not six.
+  It also predated the stagger fix, so `FuturePage` +1,804 and the total +6,795 were true
+  measurements of a tree that no longer existed. **THE RE-MEASURE RULE FIRED FOR THE THIRD TIME
+  IN THIS RELEASE AND EVERY CEILING WAS GREEN THROUGHOUT** — margin 4,166 absorbed the +123 in
+  silence, which is the whole content of the rule: a budget comment is not gated by the budget
+  it annotates. Re-derive after the LAST src commit, not after the last green run.
   **CENSUS RECOUNTED AND UNCHANGED — 89 / 85 / 22 / 39 / 75 / 6** (81 invocations − 6
   duplicates), the correct outcome for extending an e2e member in place and adding no gate
   FILE. Derived twice by two independently written counters, with five historical controls

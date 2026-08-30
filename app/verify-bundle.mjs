@@ -706,7 +706,7 @@ const BUDGETS = {
      eagerJsRaw 280,000 + lazyJsRaw 986,000 = 1,266,000 against this line's
      1,251,000, so the "sum of the two real budgets" construction has now been
      lapsed for thirteen releases. */
-  totalJsRaw: 1_258_000,  // p4·M5: built 1,253,165 on the FINAL tree, margin 4,835 (0.38%).
+  totalJsRaw: 1_258_000,  // p4·M5: built 1,253,288 on the FINAL tree, margin 4,712 (0.37%).
   //   Moved WITH lazyJsRaw and by the same 7,000, so the gap between the two
   //   holds at 265,000 — the construction p4·M8 recorded. eagerJsRaw is
   //   untouched at 280,000 and did not need to move: this release adds SIX
@@ -1390,7 +1390,7 @@ const BUDGETS = {
      to one lazy view and one lazy shared component should read as. Chunk count
      76 = 76, nothing minted: `useLadderAnchor.ts` is a new module but every one
      of its importers is already inside classic's chunk group. */
-  lazyJsRaw: 993_000,   // p4·M5: built 988,712 on the FINAL tree, margin 4,288 (0.43%).
+  lazyJsRaw: 993_000,   // p4·M5: built 988,834 on the FINAL tree, margin 4,166 (0.42%).
   //   The whole +6,789 is attributed and reconciles to the byte against an
   //   ISOLATED worktree build of 9fcc24a: repoPulse +2,923 (the chunk data.ts
   //   lands in — the audit finding, Carrot's re-derivation and Cuprate's
