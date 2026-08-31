@@ -140,6 +140,16 @@ steps, ONE cause. Root cause: `verify-releases`' `logMax <= SITE_PR <= logMax + 
 this release's own LOG line moved `logMax` to 204 while `SITE_PR` read 203. Bumped to 204;
 `verify:static` now exits 0 with 0 reds and every RAW budget is byte-identical.
 
+**CI IS FULLY GREEN.** Run 33345693764 (`cce1cf5`): `typecheck + build + offline gates`
+SUCCESS and `hardening gates` SUCCESS — every step, including the 39-gate e2e chain, all
+five `if: always()` browser gates, and `verify-vitals` with no decline and no red. Step 11,
+the failure-annotation re-emitter, is SKIPPED, which only happens when the e2e step
+succeeds — independent corroboration rather than a bare green tick.
+
+**THE RESULT TRANSFERS TO THE SHIPPING HEAD, and the basis is stated rather than assumed:**
+`git diff cce1cf5 HEAD -- app/` is EMPTY. Only `CLAUDE.md` and `README.md` changed since,
+neither bundled nor read by any gate, so the suite passed on exactly the code that ships.
+
 **No human has seen the rendered result in a browser.**
 
 ## 8 · LOOP FEEDBACK
