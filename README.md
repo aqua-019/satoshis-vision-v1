@@ -67,7 +67,7 @@ Each row names the mechanism. Every one is in this repository.
 | **The fonts are local too.** | 12 `woff2` in `app/public/fonts/`. No CDN, no `fonts.googleapis`, no `fonts.bunny.net`. The count of third-party browser requests is zero and is gated at zero. |
 | **It works with JavaScript off.** | Every static route is prerendered to real HTML at build time by `app/scripts/prerender.mjs`. Tor Browser at its Safest setting reads this site whole. Live data enriches a page; it is never the price of admission. Gated by `app/verify-nojs.mjs` and `app/verify-degraded.mjs`. |
 | **No number is invented.** | See [Real values, or none](#real-values-or-none) below. |
-| **Usable at 390px, with a 12px type floor at phone widths.** | Below 720px `styles-legibility.css` lifts the label token to 12px, and `app/verify-mobile.mjs` measures the **rendered** result at 390 and 320 on every route, carrying no class exemption and a planted 9px positive control so a pass cannot be vacuous. Above 720px there is no rendered floor: the token clamps at 11px, and a handful of chip and marker classes declare 10.5px outright. `app/verify-legibility.mjs` gates the **source** — the token scale, inline `fontSize` literals, SVG `fontSize` attributes — rather than what a selector finally resolves to. |
+| **Usable at 390px, with a 12px type floor at phone widths.** | At 720px and below — the query is `max-width: 720px`, so 720 is inside it — `styles-legibility.css` lifts the label token to 12px, and `app/verify-mobile.mjs` measures the **rendered** result at 390 and 320 on every route, carrying no class exemption and a planted 9px positive control so a pass cannot be vacuous. SVG text is measured separately, in the space the reader is actually in, and one route's chart labels are **bounded rather than exempted** — a new offender fails the build. Above 720px there is no rendered floor: the token clamps at 11px, and a handful of chip and marker classes declare 10.5px outright. `app/verify-legibility.mjs` gates the **source** — the token scale, inline `fontSize` literals, SVG `fontSize` attributes — rather than what a selector finally resolves to. |
 | **Reduced motion stops the motion.** | `app/verify-reduce.mjs` loads 27 surfaces under `prefers-reduced-motion: reduce` and requires both that nothing is still `running` and that no SMIL element is present at all — SMIL is unreachable from CSS, so the only way to honour the preference is not to render it. Two limits the gate states about itself: it proves motion **stopped**, not that the frozen frame still says what the moving one did; and its mempool list is hand-copied at 6 of the 10 registered views. |
 
 ### Real values, or none
@@ -77,8 +77,8 @@ em-dash. It is never a plausible guess wearing the clothes of a measurement.
 When a feed degrades, the page carries the last good value and says
 `STALE · reconnecting`; it never synthesises a replacement.
 
-Randomness lives in three places. Exactly one of them can reach a figure you
-read, and that one is the carve-out:
+Randomness lives in three places in the code this site ships. Exactly one of
+them can reach a figure you read, and that one is the carve-out:
 
 - **`app/src/protocols/`** — the educational simulators, which are *supposed*
   to invent values and are labelled as doing so. This is the rule's one
@@ -97,7 +97,14 @@ read, and that one is the carve-out:
   call: `verify-prng.mjs` bans the `Math.random(` literal and nothing else.
 
 In the last two the random number is a count of milliseconds to wait before a
-request. It never becomes a value anyone reads.
+request. It reaches no rendered figure: the scheduled time is written to a
+store, and the only surface that reads that store reads the `busy` boolean
+beside it.
+
+The one place a grep will find more is `app/legacy/`, the pre-v6 static site's
+own simulators. That tree ships nothing — `app/tsconfig.json` includes only
+`src`, nothing under `src/` or `scripts/` imports it, and none of its
+identifiers appear anywhere in a built `dist/`.
 
 ### What is honestly still true
 
@@ -198,14 +205,18 @@ They are not chain data, not historical data, and not a prediction of anything.
 
 **The rule is the property, not the list.** A surface that invents a figure
 labels it; a surface that reports one names where it came from, through the
-provenance vocabulary this site's displayed figures carry. The two halves are
-held by different gates and neither holds the whole: `app/verify-prng.mjs`
-gates the invent side, and `app/verify-provenance.mjs` proves the freshness
-vocabulary is total and that a badge cannot claim a freshness it has no way to
-know. That *every* displayed figure carries one is a convention this project
-holds itself to, not a build failure. This paragraph deliberately does not
-enumerate, and for a second reason: the previous version of this
-sentence scoped the rule to `/learn` and missed the explorer entirely, and a
+provenance vocabulary this site's displayed figures carry. No single gate holds
+that, and the pieces are worth naming apart. `app/verify-prng.mjs` holds *where
+invention may live* — zero `Math.random()` call sites under `app/src/` outside
+`src/protocols/`, with a paired control so the check cannot pass by scanning
+nothing. `app/verify-provenance.mjs` holds the freshness half: that the
+vocabulary is total, and that a badge cannot claim a freshness it has no way to
+know. The *labelling* is held per surface — on the explorer,
+`app/verify-explorer.mjs` asserts every provenance badge reads `MODEL` and that
+the other four sources are absent, in both directions. That *every* displayed
+figure carries a badge at all is a convention this project holds itself to, not
+a build failure. This paragraph deliberately does not enumerate, and for a
+second reason: the previous version of this sentence scoped the rule to `/learn` and missed the explorer entirely, and a
 count would go stale the same way the next time a surface is added.
 
 The explorer is the one that most needs saying, because it wears an explorer's
