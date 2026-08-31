@@ -1058,6 +1058,56 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   unprompted, one pinning every figure to the mtime it read. p3·19's defect, and the rule
   needs a second half: dispatch before editing **and pin the sweep to a revision**, or the
   window is only as safe as the sweep is fast.
+  **AND A VERIFIER PASS KILLED THE TYPE-FLOOR SENTENCE I HAD JUST SHIPPED — the release's
+  own scope error, committed BY the repair, and caught before the prose settled.** My census
+  was `/about/site`-scoped and I wrote a SITE-WIDE sentence off it ("a handful of chip and
+  marker classes declare 10.5px"). Re-measured across ALL 18 routes at 1440, splitting HTML
+  from SVG because `getComputedStyle().fontSize` reports USER UNITS for SVG and rendered px
+  for HTML: **1,774 HTML nodes under 12px, 264 under 11px, minimum 9px** — not 130 and not
+  10.5. A one-page census cannot carry a site-wide sentence, which is the exact defect this
+  release exists to repair.
+  **AND THE SMALLEST TEXT ON THE DESKTOP SITE IS THE HONESTY CHANNEL ITSELF.** The largest
+  sub-11px group is the PROVENANCE BADGES at **9.5px** — `prov-tag`, `prov-fresh`,
+  `prov-detail`, the labels whose whole job is saying where a number came from — with
+  `.data-legend__gloss` at 10px beside them. `styles-legibility.css`'s ≤720 block lifts both,
+  so a phone reads them at 12px and a desktop does not. Named, not fixed: raising a desktop
+  floor is a design decision across every panel that carries a badge.
+  **BOTH FEED STATES MEASURED, AND REPORTED AS TWO COUNTS RATHER THAN ONE.** The verifier's
+  point is that degradation both ADDS nodes (error pills) and REMOVES them (anything gated on
+  live data), so a single degraded number is evidence about the instrument as much as the
+  page. Degraded (`/api/**` → 501) vs live-mocked: **1,774 / 1,750** sub-12px, **264 / 240**
+  under 11px, and **the minimum is 9px in BOTH**. `data-legend__gloss` at 10px and the whole
+  10.5px bucket are identical across the two; the delta is entirely `prov-fresh--loading`
+  variants the live state replaces. The claim is state-robust, and the README says so.
+  **TWO OF THE VERIFIER'S FOUR CANDIDATES WERE DEAD CSS, and it said so itself** —
+  `.peerlist` has ZERO references in any `.ts`/`.tsx`, so `styles.css:722`/`:724` are false
+  positives. `.mp-zoom__btn` (`MempoolPage.tsx:128`) and `.data-legend__gloss`
+  (`provenance.tsx:274`) are live. Reproduced both directions before publishing a number.
+  **AND ONE OF THE VERIFIER'S FINDINGS DID NOT SURVIVE ITS OWN TEST — pushed back with the
+  measurement.** It called `styles-legibility.css:307`'s comment an "eighth-and-a-half claim"
+  that "reads as though the job were done" on the honesty channel. Read: the comment says
+  "the smallest text on the site **before this block**" and "if any text on **a phone** has
+  to be readable". It is scoped to the phone and to the pre-block state, and it claims
+  nothing about desktop. The FACT behind the finding is real and is recorded above; the
+  comment is not where it is wrong, so `styles-legibility.css` is untouched.
+  **§B · "I CORRECTED THE STALE COPY" AND "I REMOVED THE MECHANISM" ARE DIFFERENT REPAIRS.**
+  `verify-reduce`'s `SIMS` (21) diffs IDENTICAL against its registry and `MEM` (6) is stale
+  by four — but SIMS being right today is luck rather than structure: `withComponents()`
+  couples the two REGISTRIES to each other and NOTHING couples the gate's arrays to either.
+  So editing the `MEM` literal from six entries to ten re-arms the identical trap and the
+  eleventh mempool view lands this finding again. The wiring is the fix; the literal is not.
+  Recorded here rather than done, because it is a fifth file and needs its own break tests.
+  **§D · THE 10.5px BUCKET IS PROOF THE UTILITIES LAYER DOES ITS JOB.**
+  `.ticker-strip .tk em` carries TWO declarations — `styles.css:666` at 10px and
+  `styles-legibility.css:66` at 10.5px — and renders at 10.5. Both are single-class-plus-two-
+  type, so specificity ties: 10.5 wins on LAYER ORDER, `styles.css:1`'s
+  `@layer reset, base, theme, components, utilities` putting the legibility sheet last. It is
+  the one node in the census whose rendered size differs from its `styles.css` declaration.
+  **AND A PREMISE OF THE BRIEF DIED BY MEASUREMENT RATHER THAN BY ARGUMENT.** It described
+  the client seed as feeding "polling jitter AND history sampling". All three consumers are
+  `setTimeout` delays; nothing samples a history. The shipped sentence says schedules, which
+  is what was measured — and the verifier struck its own clause rather than defending it.
+
   **AND CI CAUGHT A DEFECT THE GATES I CHOSE TO RUN COULD NOT — this file's own
   full-chain rule, walked into.** I ran `verify-site`, `verify-mobile`, `verify-origins`,
   `verify-nojs`, `verify-ia`, `verify-legibility`, `verify-prng` and `verify-provenance`
