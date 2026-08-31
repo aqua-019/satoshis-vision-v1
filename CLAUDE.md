@@ -1058,6 +1058,29 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   unprompted, one pinning every figure to the mtime it read. p3·19's defect, and the rule
   needs a second half: dispatch before editing **and pin the sweep to a revision**, or the
   window is only as safe as the sweep is fast.
+  **AND CI CAUGHT A DEFECT THE GATES I CHOSE TO RUN COULD NOT — this file's own
+  full-chain rule, walked into.** I ran `verify-site`, `verify-mobile`, `verify-origins`,
+  `verify-nojs`, `verify-ia`, `verify-legibility`, `verify-prng` and `verify-provenance`
+  individually, all green, and **never ran `npm run verify:static` as a chain**. CI's
+  `hardening gates` job then failed at **step 5 of 17, "Static gates"** — and because that
+  step is the chain's head, `Install Chromium`, `Build`, `Start static server` and all 39
+  e2e gates were **SKIPPED**, so five downstream `if: always()` browser gates reported
+  FAILURE for want of a build. **Six red steps, ONE cause.** Read the per-step status from
+  the jobs API rather than the conclusion: the raw log download redirects to an Azure blob
+  host the egress proxy denies (`connect_rejected`), and the check-run ANNOTATIONS plus the
+  per-step list are the channels that do answer.
+  **THE CAUSE IS `verify-releases`' STALENESS CHECK, AND IT IS RIGHT.** `logMax <= SITE_PR
+  <= logMax + 1` against `handoffs/LOG.md`: writing this release's own LOG line moved
+  `logMax` to **204** while `SITE_PR` still read **203**, so the label was BEHIND the log —
+  exactly the staleness that gate exists to catch. **The reverted p4·M6 did not hit this
+  because it landed INSIDE #203 and opened no PR of its own**; opening a new PR is what
+  makes the bump mandatory, and my own commit message had asserted "SITE_PR is NOT bumped"
+  on reasoning about features that the gate does not care about. Bumped 203 → 204.
+  **AND THE BUMP IS BYTE-NEUTRAL, which is a reproduction rather than a hope**: `eagerJsRaw`
+  **264,457 BYTE-IDENTICAL**, `cssGz` 18,586, `lazyJsRaw` 990,587 and `totalJsRaw` 1,255,044
+  all byte-identical, chunks 76 — three digits at identical length cost nothing, exactly as
+  p4·01, p4·M7 and p4·M6b each measured. `eagerJsGz` moves **−3** with raw unmoved, which is
+  the same compressibility-only mechanism as the −5 above.
   **No human has seen the rendered result in a browser.**
 
 - **2026-08-30**: p4·M6c "THE ARTWORK IS NOT DATED, AND THE COLUMN WAS GATED BY NOTHING"

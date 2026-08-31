@@ -133,6 +133,13 @@ file, and it needs its own break tests and reds); `verify-reduce`'s header citin
 that does not exist; `verify-mobile`'s "fourteen canonical routes" against 18;
 `claude/V2-VIEW-CONFORMANCE.md:257`'s stale count; `LICENSE` item 3.
 
+**CI FOUND ONE MORE, AFTER the PR opened.** `hardening gates` failed at step 5 "Static
+gates" — and because that step heads the chain, Build/Chromium/server and all 39 e2e gates
+were SKIPPED, so five downstream browser gates reported FAILURE for want of a build: six red
+steps, ONE cause. Root cause: `verify-releases`' `logMax <= SITE_PR <= logMax + 1`, where
+this release's own LOG line moved `logMax` to 204 while `SITE_PR` read 203. Bumped to 204;
+`verify:static` now exits 0 with 0 reds and every RAW budget is byte-identical.
+
 **No human has seen the rendered result in a browser.**
 
 ## 8 · LOOP FEEDBACK
@@ -147,6 +154,10 @@ that does not exist; `verify-mobile`'s "fourteen canonical routes" against 18;
 - **`cd X && …` short-circuits silently when the shell is already in X**, and the next line
   runs anyway. One green run measured a file that never changed; only the failing commit
   caught it. Guard rounds inside a harness that proves the mutation landed.
+- **Run the CHAIN, not the members you think are affected.** I ran eight gates individually,
+  all green, and never ran `npm run verify:static`. It reds — on a gate none of the eight
+  was, and for a reason (the LOG/SITE_PR staleness pair) that only exists once the PR is
+  opened. The affected-file list is not the blast radius.
 - **Never cite a gate without checking it is wired.** `verify-sims` was a plausible citation
   and is an orphan. A gate that never runs is worse than no citation.
 
