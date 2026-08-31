@@ -66,7 +66,22 @@ const SIMS = [
   'skyline', 'bloodhound', 'balance',
 ];
 
-/** The 6 mempool views — mempool/views.tsx's registry. */
+/** SIX of the TEN registered mempool views.
+ *
+ *  THE PATH IN THIS COMMENT WAS STALE FOR SIX MERGES AND THAT IS THE TELL. It
+ *  read "mempool/views.tsx's registry"; `find app -name 'views.tsx'` returns
+ *  NOTHING. The real registry is `src/views/mempool-meta.ts`, and it carries
+ *  TEN ids — so orbital, abyss, pulse and circuit, every canvas view added
+ *  since v6.1.3, are not driven by this gate at all.
+ *
+ *  DO NOT "FIX" THIS BY EDITING THE LITERAL TO TEN. A hand copy corrected by
+ *  hand is still a hand copy, and the eleventh view lands this same finding.
+ *  SIMS above is the proof: it diffs IDENTICAL against protocols.tsx's ids
+ *  today, and that is luck rather than structure — `withComponents()` couples
+ *  the two REGISTRIES to each other, and nothing couples either array here to
+ *  either registry. The fix is to derive both from the registries, which needs
+ *  its own break tests because widening this gate adds four surfaces to a check
+ *  that has found real running-animation defects before. */
 const MEM = ['reactor', 'bridge', 'sediment', 'constellation', 'terminal', 'classic'];
 
 const SURFACES = [
