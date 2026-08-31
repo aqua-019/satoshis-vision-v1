@@ -876,6 +876,190 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-31**: p4·M6 "THE HONESTY REPAIR" (README + app/) — the file whose thesis is
+  *"an ethos you cannot check is a slogan"* carried claims that do not check out, and
+  **every gate in the suite was green while it did.** Four files, no new module, no new
+  import, no new stylesheet rule.
+  **THE GENERAL LESSON, WHICH IS THE ONLY REASON THIS RANKS: A GATE SUITE PROVES WHAT IT
+  ASSERTS AND SAYS NOTHING ABOUT THE SENTENCES WRAPPED AROUND IT.** 85 gates, budgets to
+  residual zero, a census controlled against five commits — and not one of them could see
+  any of this, because every one of these is a CLAIM rather than a COMPUTATION. There is no
+  instrument in this repo that reads prose. **The adversarial pass belongs before the
+  report, not after the merge.**
+  **AND THE BRIEF'S OWN REPLACEMENT TEXT WOULD HAVE BEEN THE SAME DEFECT IN A NEW COAT —
+  the single most useful thing measured here.** It proposed "a hard 11px type floor …
+  `verify-legibility.mjs` fails the build on any type under 11px". Both halves false.
+  `styles-legibility.css` declares **SEVEN** selectors at 10.5px (`.pill`, `.rail h6`,
+  `.stat .lbl`, `.ticker-strip .tk em`, `.proto-panel h6`, `.proto-badge`, `.v6-status`),
+  so there is no hard 11px RENDERED floor above 720px; and `verify-legibility` is a **pure
+  source gate** — its own header says "Reads source files with fs.readFileSync" — that never
+  launches a browser and never reads a computed font-size. **PROVEN RATHER THAN ARGUED: it
+  exits 0 on this tree while `styles-legibility.css:78` declares
+  `.pill { font-size: 10.5px }`.** A gate named for legibility, reading the sheet that
+  declares the violation, green. Measured at 1440 on `/about/site`: **130** visible sub-12px
+  nodes — 103 at 11px, 24 at 11.5px, 3 at 10.5px — against **0 at 390**. The row now states
+  the two bands that are actually enforced and says out loud that above 720px there is no
+  rendered floor at all.
+  **THE BOUNDARY WAS OFF BY ONE AND ONLY A MEASUREMENT SHOWS IT.** The first replacement
+  said "Below 720px". The query is `@media (max-width: 720px)`, which is INCLUSIVE.
+  Measured `--fs-label` at three widths: **719 → 12px · 720 → 12px · 721 → clamp(11px,
+  .74vw, 12px)**. So 720 belongs to the phone band and "below 720px" excludes a width the
+  rule covers. Corrected, with the query quoted so a reader checks the boundary rather than
+  trusting a preposition — **and then the identical error was found one file over**, in
+  `SitePage.tsx`'s own comment ("12px below 720px"), 200 lines from the CTA it describes.
+  That is the sweep rule in its predicted shape: a claim checked where it was written and
+  nowhere else.
+  **A GATE WAS CITED FOR THE CLAIM ITS OWN HEADER DISCLAIMS.** `verify-reduce.mjs:54-55`
+  reads, in one line: *"Do not add a 'no motion' assertion and call the contract
+  discharged."* It was cited for "reduced motion loses no information". Split into its own
+  row citing what it does gate — 27 surfaces, no `running` animation AND no SMIL element
+  present, the asymmetry being that SMIL is unreachable from CSS so the only way to honour
+  the preference is not to render it.
+  **AND SWEEPING MY OWN REPLACEMENT RATHER THAN THE SHIPPED SENTENCE FOUND THE 8th CLAIM.**
+  `verify-reduce.mjs:70`'s MEM list is a **HAND-COPIED SIX** — and its own comment calls it
+  "The 6 mempool views — mempool/views.tsx's registry" — against a registry of **TEN** in
+  `src/views/mempool-meta.ts`. So **orbital, abyss, pulse and circuit**, every canvas view
+  added since v6.1.3, are not driven by the reduced-motion gate at all. The hand-copied-list
+  family this file records repeatedly, inside the gate whose header argues at length against
+  allowlists. **WIDENING IT IS NOT DONE HERE** and the reason is not file count alone: it
+  adds four surfaces to a gate that has found real running-animation defects before, so it
+  needs its own break tests and its own reds. Named, not fixed.
+  **THREE ENTROPY SOURCES, NOT TWO, AND THE SENTENCE CONTRADICTED ITSELF FOUR LINES LATER.**
+  "Randomness exists in exactly two places, and neither of them renders a value" sat directly
+  above a bullet saying the simulators are *supposed* to invent values.
+  `useMarketHistory.ts:75` and `usePolling.ts:172` each draw one number from
+  `crypto.getRandomValues`; all three consumers (`useTickers.ts:126`,
+  `useMarketHistory.ts:876`, `usePolling.ts:279`) feed it to a `setTimeout` delay. Reframed
+  to three sources, exactly one of which can reach a figure you read, and it is the one that
+  is meant to.
+  **AND THE "NEVER BECOMES A VALUE ANYONE READS" HALF WAS RE-DERIVED RATHER THAN ASSUMED,
+  because an adversarial pass challenged it and it deserved the challenge.** The jittered
+  wait IS written to a store as `nextAt` (`usePolling.ts:281`) and `useMarketHistory`
+  RETURNS `nextRetryAt` from its hook — so the sentence was one render away from false.
+  Traced: no file under `src/pages`, `src/design`, `src/mempool`, `src/layout` or
+  `src/views` reads either, the single interpolation of `nextAt` is a memo cache key inside
+  `feed-activity.ts:141`, and the one UI consumer (`NetworkPage.tsx:238`) reads the `busy`
+  BOOLEAN beside it. The claim holds; it now says so precisely rather than flatly.
+  **THE CENSUS ALSO NEEDED ITS SCOPE SAID OUT LOUD.** A reader who greps this repo finds
+  ~58 more `Math.random()` call sites in `app/legacy/`. Three measurements establish that
+  tree ships nothing — `tsconfig.json` includes only `src`, nothing under `src/` or
+  `scripts/` imports it, and its own marker `genTx` appears in **0** built dist files — so
+  the section scopes itself to the shipping code and names legacy rather than leaving the
+  count looking wrong.
+  **"YOUR BROWSER REACHES NO THIRD PARTY" IS TRUE OF FETCHES AND FALSE OF CLICKS.** CSP
+  governs subresources and connections, not top-level navigation, and `vercel.json` carries
+  **no `form-action`** and no `navigate-to`. Not hypothetical: the prerendered HTML ships
+  **67 outbound anchors across a dozen third-party hosts**. The row now says "while you are
+  on it" and names the carve-out as the reader's own.
+  **AND A 7th CLAIM, FOUND BY READING EVERY GATE CITATION AGAINST WHAT THAT GATE ASSERTS.**
+  "the provenance vocabulary every displayed figure on this site carries. That is what
+  `verify-provenance.mjs` and `verify-prng.mjs` enforce" — `verify-provenance`'s own header
+  states its subject: it *"proves that a provenance badge cannot claim a freshness it has no
+  way to know, and that the freshness vocabulary is total. Pure source assertions — no
+  DOM."* **Not one of its assertions says every displayed figure carries a badge**, and no
+  other gate does either.
+  **THEN MY OWN CORRECTION OVERCLAIMED IN THE SAME SHAPE, ONE SIZE SMALLER.** I wrote
+  "`verify-prng.mjs` gates the invent side". Measured: verify-prng asserts **nothing** about
+  labelling — a grep for label/badge/prov returns two hits, both comments about statistical
+  shape. It gates WHERE INVENTION MAY LIVE. The LABELLING half — the paragraph's own first
+  clause — is held per surface, and on the explorer that is `verify-explorer.mjs` §3.
+  **CONFIRMED WIRED BEFORE CITING IT** (inside the `verify:e2e` chain CI runs);
+  `verify-sims` was the other candidate and is deliberately NOT cited, because it is an
+  ORPHAN — zero occurrences in `package.json` and in `ci.yml` — and citing a gate that never
+  runs is worse than citing none.
+  **§3 IS A COUPLING REMOVED, NOT GATED, AND THAT IS THE DECISION.** `SitePage`'s
+  `PageHeader sub=` enumerated mission → overview → record → ethos → operator: the order the
+  page had BEFORE p4·M2 moved support to second and the overview last. FIVE clauses for SIX
+  sections — it omitted `support` entirely, the section p4·M2 moved up precisely to give the
+  fundraiser weight. Nothing could see it: §12 pins DOM order and is blind to prose, §1 reads
+  prerendered text and is blind to order, and a grep for the sentence across every gate
+  returns **zero**. A gate matching the sentence against the section list would pin them
+  together forever and make every reorder an edit in two places. **A sentence that names no
+  sequence cannot rot**, so it is now a description.
+  **§4 · THE WEIGHT ASSERTION REDDENED WITHOUT DISCRIMINATING — and the polarity matters.**
+  It was not passing vacuously; it FAILS PERMANENTLY once self-included. Measured:
+  `[data-support-link] ~ a` matches **ZERO** and structurally always will (the CTA is an
+  only child of its `.chip-row`, children count 1), so the whole comparison rode on a GLOBAL
+  `a.v6-res`. Demonstrated in the browser: with the CTA given `.v6-res`, the shipped
+  selector's max becomes **38 against a CTA of 38** — `38 > 38` false however the page
+  renders — while the scoped selector stays at **28**. **"42px vs 42px" was the signature of
+  that degeneracy, not of the gate working.** Now scoped by walking up from the section
+  marker to the element holding the CTA (one hop, to `div.panel`) and self-excluded with
+  `:not([data-support-link])`.
+  **AND THE GLOBAL HALF WAS ONE OPERATOR DECISION FROM WIDENING ON ITS OWN, which needs no
+  break test.** The operator's X link renders `{OPERATOR_X ? <a className="v6-res"> : <span
+  className="v6-res">}` and the handle is still pending — measured **2 `a.v6-res`, 1
+  `span.v6-res`** reading "X · handle pending". The day that handle arrives, an anchor from
+  the OPERATOR section silently joins the SUPPORT section's comparison set. Scoping excludes
+  it structurally rather than by luck.
+  **THE FLOOR IS BOUNDED IN BOTH DIRECTIONS, and the upper half closes a blind spot an
+  adversarial pass found in the fix itself.** `>= 2` catches the scope COLLAPSING and is
+  blind to it WIDENING: measured, the scoped set is **2** and the same query against
+  `.page-shell` or `main` returns **73** — with the max still 28, because the tallest anchor
+  on the page is one of the two the scope is meant to find. So an overshooting walk-up would
+  leave BOTH the floor and the comparison green while the subject had become the whole page.
+  That is this release's own wider-subject family, arriving inside the fix for it.
+  **SIX BREAK TESTS, AND THE THREE THAT DID NOT SIMPLY GO RED TAUGHT THE MOST.**
+  · **M-a REFUSED**, and the brief's prediction was arithmetically wrong: dropping the CTA's
+    inline padding reads **30px vs 28px**, still green, because `.proto-btn` carries its own
+    `padding: 8px 14px`. The assertion's real slack at ship is **10px** (38 − 28) and that
+    mutation spends 8. Reported rather than buried; **M-a2** (vertical padding to 0) reds at
+    **14px vs 28px**, the CTA below the secondary max as §5 requires.
+  · **M-b** the CTA reclassed to `v6-res` → reds on the AFFORDANCE only, and the weight line
+    reads **42px vs 28px** — NOT an equal pair. The 42 on the left is the same number p4·M2
+    recorded; the right-hand side moving 42 → 28 IS the fix.
+  · **M-c** the old enumerating `sub=` restored → **NOTHING REDS, deliberately.** The
+    coupling was removed rather than gated. Recorded as a non-red rather than papered over
+    with a gate.
+  · **M-d** one secondary link removed → the floor reds at `1 in div.panel` **while the
+    weight assertion stays GREEN at 38 vs 28** — a scope collapse the comparison alone
+    cannot see.
+  · **M-e** the walk-up overshooting one level → reds at **`73 in div.page-shell`**, and
+    again **the weight assertion stays GREEN**. Without the upper bound that mutation ships
+    in total silence.
+  **AND A `cd` THAT DID NOT SURVIVE MADE A GREEN RUN MEASURE A FILE THAT NEVER CHANGED.**
+  `cd app && python3 …` short-circuited (the shell was already in `app/`), so the edit never
+  applied — and the `node verify-site.mjs` on the next line ran anyway and printed **81
+  passed**, which read exactly like the fix working. Caught only because the COMMIT then
+  failed with "nothing to commit". p4·M2's recorded trap, in a new door: the `&&` did its
+  job and the reader did not. **A bare re-run also went VOID later** when `serve-dist` had
+  died between rounds — http 000, the gate crashing rather than failing. The harness guards
+  for both; running outside it is what cost the two.
+  **BUDGETS: ONE TERM, RESIDUAL ZERO, cssGz AND THE EAGER HALF BOTH BYTE-IDENTICAL.**
+  Paired per chunk stem BY MULTISET, because the `index` stem holds two chunks and a
+  basename-keyed join reports them as two phantom moves that cancel. **75 of 76 stems
+  size-identical**; the one that moved is `SitePage` **17,865 → 17,834 = −31**, which IS
+  `lazyJsRaw`'s whole delta and `totalJsRaw`'s whole delta. `cssGz` **BYTE-IDENTICAL at
+  18,586** and `eagerJsRaw` **BYTE-IDENTICAL at 264,457** — the release adds no stylesheet
+  rule and no eager byte. `eagerJsGz` moves **−5** with eager RAW unmoved: the entry embeds
+  SitePage's rotated hash twice in `__vite__mapDeps` at fixed length, so that is
+  compressibility alone — p4·01's recorded phenomenon. `CHUNK_COUNT` **76 = 76**. Controls
+  run rather than assumed: the new subtitle greps **0** times in the eager entry and **1** in
+  SitePage's lazy chunk; and the README-only and comment-only commits were each rebuilt and
+  measured BYTE-IDENTICAL, which is how "README is not bundled" and "the build strips
+  comments" became measurements instead of assumptions.
+  **THE −31 IS THE SENTENCE AND THE SENTENCE WAS NOT SHAPED BY IT.** A same-length
+  replacement would have made every figure byte-identical and would have been copy written to
+  a budget, which this file records as its own anti-pattern. The true sentence was written
+  and the delta attributed.
+  `verify-site` **81 passed · 0 failed**, count UNCHANGED — three assertions rewritten, none
+  added. `verify-mobile` 59 · `verify-origins`, `verify-nojs`, `verify-ia`,
+  `verify-legibility`, `verify-prng`, `verify-provenance` all green.
+  **NOT FIXED, and named — all outside the four files this PR may touch**:
+  `verify-reduce.mjs`'s hand-copied six (above), whose header also cites
+  `mempool/views.tsx's registry`, **a path that does not exist**; `verify-mobile.mjs`'s
+  header saying "fourteen canonical routes" against a derived `ROUTES.length` of **18** (the
+  comment rots, the assertion is correct); `claude/V2-VIEW-CONFORMANCE.md:257`'s "nineteen
+  sub-12px declarations" against a measured 81 across four sheets; and `LICENSE` item 3,
+  which still names exchange widgets that no longer exist.
+  **AND THE RECON RAN OVER A TREE THAT MOVED UNDER IT — my own doing, and the agents caught
+  it themselves.** Recon was dispatched BEFORE editing, which is the rule, but it ran long
+  enough that the fixes landed mid-sweep; three separate agents reported the discrepancy
+  unprompted, one pinning every figure to the mtime it read. p3·19's defect, and the rule
+  needs a second half: dispatch before editing **and pin the sweep to a revision**, or the
+  window is only as safe as the sweep is fast.
+  **No human has seen the rendered result in a browser.**
+
 - **2026-08-30**: p4·M6c "THE ARTWORK IS NOT DATED, AND THE COLUMN WAS GATED BY NOTHING"
   (app/) — the seventh peer's artwork ships at a real size, undated because it is not a
   capture, and the column branch p4·M6b shipped gets the witness it never had.

@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260831-M6
 branch: claude/new-session-xw3hru
-status: in_progress
+status: done
 written_by: claude-code (manual mode)
 owner: claude-code
 ---
@@ -94,9 +94,59 @@ cd .. && git diff --name-only fa5e518
 
 ## 7 · REPORT — filled on exit
 
-status:
-pr:
-commits:
+status: **done**
+pr: PR_URL_PENDING
+commits: `7e33dff` six claims + the selector · `e8b72c8` four more, three in my own
+replacement text · `b6631c7` the §12 scope bounded both ways · `7f66b72` the same
+off-by-one one file over · `<record>` the record
+
+**DONE-CRITERIA — all met.**
+- `npm run build` exits 0 ✓
+- `node verify-site.mjs` exits 0, **81 passed · 0 failed**, §12 printing a real unequal
+  pair `38px vs 28px` ✓
+- floor names the count and requires ≥ 2 — and is bounded ABOVE too, at ≤ 8, after an
+  adversarial pass found `>= 2` blind to the scope widening (scoped 2, `main` 73) ✓
+- **M-a REFUSED** (30 vs 28; `.proto-btn` carries its own padding — the brief's arithmetic
+  was wrong and the assertion's real slack is 10px). Reported, not buried. **M-a2** reds at
+  `14px vs 28px`, CTA below the secondary max ✓
+- **M-b** reds on the affordance only; weight line reads `42px vs 28px`, NOT an equal pair —
+  the proof the self-inclusion is gone ✓
+- **M-c** reds NOTHING, deliberately ✓  · **M-d** and **M-e** each red the floor while the
+  weight assertion stays green ✓
+- every restore proven against the COMMITTED BLOB, bracketed marker sweep, rebuilt between
+  restore and re-measure ✓
+- budgets: `cssGz` **byte-identical 18,586**; `eagerJsRaw` **byte-identical 264,457**; one
+  term `SitePage −31` = lazy's and total's whole delta, **residual zero**; chunks 76 = 76 ✓
+- `git diff --name-only fa5e518` names exactly 4 code files (+ this handoff, LOG, CLAUDE.md
+  as the record) ✓
+- sweep complete: all 9 cited gates exist AND are wired (no orphan cited); every "Main
+  Home", "12px" and "11px" hit read and judged ✓
+- stale claims outside the four files NAMED not fixed ✓
+
+**WHAT THE BRIEF GOT WRONG, measured:** §1d was already landed by #203. §1a's proposed
+replacement was false in the same shape as the claim it replaced. M-a's predicted red was
+arithmetically impossible. §4's premise was right and its *polarity* was not — the old
+selector fails permanently once self-included rather than passing vacuously.
+
+**NOT DONE, and named:** widening `verify-reduce`'s hand-copied mempool six to ten (a fifth
+file, and it needs its own break tests and reds); `verify-reduce`'s header citing a path
+that does not exist; `verify-mobile`'s "fourteen canonical routes" against 18;
+`claude/V2-VIEW-CONFORMANCE.md:257`'s stale count; `LICENSE` item 3.
+
+**No human has seen the rendered result in a browser.**
 
 ## 8 · LOOP FEEDBACK
+
+- **The brief's replacement text needed the same scrutiny as the text it replaced.** Two of
+  the eight findings were defects in my own corrections, and one was in the paragraph
+  written to remove an overclaim. Sweep the fix, not just the defect.
+- **A measurement is scoped to WHEN it was taken.** Recon dispatched before editing still
+  read a tree that moved under it, because the sweep outlasted the edits. Three agents
+  caught it themselves. The rule needs a second half: dispatch before editing *and* pin the
+  sweep to a revision.
+- **`cd X && …` short-circuits silently when the shell is already in X**, and the next line
+  runs anyway. One green run measured a file that never changed; only the failing commit
+  caught it. Guard rounds inside a harness that proves the mutation landed.
+- **Never cite a gate without checking it is wired.** `verify-sims` was a plausible citation
+  and is an orphan. A gate that never runs is worse than no citation.
 
