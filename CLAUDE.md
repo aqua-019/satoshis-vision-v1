@@ -1063,7 +1063,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   was `/about/site`-scoped and I wrote a SITE-WIDE sentence off it ("a handful of chip and
   marker classes declare 10.5px"). Re-measured across ALL 18 routes at 1440, splitting HTML
   from SVG because `getComputedStyle().fontSize` reports USER UNITS for SVG and rendered px
-  for HTML: **1,774 HTML nodes under 12px, 264 under 11px, minimum 9px** — not 130 and not
+  for HTML: **1,731 HTML nodes under 12px, 256 under 11px, minimum 9px** — not 130 and not
   10.5. A one-page census cannot carry a site-wide sentence, which is the exact defect this
   release exists to repair.
   **AND THE SMALLEST TEXT ON THE DESKTOP SITE IS THE HONESTY CHANNEL ITSELF.** The largest
@@ -1072,10 +1072,21 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `.data-legend__gloss` at 10px beside them. `styles-legibility.css`'s ≤720 block lifts both,
   so a phone reads them at 12px and a desktop does not. Named, not fixed: raising a desktop
   floor is a design decision across every panel that carries a badge.
+  **AND MY OWN CENSUS MEASURED THE SPLASH ON `/` — caught by a second instrument
+  disagreeing, and it moved the published number.** `coldboot/gate.ts`'s predicate ends
+  `pathname === R.HOME`, so `/` renders the cold-boot console unless a gate installs
+  `coldBootOffBrowser`. My first site-wide run did not, so its `/` rows censused the splash
+  rather than Main Home. Re-run WITH the bypass the figures drop by 8 in each state:
+  **256 / 232** sub-11px, not 264 / 240. The published range is 232–256.
+  **THE TWO INSTRUMENTS THEN RECONCILED EXACTLY, which is what makes either trustworthy.**
+  A parallel census reported **278** under 11px against my 256 — because it counted SVG
+  TOGETHER WITH HTML while I separate them, and 256 + the ~22 sub-11px SVG nodes is 278. The
+  disagreement was entirely a scoping difference, and finding that out is the only reason
+  either number can be published. A count is a REPORT until a second instrument reproduces it.
   **BOTH FEED STATES MEASURED, AND REPORTED AS TWO COUNTS RATHER THAN ONE.** The verifier's
   point is that degradation both ADDS nodes (error pills) and REMOVES them (anything gated on
   live data), so a single degraded number is evidence about the instrument as much as the
-  page. Degraded (`/api/**` → 501) vs live-mocked: **1,774 / 1,750** sub-12px, **264 / 240**
+  page. Degraded (`/api/**` → 501) vs live-mocked: **1,731 / 1,707** sub-12px, **256 / 232**
   under 11px, and **the minimum is 9px in BOTH**. `data-legend__gloss` at 10px and the whole
   10.5px bucket are identical across the two; the delta is entirely `prov-fresh--loading`
   variants the live state replaces. The claim is state-robust, and the README says so.
