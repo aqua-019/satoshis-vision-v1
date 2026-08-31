@@ -1072,6 +1072,38 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `.data-legend__gloss` at 10px beside them. `styles-legibility.css`'s ≤720 block lifts both,
   so a phone reads them at 12px and a desktop does not. Named, not fixed: raising a desktop
   floor is a design decision across every panel that carries a badge.
+  **AND A NINTH CLAIM LANDED INSIDE THE REPAIR ITSELF — a fresh unchecked superlative, caught
+  by a verifier before it settled.** The cell said "the smallest is 9px" and, three clauses
+  later, that the provenance badges "are the smallest text on the desktop site". Both cannot
+  be true: 9 < 9.5, so they are the smallest GROUP. **And the counterexample is neither
+  hypothetical nor on another route** — `NetworkPage.tsx:813` renders
+  `<Provenance source="node" /><span className="soon-badge">Soon</span>` in ONE fragment, so a
+  reader checking the claim meets the exception beside the thing claimed about. Measured:
+  `.soon-badge` is `font: 9px/1`, `.prov` and `.data-legend` are `font: 9.5px/1`, and all
+  three lift to 12px only inside the ≤720 block. **A SUPERLATIVE IS WHAT ONE COUNTEREXAMPLE
+  BREAKS AND A COUNT IS NOT**, so it is now a count: under 10px, all but FOUR nodes are
+  provenance badges — and four is the figure in BOTH feed states (3 `data-legend__k` at 9.5px,
+  1 `soon-badge` at 9px), where the absolute total is not (126 degraded, 102 live).
+  **AND A FOUR-LENS ADVERSARIAL PASS OVER THE REPLACEMENT THEN FOUND A TENTH — A RIGHT NUMBER
+  ON A WRONG NOUN.** I wrote "232–256 HTML text NODES". The values are exact; the noun is not.
+  The census counts one entry per ELEMENT that owns visible text, which is `verify-mobile`'s
+  own subject — its failure message says "visible text element(s)". Counted as actual DOM text
+  nodes the same pages give **258–278**. Corrected to "text-bearing elements", which also puts
+  the README in the gate's vocabulary rather than beside it.
+  **AND THE COINCIDENCE IS THE PART WORTH KEEPING: 278 IS REACHABLE BY TWO UNRELATED
+  DERIVATIONS.** It is the HTML TEXT-NODE count, and it is also 256 HTML elements + 22 sub-11px
+  SVG elements — the reconciliation this note already records one paragraph below. Two figures
+  AGREEING for different reasons is worse than two disagreeing, because nothing looks wrong.
+  A reader meeting a bare "278" cannot tell which instrument produced it. **Name the unit beside
+  the count**, which is this file's state-the-instrument rule applied to a noun rather than a
+  method.
+  **AND THE SHORTHAND CLAIM WAS UNDER-STATED RATHER THAN OVER-STATED, which is the rarer
+  direction.** I wrote "several" declare their size through a `font:` shorthand. Measured:
+  `.prov`, `.soon-badge` and `data-legend__k` carry NO `font-size:` longhand anywhere, so a
+  `font-size:` grep misses **the entire sub-10px population** — 100% of the site's smallest
+  text. That is exactly how the verifier's own mid-flight note put the floor at 10px across
+  eleven declarations: it grepped the longhand. The sentence now says what was measured.
+
   **AND MY OWN CENSUS MEASURED THE SPLASH ON `/` — caught by a second instrument
   disagreeing, and it moved the published number.** `coldboot/gate.ts`'s predicate ends
   `pathname === R.HOME`, so `/` renders the cold-boot console unless a gate installs
