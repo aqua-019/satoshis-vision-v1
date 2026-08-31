@@ -606,7 +606,42 @@ R.group('§12 · section order, and the support CTA is emphasis rather than a na
       const pos = getComputedStyle(n).position;
       if (pos === 'fixed' || pos === 'sticky') { stuck = n.tagName.toLowerCase() + '/' + pos; break; }
     }
-    const secondary = [...document.querySelectorAll('a.v6-res, [data-support-link] ~ a')]
+    /* SCOPED, AND SELF-EXCLUDING — both halves are load-bearing.
+       The previous selector was `a.v6-res, [data-support-link] ~ a`, and it
+       reddened without discriminating. Measured on this page: the sibling half
+       matches ZERO and structurally always will, because the CTA is an only
+       child of its `.chip-row` — so the whole comparison rode on a GLOBAL
+       `a.v6-res`. That is how p4·M2's own break test, which gave the CTA that
+       class, put the CTA into its own comparison set and degenerated the
+       assertion below to `h > max(h, …)` — false however the page renders.
+       "42px vs 42px" was the signature of that degeneracy, not of the gate
+       working.
+       So: walk up from the section marker to the element that also holds the
+       CTA (one hop, to the section's `.panel`), and exclude the CTA by
+       attribute. `:not([data-support-link])` is what makes a mutation
+       discriminate — the CTA can never enter its own set, so a red here now
+       means the CTA actually got smaller.
+
+       THE GLOBAL HALF WAS ALSO ONE OPERATOR DECISION FROM WIDENING ON ITS OWN,
+       which is an argument for scoping that needs no break test. The operator's
+       X link renders `{OPERATOR_X ? <a className="v6-res"> : <span
+       className="v6-res">}`, and CLAUDE.md records that handle as still
+       pending — so today it is a SPAN and `a.v6-res` misses it. Measured here:
+       2 `a.v6-res`, 1 `span.v6-res` reading "X · handle pending". The day the
+       handle arrives, an anchor from the OPERATOR section would silently join
+       the SUPPORT section's comparison set.
+
+       AND THE FLOOR BELOW IS BOUNDED IN BOTH DIRECTIONS, because `>= 2` alone
+       is blind to the scope WIDENING. Measured: the scoped set is 2, and the
+       same query against `.page-shell` or `main` returns 73 — with the max
+       still 28, since the tallest anchor on the page is one of the two the
+       scope is meant to find. So an overshooting walk-up would leave the floor
+       AND the comparison green while the subject had quietly become the whole
+       page: the same wider-subject shape this section was just fixed for. */
+    const marker = document.querySelector('[data-site-section="support"]');
+    let card = marker;
+    while (card && !card.querySelector('[data-support-link]')) card = card.parentElement;
+    const secondary = [...(card ? card.querySelectorAll('a:not([data-support-link])') : [])]
       .map((e) => e.getBoundingClientRect().height).filter((h) => h > 0);
     return {
       tag: el.tagName.toLowerCase(),
@@ -615,6 +650,8 @@ R.group('§12 · section order, and the support CTA is emphasis rather than a na
       stuck,
       dialog: !!el.closest('dialog, [role="dialog"], [aria-modal="true"]'),
       maxSecondaryH: secondary.length ? Math.round(Math.max(...secondary)) : 0,
+      nSecondary: secondary.length,
+      cardCls: card ? (card.tagName.toLowerCase() + '.' + String(card.className || '')) : null,
       digits: /\d/.test(el.textContent || ''),
     };
   });
@@ -631,9 +668,15 @@ R.group('§12 · section order, and the support CTA is emphasis rather than a na
     R.ok(!cta.digits, '12 · the control itself prints no digit — no total, no goal');
     // A FLOOR, not a comparison against a hardcoded pixel size: the point is
     // that the primary control outweighs the secondary links beside it.
-    R.ok(cta.maxSecondaryH > 0,
-      `12 · the secondary links were measured (tallest ${cta.maxSecondaryH}px)`,
-      'the weight comparison below is vacuous without them');
+    // NON-VACUITY, NAMING THE COUNT. `> 0` would be satisfied by a single
+    // anchor; the support panel ships two ("Run a node", "Mine Monero"), so a
+    // floor of 2 notices the scope collapsing to one as well as to none. If
+    // this reads 0 the gate is measuring nothing and the comparison below is
+    // vacuous however it lands.
+    R.ok(cta.nSecondary >= 2 && cta.nSecondary <= 8,
+      `12 · the secondary links were measured (${cta.nSecondary} in ${cta.cardCls}, tallest ${cta.maxSecondaryH}px)`,
+      'expected 2..8 — 0 or 1 means the scope collapsed and the comparison is vacuous; ' +
+      'above 8 means the walk-up overshot the panel (main measures 73)');
     R.ok(cta.h > cta.maxSecondaryH,
       `12 · the primary CTA is a bigger target than every secondary link (${cta.h}px vs ${cta.maxSecondaryH}px)`);
   }

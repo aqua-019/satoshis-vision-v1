@@ -254,7 +254,7 @@ export function SitePage() {
       <PageHeader
         kicker="non-profit · educational · no trackers"
         title='<em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">xmr.irish</em>: a non-profit educational system &amp; blockchain explorer'
-        sub="What this site is, what is on it, where it came from, how it treats you, and how it stays up."
+        sub="Everything this site says about itself, and where to check it."
       />
 
       {/* ── The mission ─────────────────────────────────────────────────── */}
@@ -296,7 +296,8 @@ export function SitePage() {
             this repo's cssGz margin. The padding bump is inline, so it costs
             JS bytes and not CSS bytes. NO inline fontSize — `verify-legibility`
             bans sub-14px inline literals, and the class already resolves to
-            11.5px desktop / 12px below 720px, which clears the touch floor.
+            11.5px desktop / 12px at 720px and below (`max-width: 720px` includes
+            720), which clears the touch floor.
 
             THE LABEL IS SHORT ON PURPOSE. `proto-btn` is uppercase with
             0.16em tracking, so a long label is wide out of proportion to its

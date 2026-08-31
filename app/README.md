@@ -255,9 +255,13 @@ The default build:
   — this is user-facing, not a design-time tool. v6.1.2 added phosphor as a
   third Theme option and flipped the default from indigo to classic; it also
   mounted the same Theme control (`design/ThemeToggle.tsx`) directly on Main
-  Home, beside the hero CTAs, as a first-class control rather than a
-  topbar-only footnote — both toggles render from one definition so they
-  can't drift out of sync. The full tweaks system (Accent/Type/Glow/Density)
+  Home, beside the hero CTAs, as a second first-class control. **p4·M2
+  removed that second mount.** `ThemeToggle` now renders exactly once, from
+  the `⌘ DESIGN` dropdown that rides the topbar on every route — a theme is a
+  display preference and belongs with the other display preferences rather
+  than on the site's front door. See that file's own docstring, which carries
+  the reasoning and the note that its `useId()` keys are kept anyway.
+  The full tweaks system (Accent/Type/Glow/Density)
   is still deliberately **not** in this repo; that remains a design-time
   concern and still lives in the design hub. Don't conflate the two: the
   in-app panel is two knobs, not the whole tweaks surface.
