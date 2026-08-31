@@ -95,7 +95,7 @@ cd .. && git diff --name-only fa5e518
 ## 7 · REPORT — filled on exit
 
 status: **done**
-pr: PR_URL_PENDING
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/204
 commits: `7e33dff` six claims + the selector · `e8b72c8` four more, three in my own
 replacement text · `b6631c7` the §12 scope bounded both ways · `7f66b72` the same
 off-by-one one file over · `<record>` the record
