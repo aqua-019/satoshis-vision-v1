@@ -1119,6 +1119,29 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `setTimeout` delays; nothing samples a history. The shipped sentence says schedules, which
   is what was measured — and the verifier struck its own clause rather than defending it.
 
+  **AND I PREDICTED A SECOND FAILURE THAT DID NOT HAPPEN — CI REFUTED ME, and the only
+  reason the refuting evidence still existed is that I lacked permission to destroy it.**
+  Having root-caused the `SITE_PR` red, I called the earlier head `7f40813` "the pre-fix
+  head, its static gates WILL fail, pure waste", and tried to CANCEL its run to free
+  contended runners. The cancel returned **403** (no `actions: write`). That run then
+  finished **GREEN, `Static gates` success, whole job success.** Measured why: at `7f40813`
+  the LOG line still read `PR_URL_PENDING`, so `logMax` was **203** against `SITE_PR` 203 and
+  the invariant HELD. The `#204` reference entered one commit later at `7c6a1e2`, when the
+  real URL was substituted — so **the failing window was exactly ONE COMMIT WIDE**, and the
+  run I judged worthless was a valid green.
+  The root cause was right and the BLAST RADIUS was wrong, which is the same
+  wider-or-narrower-subject family in a new place: a correct mechanism attributed to the
+  wrong commit. **And the near-miss is the transferable half — I moved to delete evidence on
+  the strength of a prediction I had not checked, and a permission failure is what preserved
+  it.** Verify a run is worthless by reading what its tree actually contained, not by
+  reasoning forward from the fix.
+  **THE AUDIT OF THAT VERY CHECK THEN HIT THIS FILE'S OWN RECORDED DECOY.** A throwaway
+  `grep -oE 'SITE_PR = [0-9]+'` returned **two** values — the real export and the literal
+  `SITE_PR = 99999` sitting in siteVersion.ts's own comment — and the comparison broke on the
+  pair. That is p4·M1's recorded defect verbatim ("§9d's version regex matched the COMMENT
+  `SITE_PR = 99999` instead of the export; anchored to `export const`"), reproduced in an
+  ad-hoc shell one-liner by someone who had read the entry. Anchor on `^export const`.
+
   **AND CI CAUGHT A DEFECT THE GATES I CHOSE TO RUN COULD NOT — this file's own
   full-chain rule, walked into.** I ran `verify-site`, `verify-mobile`, `verify-origins`,
   `verify-nojs`, `verify-ia`, `verify-legibility`, `verify-prng` and `verify-provenance`
