@@ -254,7 +254,7 @@ export function SitePage() {
       <PageHeader
         kicker="non-profit · educational · no trackers"
         title='<em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">xmr.irish</em>: a non-profit educational system &amp; blockchain explorer'
-        sub="What this site is, what is on it, where it came from, how it treats you, and how it stays up."
+        sub="Everything this site says about itself, and where to check it."
       />
 
       {/* ── The mission ─────────────────────────────────────────────────── */}
