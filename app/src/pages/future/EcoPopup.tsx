@@ -328,6 +328,20 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
           ) : null}
         </div>
 
+        {/* p4·M6c — GUARDED ON `links.length`, AND THE NINTH PEER IS WHAT
+            SURFACED IT. This block rendered its rule and its "Links" heading
+            UNCONDITIONALLY, above a map over `e.links`. Every entry that has
+            ever shipped carried at least one link, so the empty case had no
+            subject and nobody saw it; the ninth peer has none by design,
+            because there is nowhere to send a reader yet.
+
+            A captioned empty region is the exact shape p4·M6b deleted the
+            screenshot-reservation type for: on a live page it does not read
+            as "there are none", it reads as content that FAILED TO RENDER.
+            An absent section is the honest form of an absence — the heading
+            is a label for something, and with nothing under it the label is
+            the lie. */}
+        {e.links.length > 0 ? (
         <div style={{ borderTop: "1px solid var(--rule)", paddingTop: 16 }}>
           <div className="kicker" style={{ marginBottom: 10 }}>Links</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -361,6 +375,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
             )}
           </div>
         </div>
+        ) : null}
       </div>
     </V6Modal>
   );

@@ -4,7 +4,7 @@
 //  no column assertion and never did.)
 //
 // Verifies the ecosystem entries land correctly, rendering:
-//   1. Seven PARTNER cards (exact count from source parse)
+//   1. Nine PARTNER cards (exact count from source parse)
 //   2. Superbrain's GitHub repo URL in exact casing (case-sensitive)
 //   3. Install block with 4 ordered steps in <ol>
 //   4. Five app names rendered (Superbrain, SuperPay, MoneroSpace, Superstress, SuperAtomic)
@@ -63,8 +63,8 @@ R.ok(expectedPartnerCount > 0,
    changing, which is the whole reason a second, hand-written figure exists
    here at all. If you moved this number without meaning to move it, that is
    the assertion doing its job. */
-R.ok(expectedPartnerCount === 7,
-  `§1 · data.ts declares exactly 7 PARTNER entries (parsed: ${expectedPartnerCount})`);
+R.ok(expectedPartnerCount === 9,
+  `§1 · data.ts declares exactly 9 PARTNER entries (parsed: ${expectedPartnerCount})`);
 
 // §5: Check RepoPulseReadout does not render any typed numbers as text content.
 // RepoPulseReadout was extracted into app/src/pages/future/repoPulse.tsx.
@@ -654,10 +654,16 @@ try {
      the reader gets, so a class that stopped resolving to a grid would leave a
      class check green.
 
-     BLIND SPOT, STATED: on the shipping roster all seven partners declare a
+     [p4·M6c — THE BLIND SPOT IS CLOSED, and this is the note that used to
+     say it was open: "on the shipping roster all seven partners declare a
      shot, so the ZERO-track arm has no live subject and is exercised only by
-     the break test above. The count is printed on both sides so a reader can
-     see which arm is carrying the assertion rather than inferring it. */
+     the break test above." Two of the nine partners now declare none —
+     `cakewallet`, whose asset the egress proxy would not serve, and `mac`,
+     which has no work to show yet — so both arms of the biconditional carry
+     live subjects on the shipping tree and the zero-track arm no longer
+     depends on a mutation for its only exercise. The count is printed on both
+     sides so a reader can see which arm is carrying the assertion rather than
+     inferring it. */
   const wrongTracks = shown.filter((o) => (declaresShot.has(o.id) ? o.tracks !== 2 : o.tracks !== 0));
   R.ok(shown.length >= 1 && wrongTracks.length === 0,
     `§9 · the shot COLUMN exists if and only if the shot does — 2 tracks for the ${withShot.length} briefs that declare one, 0 for the ${withoutShot.length} that do not`,

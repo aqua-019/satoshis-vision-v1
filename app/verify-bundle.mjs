@@ -706,7 +706,12 @@ const BUDGETS = {
      eagerJsRaw 280,000 + lazyJsRaw 986,000 = 1,266,000 against this line's
      1,251,000, so the "sum of the two real budgets" construction has now been
      lapsed for thirteen releases. */
-  totalJsRaw: 1_258_000,  // p4·M5: built 1,253,288 on the FINAL tree, margin 4,712 (0.37%).
+  totalJsRaw: 1_262_000,  // p4·M6c: built 1,258,300 on the FINAL tree, margin 3,700 (0.29%).
+  //   MOVED WITH lazyJsRaw BY THE SAME 4,000 so the documented gap between the
+  //   two holds at 265,000 — this row's own construction, kept rather than
+  //   drifted. (That construction's ORIGINAL sense, "the sum of the two real
+  //   budgets", has been lapsed since #174 and is still not this PR's to
+  //   restore; the gap is what is preserved here.)
   //   Moved WITH lazyJsRaw and by the same 7,000, so the gap between the two
   //   holds at 265,000 — the construction p4·M8 recorded. eagerJsRaw is
   //   untouched at 280,000 and did not need to move: this release adds SIX
@@ -1390,7 +1395,18 @@ const BUDGETS = {
      to one lazy view and one lazy shared component should read as. Chunk count
      76 = 76, nothing minted: `useLadderAnchor.ts` is a new module but every one
      of its importers is already inside classic's chunk group. */
-  lazyJsRaw: 993_000,   // p4·M5: built 988,834 on the FINAL tree, margin 4,166 (0.42%).
+  lazyJsRaw: 997_000,   // p4·M6c: built 993,843 on the FINAL tree, margin 3,157 (0.32%).
+  //   Two peer entries of prose in pages/future/data.ts. The delta is +3,256
+  //   against a MEASURED base of 990,587 at 9f9e176 — which is also exactly
+  //   the figure #204's report implies, so the derivation and the build agree.
+  //   +3,256 is ALSO totalJsRaw's whole delta, which is what proves the eager
+  //   half did not move: eagerJsRaw is BYTE-IDENTICAL at 264,457 across the
+  //   pair, and cssGz BYTE-IDENTICAL at 18,586 (this release adds no
+  //   stylesheet rule at all — §4's repair is a comment). CHUNK_COUNT 76 = 76,
+  //   nothing minted. eagerJsGz moves +8 with raw unmoved: compressibility
+  //   alone from the hash cascade, p4·01's recorded phenomenon, and SITE_PR
+  //   204 -> 205 contributes exactly 0 raw bytes — three digits at identical
+  //   length, reproducing p4·01/p4·M6/p4·M7's own measurement.
   //   The whole +6,789 is attributed and reconciles to the byte against an
   //   ISOLATED worktree build of 9fcc24a: repoPulse +2,923 (the chunk data.ts
   //   lands in — the audit finding, Carrot's re-derivation and Cuprate's
@@ -1701,7 +1717,22 @@ const ROUTE_BUDGET_GZ = {
      handoff), and splitting a file mid-flight under another author is how a
      clean merge becomes a bad one. Raised, measured, and ledgered so the split
      can be taken deliberately in a change that owns the file. */
-  '/future':                112_000, // 108,502 post-merge — see above.
+  '/future':                115_000, // p4·M6c: built 112,326, margin 2,674.
+  //   THE BRIEF FOR THIS RELEASE NAMED TWO ROWS TO RAISE. A MEASUREMENT FINDS
+  //   THREE, and this is the third — an enumeration is a hypothesis and a
+  //   build is the measurement, which is this repo's own standing rule
+  //   arriving in a budget table. /future was at 111,152 of 112,000 on the
+  //   untouched base (margin 848) and went RED at 112,326 on the first build
+  //   of this branch.
+  //   IT RENDERS NEITHER NEW PEER. FuturePage does `ECOSYSTEM.find(e => e.id
+  //   === eco)` — a lookup driven by the URL parameter — plus the stressnet
+  //   band and the protocol cards; no peer grid, no cakewallet, no mac. So it
+  //   paid the SAME +1,174 B gzip as /operate/peers, which draws both, for
+  //   prose it never puts on screen. Two of the three routes charged by this
+  //   release render none of what they are charged for, which is the split
+  //   argument stated in bytes rather than in principle — see /operate/peers
+  //   below. p4·06 predicted this row would be "where the next touch to
+  //   /future reds"; it was.
   //   p4·06 · NOT RAISED, because not crossed — but said out loud: this row's
   //   margin is now 484 B (built 106,516). /future did not shrink when
   //   FuturePage's chunk lost 7,463 B to the extraction; it grew by 1,172,
@@ -1781,7 +1812,18 @@ const ROUTE_BUDGET_GZ = {
      handoff), and splitting a file mid-flight under another author is how a
      clean merge becomes a bad one. Raised, measured, and ledgered so the split
      can be taken deliberately in a change that owns the file. */
-  '/operate/superstress':   110_000, // 106,539 post-merge — see above.
+  '/operate/superstress':   112_000, // p4·M6c: built 109,404, margin 2,596.
+  //   THE COMMENT HERE READ "106,539 post-merge" AND WAS STALE BY TWO
+  //   RELEASES — measured 108,244 on the untouched base 9f9e176, so the slack
+  //   this row advertised was 3,461 where it was really 1,756. Re-baselined.
+  //   RAISED WHILE GREEN, and the reason is the ledgered one: this route
+  //   renders NEITHER new peer (SuperstressPage reads exactly two ECOSYSTEM
+  //   entries by id, `superbrain` and `stressnet`) and still paid +1,160 B
+  //   gzip for their prose, because data.ts is one module and lands in a chunk
+  //   this route downloads. It cleared its ceiling by 596 B — less than one
+  //   peer entry — so the next peer would red a route that draws none of it,
+  //   which is a failure that teaches nothing about the change that caused it.
+  //   p4·M5 raised /future/protocol on the same ground at 0.26%.
   /* p4·07 · the 18th route. Built 94,719 gzip on the FINAL tree (margin 3,281),
      a FOUR-chunk closure: entry + vendor + StressnetExplorerPage + the 634 B
      stressnet-model leaf. It is the LIGHTEST of the three Operate leaves
@@ -1829,7 +1871,18 @@ const ROUTE_BUDGET_GZ = {
      target and the screenshot figure are both inline styles on pages whose
      idiom is inline styles, which was the constraint rather than the
      outcome. */
-  '/operate/peers':         106_000, // 103,330 post-merge — see above.
+  '/operate/peers':         109_000, // p4·M6c: built 106,687, margin 2,313.
+  //   THE COMMENT HERE READ "103,330 post-merge" AND WAS STALE BY TWO
+  //   RELEASES TOO — measured 105,513 on the untouched base, i.e. a real
+  //   margin of 487 where 657 was last recorded and 2,670 was implied here.
+  //   This is the route that actually renders the two new briefs: +1,174 B.
+  //   THE STRUCTURAL FIX IS STILL OWED AND IS NOW THREE RELEASES OVERDUE.
+  //   Splitting the PARTNER array out of pages/future/data.ts would make BOTH
+  //   this row and /operate/superstress CHEAPER instead of dearer — the leaf
+  //   lesson this repo has applied nine times. It is not taken here for the
+  //   same operational reason p4·M3 gave: a file-shape change riding along
+  //   with content is how a clean merge becomes a bad one. Recorded as rent
+  //   paid, not as a renewal.
   // p3·17 RAISE, 95,000 -> 98,000. Built 95,027 on the FINAL tree (margin
   // 2,973), red first at `❌ /about/sources first load 95027 B gzip ≤ 95000`.
   //
