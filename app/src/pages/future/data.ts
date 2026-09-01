@@ -1396,6 +1396,154 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       ["@kathiful on X", "https://x.com/kathiful"],
     ],
   },
+  /* ── THE EIGHTH PEER ────────────────────────────────────────────────────
+     SHIPS WITHOUT A `shot`, AND THE ABSENCE IS MEASURED RATHER THAN CHOSEN.
+     The intended image is Cupcake's own published integration diagram at
+     cupcakewallet.com/static/two-phones-b432a9f5a5c9a382eab8c56ae5baad9c.webp
+     (1289x1787, 285,558 B). This build could not fetch it: the egress proxy
+     answers 403 to CONNECT for cupcakewallet.com and logs `connect_rejected`
+     by name, and cakewallet.com, monero.com and docs.cakewallet.com all read
+     000 on the same instrument. The one route that does resolve —
+     api.github.com — is bound to this repository, so it cannot reach a mirror
+     either. Three independent routes, one answer.
+
+     So there is no `shot` key at all, per EcoShot's own header: a screenshot
+     slot with an image ships, and a slot without one DOES NOT EXIST. p4·M6b
+     set the precedent when the medallion arrived unusable — it shipped
+     nothing rather than a placeholder, because on a live page a reserved
+     empty box reads as a broken image and not as a reservation. When the file
+     can be fetched it arrives as `kind: "artwork"` with NO `captured` date:
+     it is the publisher's own diagram, not a capture this site took, and a
+     date on it would record the day it reached our inbox.
+
+     WHAT THIS SESSION READ, AND WHAT IT DID NOT. It read none of the four
+     Cake Wallet hosts — every sentence below rests on the brief's own reading
+     of them, dated 2026-09-01, not on a fetch performed here. That is stated
+     rather than buried: it is the same disclosure Privacy Gateway carries for
+     the same reason, and on a page whose subject is who this site vouches for
+     the provenance of the description is part of the claim.
+
+     FOUR CLAIMS WERE REFUTED BEFORE THEY REACHED THIS FILE and none is
+     restored below. (1) The signing direction was inverted in the original
+     description — Cake Wallet builds and broadcasts, CUPCAKE signs; the
+     Cupcake-to-Cake QR is the pairing step, not the spending step, and which
+     device holds the spend key IS the product. (2) "Dev's Choice" has no
+     source on any of their sites. (3) "Cross-platform sync" misreads their
+     BACKGROUND sync, which is syncing with the chain. (4) A "largest / most
+     trusted" superlative — #203 cut one of those and #204 cut a second that
+     had landed inside the repair; a third does not go in voluntarily.
+
+     AND NO USER COUNT, WHICH IS THE INTERESTING ONE. cakewallet.com says
+     "Trusted by 1,750,000+ users"; cakelabs.com — their own corporate site,
+     the same company — says "250,000 Users · Since Jan 2018". Sevenfold
+     apart. The stale one is probably cakelabs, but that does not matter:
+     publishing either invites a reader to find the other and conclude this
+     page does not check what it repeats. The mechanism argument needs no
+     headcount and cannot be falsified by one. FIRST TIME THIS SITE HAS
+     DECLINED A FIGURE BECAUSE ITS OWN SOURCE CONTRADICTS ITSELF — the next
+     peer arriving with two numbers gets the same treatment.
+
+     ACCENT MEASURED, not picked: #0ea5e9 sits at a minimum CIEDE2000 of 15.32
+     against the ten distinct `c:` values already in this file, where the
+     tightest pair ALREADY SHIPPING is 4.35 (#5ed3f4 against #22d3ee). Worst
+     contrast 5.32:1 across eight grounds in three themes — third-lowest of
+     the nine partner accents and above two that ship, so it is in band rather
+     than an outlier. Their own brand orange was unavailable: XMRHUB holds
+     #ff7a1a. */
+  {
+    id: "cakewallet", name: "Cake Wallet",
+    head: "keys on one phone, the internet on the other.",
+    kind: "Collaborator · wallet · air-gapped signing", status: "PARTNER", c: "#0ea5e9",
+    url: "https://cakewallet.com/",
+    blurb: "An open-source, non-custodial wallet whose companion app turns a second phone into the device that holds your keys.",
+    body: [
+      "Cake Labs — Cake Technologies, LLC on both App Store listings — ships three things. Cake Wallet is the multi-coin wallet, open source and non-custodial, dated by its own site to 2018. Monero.com is the same wallet built for Monero only. Cupcake is the third, and it is the one that belongs on this page: it runs on a phone that never goes online.",
+      "The split is the mechanism, and the mechanism is the point. Cupcake holds the private keys. Cake Wallet holds only the view keys, so it can show you a balance and build a transaction but cannot sign one. To spend, Cake Wallet renders the unsigned transaction as an animated QR code; Cupcake reads it off the screen, shows you what it says, and signs it; Cupcake then renders the signed transaction as its own animated QR; Cake Wallet reads that back and broadcasts it. Nothing but light crosses the gap. Cupcake covers Monero, Bitcoin and Litecoin including MWEB, and runs on iOS and Android only — Cake Wallet itself also ships for macOS, Windows and Linux.",
+      "Apple's privacy label on both store listings reads “The developer does not collect any data from this app” — their storefront's assertion about them, not this site's about them. Two things this page does not answer: the code audit their site says Cupcake has had, which this build did not read; and the built-in exchange, which routes through third-party providers and is a different trust question from the wallet.",
+    ],
+    links: [
+      ["cakewallet.com", "https://cakewallet.com/"],
+      ["cupcakewallet.com", "https://cupcakewallet.com/"],
+      ["monero.com · Monero-only build", "https://monero.com/"],
+      ["docs.cakewallet.com/cupcake", "https://docs.cakewallet.com/cupcake"],
+    ],
+  },
+  /* ── THE NINTH PEER, AND IT IS OURS ─────────────────────────────────────
+     THE DISCLOSURE IS THE LOAD-BEARING PART, AND IT APPEARS TWICE. The other
+     eight entries are other people's projects, read and described from their
+     own sources. This one belongs to whoever runs xmr.irish. A directory that
+     quietly lists its own author among its endorsements is an advertisement
+     wearing a directory's clothes — so `kind` carries the ownership clause,
+     because `kind` renders ON THE CARD and a reader who never opens the brief
+     still gets it, and body[2] carries it in full for the reader who does.
+     Putting it in the brief ALONE would be worse than either: a card that
+     reads as an endorsement with the correction behind a click most readers
+     never make.
+
+     NO `shot`, and no reservation for one — same rule as the eighth peer
+     above. When the project has work to show, the image arrives with it.
+
+     THIS IS THE FIRST ENTRY WITH NO `url` AND NO `links`, so it renders code
+     paths seven uniform partners never reached. All three were MEASURED
+     against the shipping components rather than reasoned about, and two of
+     the three were already correct:
+
+       1. `e.c` IS STRING-CONCATENATED — TrustedPeersPage does `e.c + "44"`
+          and `${e.c}55`. A hex survives that ("#cbd5e1" + "44" is a valid
+          8-digit RGBA); a `var(--ink-40)` would yield `var(--ink-40)44`,
+          which is invalid CSS, silently dropped, and a border that quietly
+          falls back with no error anywhere. That is why this value is a
+          literal hex and not a token, and the break test for it reds nothing
+          — see the report: no gate in this repo watches that class.
+
+       2. `links: []` MAKES `primary` UNDEFINED, and it does not matter.
+          `primary` has exactly one consumer (TrustedPeersPage:306, inside the
+          `e.url ?` branch), so the branch that reads it never runs for this
+          entry. The `else` already written beside it renders "open panel →" —
+          a branch that has been UNREACHABLE until now, because all seven
+          previous partners carry a `url`. This entry is the first to render
+          it, which is a designed fallback finally getting a subject rather
+          than a defect.
+
+       3. NO `url` CORRECTLY RENDERS NO VISIT CONTROL. EcoPopup guards its
+          `VISIT <NAME> ↗` anchor on `e.url ?` already, so nothing offers a
+          destination that does not exist.
+
+     WHAT WAS ACTUALLY BROKEN IS THE LINKS BLOCK, and this entry is what
+     surfaced it: EcoPopup rendered its "Links" heading and its rule
+     unconditionally, above a `map` over an empty array — a captioned empty
+     region, which is the exact shape p4·M6b deleted the reservation type for.
+     Fixed there, in this release, guarded on `e.links.length > 0`.
+
+     ACCENT MEASURED: #cbd5e1 sits at a minimum CIEDE2000 of 18.22 against the
+     ten distinct `c:` values in this file — the widest separation of any
+     candidate tested, wider than Kathie's 16.91 — and is nearly neutral,
+     which is the point: it reads as "no colour claimed yet" while being a
+     valid hex the concatenation above can survive. Worst contrast 9.93:1
+     across eight grounds in three themes.
+
+     THE GRADUATION PATH, WRITTEN DOWN SO THE NEXT AUTHOR FINDS IT RATHER THAN
+     RE-DERIVES IT: when Monero Arts Culture has a site, this record gains a
+     `url` and real `links`; `kind` KEEPS its ownership clause, because the
+     conflict does not expire when the project ships; and body[1] is REPLACED
+     rather than softened — "it does not exist yet" becomes a description of
+     what does, or it goes. A hedge left in place after it stops being true is
+     the staleness this file's own `captured` doctrine exists to prevent. */
+  {
+    id: "mac", name: "Monero Arts Culture",
+    head: "physical and digital, in Monero's own iconography.",
+    kind: "xmr.irish's own · fine art collective", status: "PARTNER", c: "#cbd5e1",
+    /* NO `url`, deliberately — the first PARTNER without one. There is
+       nowhere to send a reader, and inventing a destination is the one thing
+       this page may never do. */
+    blurb: "A fine art collective for physical and digital work made in Monero's iconography. Named here before it exists.",
+    body: [
+      "Monero Arts Culture is a fine art collective for physical and digital work that takes Monero's own iconography as its subject — the logo, the palette, the visual language a currency accumulates once people start making things with it.",
+      "IT DOES NOT EXIST YET. There is no site, no account, no catalogue and nothing to show, and this panel carries no outbound link because there is nowhere to send you. It is named here because this grid is a statement about what this project considers adjacent to itself, and this is the next thing its operator intends to build.",
+      "IT IS NOT A THIRD PARTY. The other eight entries on this page are other people's projects, read and described from their own sources. This one belongs to whoever runs xmr.irish. That is said here rather than discovered later, because a directory that quietly lists its own author among its endorsements is an advertisement wearing a directory's clothes.",
+    ],
+    links: [],
+  },
 ];
 
 /* ── automation registry · actual wiring, not aspiration ─────────

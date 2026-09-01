@@ -2134,9 +2134,34 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 /* ── provenance · canonical 5-source attribution badge ───────────────────────
    ONE vocabulary, ONE badge, everywhere. NODE=green, NETWORK=blue,
    COINGECKO=soft-amber, SESSION=cyan ("computed"), MODEL=edu-purple.
-   Stale/loading is a FRESHNESS suffix (gold), never a source — gold therefore
-   still means exactly one thing site-wide: degraded freshness. See
-   design/provenance.tsx. */
+   Stale/loading is a FRESHNESS suffix (gold), never a source — so WITHIN THE
+   PROVENANCE VOCABULARY gold means exactly one thing: degraded freshness.
+
+   [p4·M6c — THAT SENTENCE USED TO END "site-wide", AND IT WAS FALSE THREE
+   WAYS. The scope was the error, not the meaning: inside this badge the claim
+   holds and is worth keeping, and it is the reach past the badge that no
+   longer survives a grep.
+     1. THE TOKEN'S OWN DECLARATION CONTRADICTS IT, 2,048 lines above this
+        comment: :89 declares `--y-50: #ffd400` and annotates it, in its own
+        trailing comment, "warning / queued" — two meanings, and neither of
+        them is "degraded freshness". (Written without comment delimiters on
+        purpose: p4·06 lost 19 lines of stylesheet to prose that escaped a
+        block whose `*` `/` had been typed inside it.)
+     2. `.soon-badge`, TEN LINES ABOVE THIS BLOCK, already spends gold on the
+        second of those — its own comment says "paused panels reserving space
+        for real, node-pointed telemetry", which is queued, not stale.
+     3. The brief that raised this also claimed gold is a PEER ACCENT, twice
+        over, and therefore an identity colour on /operate/peers. MEASURED,
+        AND IT IS A RIGHT NUMBER ON A WRONG NOUN — the same family as the
+        tenth claim p4·M6 repaired. `c: "#ffd400"` really does occur exactly
+        twice in pages/future/data.ts, and NEITHER occurrence is a peer: one
+        is the `cuprate` FUTURE_PROTOCOL card, the other the `v20` roadmap
+        stop. Zero of the nine ECOSYSTEM PARTNER entries use it, and neither
+        of those two renders on /operate/peers at all. So gold is not an
+        identity colour on that page, and the third reason this sentence was
+        wrong is itself not a reason.
+   Two of three stand, which is enough: the claim is scoped to the vocabulary
+   it can actually keep.] See design/provenance.tsx. */
 /* Rendered `inline` (not inline-flex) so innerText reads "COINGECKO · stale"
    on one logical line — flex items would inject newlines into the text layer
    (breaks screen-reader flow + string asserts) while looking identical. */

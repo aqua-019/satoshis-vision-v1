@@ -4,7 +4,7 @@
 //  no column assertion and never did.)
 //
 // Verifies the ecosystem entries land correctly, rendering:
-//   1. Seven PARTNER cards (exact count from source parse)
+//   1. Nine PARTNER cards (exact count from source parse)
 //   2. Superbrain's GitHub repo URL in exact casing (case-sensitive)
 //   3. Install block with 4 ordered steps in <ol>
 //   4. Five app names rendered (Superbrain, SuperPay, MoneroSpace, Superstress, SuperAtomic)
@@ -63,8 +63,8 @@ R.ok(expectedPartnerCount > 0,
    changing, which is the whole reason a second, hand-written figure exists
    here at all. If you moved this number without meaning to move it, that is
    the assertion doing its job. */
-R.ok(expectedPartnerCount === 7,
-  `§1 · data.ts declares exactly 7 PARTNER entries (parsed: ${expectedPartnerCount})`);
+R.ok(expectedPartnerCount === 9,
+  `§1 · data.ts declares exactly 9 PARTNER entries (parsed: ${expectedPartnerCount})`);
 
 // §5: Check RepoPulseReadout does not render any typed numbers as text content.
 // RepoPulseReadout was extracted into app/src/pages/future/repoPulse.tsx.
@@ -654,10 +654,16 @@ try {
      the reader gets, so a class that stopped resolving to a grid would leave a
      class check green.
 
-     BLIND SPOT, STATED: on the shipping roster all seven partners declare a
+     [p4·M6c — THE BLIND SPOT IS CLOSED, and this is the note that used to
+     say it was open: "on the shipping roster all seven partners declare a
      shot, so the ZERO-track arm has no live subject and is exercised only by
-     the break test above. The count is printed on both sides so a reader can
-     see which arm is carrying the assertion rather than inferring it. */
+     the break test above." Two of the nine partners now declare none —
+     `cakewallet`, whose asset the egress proxy would not serve, and `mac`,
+     which has no work to show yet — so both arms of the biconditional carry
+     live subjects on the shipping tree and the zero-track arm no longer
+     depends on a mutation for its only exercise. The count is printed on both
+     sides so a reader can see which arm is carrying the assertion rather than
+     inferring it. */
   const wrongTracks = shown.filter((o) => (declaresShot.has(o.id) ? o.tracks !== 2 : o.tracks !== 0));
   R.ok(shown.length >= 1 && wrongTracks.length === 0,
     `§9 · the shot COLUMN exists if and only if the shot does — 2 tracks for the ${withShot.length} briefs that declare one, 0 for the ${withoutShot.length} that do not`,
@@ -891,7 +897,7 @@ try {
    * or if captions stopped being rendered at all, "zero placeholders" would be
    * true of an empty set. The floor counts the SUBJECT that must exist in both
    * states: the real, dated captions under the screenshots that DID arrive. */
-  const slotSweep = { boxes: [], captions: 0, briefs: 0 };
+  const slotSweep = { boxes: [], captions: 0, briefs: 0, links: [] };
   for (const id of peerIds) {
     await page.goto(`${BASE}/operate/peers?p=${id}`, { waitUntil: 'networkidle' });
     const seen = await page.evaluate(() => {
@@ -909,12 +915,25 @@ try {
               && (el.closest('figure') === null);   // a real <figcaption> lives in a figure
         })
         .map((el) => (el.textContent || '').trim().slice(0, 60));
+      /* p4·M6c — the LINKS section, measured in the same pass so it costs no
+         extra navigation. `heading` is the "Links" kicker; `chips` is what
+         renders under it. The pair is what makes the biconditional below
+         possible: either number alone is satisfiable by a broken page. */
+      const kickers = [...d.querySelectorAll('.kicker')]
+        .filter((el) => /^links$/i.test((el.textContent || '').trim()));
       return {
         bad,
         captions: d.querySelectorAll('figure figcaption').length,
+        heading: kickers.length,
+        chips: kickers.length
+          ? (kickers[0].parentElement?.querySelectorAll('.v6-res').length ?? 0)
+          : 0,
       };
     });
-    if (seen) { slotSweep.briefs++; slotSweep.boxes.push(...seen.bad); slotSweep.captions += seen.captions; }
+    if (seen) {
+      slotSweep.briefs++; slotSweep.boxes.push(...seen.bad); slotSweep.captions += seen.captions;
+      slotSweep.links.push({ id, heading: seen.heading, chips: seen.chips });
+    }
   }
 
   R.ok(slotSweep.briefs === peerIds.length,
@@ -925,6 +944,47 @@ try {
     `§11 · NO brief renders a screenshot reservation — a captioned box with no image in it (${slotSweep.boxes.length} found across ${slotSweep.briefs} briefs)`,
     slotSweep.boxes.join(' | ')
     + '  — a slot with no image reads as a failed load, not as an artifact nobody has captured. See EcoShot in data.ts.');
+
+  /* ── §11b · A SECTION HEADING WITH NOTHING UNDER IT (p4·M6c) ─────────────
+     THE SAME DEFECT AS THE RESERVATION BOX ABOVE, ONE ELEMENT UP, and the
+     ninth peer is what surfaced it. EcoPopup rendered the "Links" rule and
+     kicker UNCONDITIONALLY, above a map over `e.links`. Every entry that had
+     ever shipped carried at least one link, so the empty case had no subject
+     and nobody saw it; `mac` has none by design, because there is nowhere to
+     send a reader yet. A heading is a label FOR something — with nothing
+     under it, the label is the lie, and it reads as content that failed to
+     render rather than as an absence somebody intended.
+
+     THE FIX HAD NO WITNESS, WHICH IS WHY THIS EXISTS. Break test BT5 reverted
+     the guard and all 70 assertions stayed GREEN — the same shape p4·M6b's
+     `col-2` change was found in, a correct change nothing could tell from its
+     own reversal. Reverting it in silence was one edit away.
+
+     A BICONDITIONAL, not two checks, because the failure is a DISAGREEMENT:
+     a heading with no chips (the defect) or chips with no heading (an
+     unlabelled list). Counts are printed on both sides so a reader can see
+     which arm carries it. The positive floor stops the whole thing passing
+     over a page that stopped rendering links altogether. */
+  const linkDeclared = new Set(idMarks.filter((m, i) => {
+    const seg = dataContent.slice(m.index, (idMarks[i + 1] || { index: dataContent.length }).index);
+    const lm = seg.match(/\blinks:\s*\[/);
+    if (!lm) return false;
+    // Non-empty means something other than whitespace before the closing `]`.
+    return !/^\s*\]/.test(seg.slice(lm.index + lm[0].length));
+  }).map((m) => m[1]));
+
+  const withLinks = slotSweep.links.filter((o) => linkDeclared.has(o.id));
+  const withoutLinks = slotSweep.links.filter((o) => !linkDeclared.has(o.id));
+  R.ok(withLinks.length >= 6,
+    `§11b · ${withLinks.length} of ${slotSweep.links.length} briefs declare at least one link (floor: a parse that found none would make the biconditional below vacuous)`);
+
+  const wrongLinks = slotSweep.links.filter((o) => (linkDeclared.has(o.id)
+    ? !(o.heading === 1 && o.chips > 0)
+    : !(o.heading === 0 && o.chips === 0)));
+  R.ok(wrongLinks.length === 0,
+    `§11b · the Links heading exists if and only if a link does — rendered for the ${withLinks.length} briefs that declare one, absent for the ${withoutLinks.length} that do not (${withoutLinks.map((o) => o.id).join(', ') || 'none'})`,
+    wrongLinks.map((o) => `${o.id}: declares ${linkDeclared.has(o.id) ? 'links' : 'none'} but renders heading=${o.heading} chips=${o.chips}`).join(', ')
+    + '  — a captioned empty region is the reservation defect p4·M6b deleted the screenshot type for, arriving one element up.');
 
   await page.close();
   await reducedMotionPage.close();
