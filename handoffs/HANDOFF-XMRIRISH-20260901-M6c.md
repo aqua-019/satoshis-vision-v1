@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260901-M6c
 branch: claude/peers-ceilings-baseline-xfx33y
-status: in_progress
+status: done
 written_by: claude-code (manual mode — task arrived as a prompt)
 owner: claude-code
 ---
@@ -68,9 +68,69 @@ cd app && npm run verify:static
 cd app && npm run verify:e2e
 ```
 
-## 7 · REPORT  — filled on exit
-status:
-pr:
-commits:
+## 7 · REPORT
+status: done
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/205
+commits: c606c23 · 796fffd · a846d47
+
+**THE ASSET IS UNREACHABLE AND THE EIGHTH PEER SHIPS WITHOUT IT.** Measured on
+three independent routes: cupcakewallet.com answers 403 to CONNECT with the
+proxy logging `connect_rejected` by name; cakewallet.com, monero.com and
+docs.cakewallet.com all read 000; api.github.com resolves but is bound to this
+repository so it cannot reach a mirror. Per `EcoShot`'s own header a slot
+without an image does not exist, so there is no `shot` key rather than a
+placeholder — p4·M6b's medallion precedent. This session read none of the four
+Cake Wallet hosts and the entry says so.
+
+**TWO OF THE THREE PREDICTED HAZARDS WERE ALREADY CORRECT.** `primary` has one
+consumer, inside the `e.url ?` branch that never runs for a url-less entry, and
+the `else` beside it renders `open panel →` — unreachable until now because all
+seven previous partners carry a url. `EcoPopup` already guards its VISIT anchor.
+Measured on the render: `borderColor rgba(203,213,225,0.267)`, `textShadow
+rgba(203,213,225,0.333) 0 0 16px`, footer `our brief open panel →`, 0 anchors,
+0 hrefless anchors, `visitControls: 0`.
+
+**THE THIRD WAS REAL:** EcoPopup rendered its "Links" rule and heading
+unconditionally above a map over an empty array. Guarded here, and gated —
+BT5 reverted the guard and all 70 assertions stayed GREEN, the same
+no-witness shape p4·M6b's `col-2` change was found in. New §11b is a
+biconditional inside §11's existing sweep; both arms carry live subjects.
+
+**THE BRIEF NAMED TWO CEILING ROWS AND THE BUILD FOUND THREE.** `/future` went
+red at 112,326 of 112,000 on the first build and renders NEITHER new peer, so
+two of the three routes charged render none of what they are charged for. All
+four budget comments touched were stale: /operate/peers 103,330 vs 105,513,
+/operate/superstress 106,539 vs 108,244, /future 108,502 vs 111,152.
+
+**THE BRIEF'S §4 POINT 3 IS A RIGHT NUMBER ON A WRONG NOUN** — `c: "#ffd400"`
+occurs exactly twice and neither occurrence is a peer (cuprate's protocol card,
+the v20 roadmap stop). Points 1 and 2 stand; the sentence is scoped to the
+provenance vocabulary.
+
+Budgets: eagerJsRaw BYTE-IDENTICAL 264,457 · cssGz BYTE-IDENTICAL 18,586 (no
+stylesheet rule) · lazy and total both +3,256 so the eager delta is exactly
+zero · chunks 76 = 76 · SITE_PR 204→205 costs 0 raw bytes.
 
 ## 8 · LOOP FEEDBACK
+
+- **DEFERRED** — the `data.ts` PARTNER-array split. Third release running that
+  this rent is paid instead of the fix. Both raised route rows would get
+  CHEAPER under it rather than dearer.
+- **DEFERRED** — the Cake Wallet image, until an environment that can reach
+  cupcakewallet.com fetches it. It arrives as `kind: "artwork"`, no `captured`.
+- **NOT FIXED, named** — BT1: the ownership disclosure is convention, not
+  structure; nothing reads `kind` for it. A gate would pin prose to prose,
+  which p4·M6's §3 precedent deliberately removed rather than added.
+- **NOT FIXED, named** — BT2: a `var()` token in `c` is caught by nothing, and
+  it is SHARPER than the brief predicted. Not "silently dropped": the
+  declaration is RETAINED in the CSSOM as a pending-substitution value and the
+  computed border becomes `rgb(201,198,216)`, an unrelated colour. So a check
+  that the declaration is present passes, and so does a check that the computed
+  colour is non-default.
+- **BRIEF DEFECT** — §5's third break test ("give the ninth cell an `id` and
+  push it into ECOSYSTEM") presupposes a design this PR did not take: MAC is a
+  real ECOSYSTEM entry from the start, so `PEER_IDS` is 9 and `?p=mac` is
+  reachable by construction, both proven by verify-peers §10 rather than by a
+  mutation. The test as written has no subject.
+- **BRIEF DEFECT** — the ceiling table named two rows where a build finds
+  three, and quoted /operate/peers as current when it was stale by 170 B.
