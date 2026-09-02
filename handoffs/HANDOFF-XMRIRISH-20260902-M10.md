@@ -101,7 +101,7 @@ status: done — every §5 box passes on the final tree (`verify:static` exit 0;
   verify-nav 129, memviews, memdetail, glide, memphone 451, memstats 80, nojs all green;
   verify-bundle 32, nothing raised). The full 39-member `verify:e2e` chain is CI's to run on the
   PR head; this sandbox ran the eight gates the handoff names plus the static chain.
-pr: PR_URL_PENDING
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/210
 commits:
   - docs(handoffs): the handoff, before feature work
   - test(bundle): re-baseline the /live/mempool row from a build of cabab9c (96,835 → 106,038; margin 962)
