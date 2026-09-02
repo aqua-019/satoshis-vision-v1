@@ -982,7 +982,23 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   edit was re-applied and COMMITTED BEFORE the break test, which is p3·12d's rule and the only
   thing that makes `git checkout` a restore rather than a revert; `verify-bundle.mjs`'s "Largest single shot:
   53,936 B" comment has been stale since Kathie's 55,798. Census unchanged — no gate file added,
-  none wired. **`npm run verify:e2e`: exit 0, all 39 members, 0 reds on the build stamped `eba7ad4` (verify-vitals 15 passed · 4 skipped by its own contention guard, both routes "would have PASSED").** **No human has seen the rendered result
+  none wired. **`npm run verify:e2e` RAN TWICE, and the second run is where the interesting part is.** On
+  `eba7ad4`: exit 0, all 39 members, 0 reds (verify-vitals 15 passed · 4 skipped by its own
+  contention guard, both declined routes "would have PASSED"). On the FINAL tree `5582011`,
+  after the caption fix: **exit 1 — 38 of 39 green and `verify-vitals` 15 passed · 2 skipped ·
+  2 failed** (`/` blocking 413ms ≤ 400, `/live/markets` LCP 4392ms ≤ 2600).
+  **PAIRED RATHER THAN WAVED AT, AND THE BASE IS WORSE ON EVERY SHARED METRIC.** The untouched
+  `1c5425e`, built in its own worktree and served on its own port with the holder's cwd confirmed,
+  is **ALSO exit 1 with the IDENTICAL tally 15 / 2 / 2**: `/` blocking **435 → 413**, `/` LCP
+  2304 → 2276, `/live/mempool` blocking **303 (red on base) → 254 (green on head)**, mempool LCP
+  3984 → 3960, `/live/markets` LCP **4656 → 4392**, markets blocking 418 → 400. Head better or
+  equal on all six. What moves between runs is WHICH route the contention guard declines as
+  UNVERIFIABLE — a property of the runner, this file's own recorded finding, reproduced across
+  two trees in one session. **Neither red route is reachable from the diff** (`siteVersion.ts`,
+  `EcoPopup.tsx`, `data.ts` → the `repoPulse` and `EcoPopup` chunks, which `/` and `/live/markets`
+  do not load; `eagerJsRaw` byte-identical at 264,457). **AND CI SETTLES IT: the `hardening gates`
+  job runs this same 39-member chain and reports SUCCESS on `bc39ba9` and on `5582011`.** A local
+  vitals red is not evidence; CI is the calibrated environment. **No human has seen the rendered result
   in a browser** — read from screenshots at 1440 (dpr 1 and 2) and 390 (dpr 3).
 
 - **2026-08-31**: p4·M6 "THE HONESTY REPAIR" (README + app/) — the file whose thesis is

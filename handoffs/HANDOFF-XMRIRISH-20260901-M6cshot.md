@@ -154,7 +154,42 @@ a quality fact. The edge-share column and the upsampled rows decided it.
 - `verify-origins` green: "declares a screenshot for 8 of the 9 rendered
   briefs", all 8 loaded and decoded.
 - `npm run verify:static` exit 0, 0 reds.
-- `npm run verify:e2e`: **exit 0 (recorded `E2E_EXIT=0` off `PIPESTATUS`, not the pipeline's), all 39 members ran, 0 reds**, on the build stamped `eba7ad4` served with the held port's holder and cwd confirmed. Tail: verify-coldboot 220 · verify-orb 217 + 1 reasoned skip · verify-stream 17 · verify-vitals **15 passed · 4 skipped · 0 failed** — the four skips are the gate's own contention guard declining `/live/markets` (spread 79.4 %) and `/learn/sim` (77.2 %) as UNVERIFIABLE while printing both as "would have PASSED"; `/` and `/live/mempool` were judged and passed. verify-memphone 436 · verify-peers 72 · verify-superstress 90 · verify-explorer 82 · verify-nav 129.
+- `npm run verify:e2e`, RUN TWICE — once on `eba7ad4` and again on the FINAL
+  tree `5582011` after the caption fix. Both ran all 39 members with the
+  recorded exit read off `PIPESTATUS`, never the pipeline's.
+  · **`eba7ad4`: exit 0, 0 reds.** verify-coldboot 220 · verify-orb 217 + 1
+    reasoned skip · verify-stream 17 · verify-vitals 15 passed · 4 skipped ·
+    0 failed · verify-memphone 436 · verify-peers 72 · verify-superstress 90 ·
+    verify-explorer 82 · verify-nav 129.
+  · **`5582011`: exit 1 — 38 of 39 green, `verify-vitals` 15 passed · 2 skipped
+    · 2 failed** (`/` blocking 413ms ≤ 400 and `/live/markets` LCP 4392ms ≤
+    2600; `/learn/sim` declined at a 71.5 % run spread). verify-peers 72 and
+    every other member green.
+  **THE VITALS RED IS THE MACHINE, AND IT IS PAIRED RATHER THAN WAVED AT.** The
+  untouched base `1c5425e`, built in its own worktree and served on its own port
+  with the holder's cwd confirmed by `/proc`, is **ALSO exit 1 with the IDENTICAL
+  tally — 15 passed · 2 skipped · 2 failed** — and worse on every metric the two
+  trees both judged:
+
+  | route · metric | base `1c5425e` | head `5582011` |
+  |---|---|---|
+  | `/` blocking | **435ms ❌** | **413ms ❌** (−22) |
+  | `/` LCP | 2304ms ✅ | 2276ms ✅ (−28) |
+  | `/live/mempool` blocking | **303ms ❌** | 254ms ✅ (−49) |
+  | `/live/mempool` LCP | 3984ms ✅ | 3960ms ✅ (−24) |
+  | `/live/markets` LCP | 4656ms (declined, "WOULD HAVE FAILED") | **4392ms ❌** (−264) |
+  | `/live/markets` blocking | 418ms (declined, "WOULD HAVE FAILED") | 400ms ✅ (−18) |
+
+  The head is BETTER OR EQUAL on all six. What moves between runs is WHICH route
+  the gate's own contention guard declines as UNVERIFIABLE, which is a property
+  of the runner — CLAUDE.md's recorded finding, reproduced here across two trees
+  in one session. **Neither red route is reachable from this diff**: it touches
+  `siteVersion.ts`, `EcoPopup.tsx` and `data.ts`, i.e. the `repoPulse` and
+  `EcoPopup` chunks, and `/` and `/live/markets` load neither; `eagerJsRaw` is
+  byte-identical at 264,457.
+  **AND CI SETTLES IT.** The `hardening gates` job runs this same 39-member
+  chain and reports **success on `bc39ba9` AND on `5582011`**, the final tree.
+  CI is the calibrated environment; this sandbox is not.
 
 ### verify-frontend-change (the repo's own skill), steps 1-5
 1-2 · Served build opened, the brief opened by its own `?p=cakewallet` address,
