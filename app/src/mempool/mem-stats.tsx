@@ -36,7 +36,16 @@ export interface FeeBand {
 export interface MemStats {
   txCount: number;
   poolBytes: number;
-  oldestAgeSec: number;
+  /** The oldest KNOWN age in the pool, or null when no tx in it carries one.
+   *  Never 0 over an empty set, and never `Math.max()` of nothing (which is
+   *  -Infinity and was one `|| 0` away from claiming "just arrived"). p4·M9a. */
+  oldestAgeSec: number | null;
+  /** Which clock `oldestAgeSec` counts from — the source of the tx it came
+   *  from. "site" means the figure is how long THIS SITE has seen the tx, a
+   *  lower bound on its real age, and the strip labels it "seen" not "age". */
+  ageBasis: "node" | "site" | null;
+  /** txs in the pool whose arrival no clock reported. */
+  unagedCount: number;
   medianPerB: number;
   feeBands: FeeBand[];
   /** Seconds until the next block is DUE on the node's live block-target.
@@ -96,10 +105,24 @@ export function useMemStats(data: MoneroLive): MemStats {
       for (const band of feeBands) band.pct = band.count / txCount;
     }
 
+    // One pass: the oldest KNOWN age, the clock it came from, and how many
+    // txs have no age at all. A tx with `age: null` is skipped, never scored
+    // as 0 — 0 would be the newest tx in the pool, which is the opposite of
+    // what "unknown" means.
+    let oldestAgeSec: number | null = null;
+    let ageBasis: MemStats["ageBasis"] = null;
+    let unagedCount = 0;
+    for (const t of txs) {
+      if (t.age == null) { unagedCount++; continue; }
+      if (oldestAgeSec == null || t.age > oldestAgeSec) { oldestAgeSec = t.age; ageBasis = t.ageSource; }
+    }
+
     return {
       txCount,
       poolBytes: txs.reduce((a, t) => a + t.size, 0),
-      oldestAgeSec: txCount ? Math.max(...txs.map((t) => t.age)) : 0,
+      oldestAgeSec,
+      ageBasis,
+      unagedCount,
       medianPerB: medianOfPerB(txs),
       feeBands,
       nextBlockEtaSec: nextBlockEtaSec(data),
@@ -166,7 +189,9 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
           <span className="acc" data-memstat="mempool" data-memstat-value={poolReady ? stats.txCount : ""}>{poolReady ? fmtN(stats.txCount) : dash}</span> mempool
         </span>
         <span data-memstat="bytes" data-memstat-value={poolReady ? stats.poolBytes : ""}>{poolReady ? fmtBytes(stats.poolBytes) : dash}</span>
-        <span data-memstat="oldest" data-memstat-value={poolReady ? stats.oldestAgeSec : ""}>{poolReady ? `${stats.oldestAgeSec}s oldest` : dash}</span>
+        <span data-memstat="oldest" data-memstat-value={poolReady && stats.oldestAgeSec != null ? stats.oldestAgeSec : ""} data-memstat-basis={poolReady ? stats.ageBasis ?? "" : ""}>
+          {poolReady && stats.oldestAgeSec != null ? `${stats.oldestAgeSec}s ${stats.ageBasis === "site" ? "oldest seen" : "oldest"}` : dash}
+        </span>
         <span data-memstat="median" data-memstat-value={poolReady ? Math.round(stats.medianPerB) : ""}>{poolReady ? `${Math.round(stats.medianPerB).toLocaleString()} pcn/B med` : dash}</span>
         <span style={{ color: "var(--p-50)" }} data-memstat="eta" data-memstat-value={hasData(data.status.network) ? stats.nextBlockEtaSec : ""}>
           {hasData(data.status.network) ? <BlockEta data={data} /> : dash} next block
@@ -190,8 +215,16 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
       <div data-memstat="bytes" data-memstat-value={poolReady ? stats.poolBytes : ""} style={{ display: "contents" }}>
         <Stat k="WEIGHT" v={poolReady ? fmtBytes(stats.poolBytes) : pending(56)} sub="pool" />
       </div>
-      <div data-memstat="oldest" data-memstat-value={poolReady ? stats.oldestAgeSec : ""} style={{ display: "contents" }}>
-        <Stat k="OLDEST" v={poolReady ? `${stats.oldestAgeSec}s` : pending(44)} sub="age" />
+      {/* p4·M9a — `data-memstat-value` is EMPTY when no tx in the pool carries
+          an age, and the tile shows the em-dash: a pool whose node reports
+          `receive_time: 0` on every row has no oldest, and the old
+          `Math.max(...ages)` over `now - 0` printed the Unix epoch here as a
+          duration. `data-memstat-basis` says which clock the figure counts
+          from; when it is the site's own first sighting the label reads
+          "seen", because that number is how long WE have seen the tx, not how
+          long the network has. */}
+      <div data-memstat="oldest" data-memstat-value={poolReady && stats.oldestAgeSec != null ? stats.oldestAgeSec : ""} data-memstat-basis={poolReady ? stats.ageBasis ?? "" : ""} style={{ display: "contents" }}>
+        <Stat k="OLDEST" v={poolReady ? (stats.oldestAgeSec != null ? `${stats.oldestAgeSec}s` : dash) : pending(44)} sub={stats.ageBasis === "site" ? "seen" : "age"} />
       </div>
       <div data-memstat="median" data-memstat-value={poolReady ? Math.round(stats.medianPerB) : ""} style={{ display: "contents" }}>
         <Stat k="MEDIAN" v={poolReady ? Math.round(stats.medianPerB).toLocaleString() : pending(52)} sub="pcn/B" />

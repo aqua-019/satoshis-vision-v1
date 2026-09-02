@@ -429,8 +429,10 @@ export interface CirPacket {
   id: string;
   perB: number;
   size: number;
-  /** age as the node reported it, at the snapshot instant */
-  age: number;
+  /** age as the node reported it, at the snapshot instant — null when no
+   *  clock reported one. Never positional here (the axis is queue depth), so
+   *  an unaged packet is drawn like any other and its age cell reads "—". */
+  age: number | null;
   /** the LANE — a node fee tier, or -1 when tiers are unknown */
   tier: number;
   /** rank in the fee-sorted order, dearest first */

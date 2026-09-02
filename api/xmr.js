@@ -99,17 +99,107 @@ async function rpcHttp(path, payload) {
   return null;
 }
 
-function feeTier(rate) {
-  if (rate <= 1)  return 'stuck';
-  if (rate <= 5)  return 'economy';
-  if (rate <= 20) return 'normal';
-  if (rate <= 80) return 'fast';
-  return 'priority';
+/* ── fee tiers: the node's own vocabulary ──────────────────────────────────
+   p4·M9a. `feeTier()` used to classify a rate against 1/5/20/80 pcn/B —
+   thresholds three orders of magnitude UNDER mainnet's ~20,000 pcn/B floor —
+   so every pool tx was tagged `priority` and the histogram read [0,0,0,0,N].
+   The node publishes its own four tiers (`get_fee_estimate.fees`, the array
+   /api/xmr/network and /api/xmr/fees already relay), and the client's table,
+   stat strip and classic cards all classify against THAT with the identical
+   `<` comparisons (app/src/data/map.ts feeTierIndex). One vocabulary:
+   slow · normal · fast · fastest, index 0..3 — or null when no node answered
+   the estimate, never a plausible default. api/_tests/verify-tx-parse.mjs
+   pins the boundary semantics so the two implementations cannot drift. */
+const FEE_TIER_LABELS = ['slow', 'normal', 'fast', 'fastest'];
+function feeTierIndex(rate, tiers) {
+  if (!Array.isArray(tiers) || tiers.length !== 4 || !Number.isFinite(rate)) return -1;
+  if (rate < tiers[1]) return 0;
+  if (rate < tiers[2]) return 1;
+  if (rate < tiers[3]) return 2;
+  return 3;
+}
+function feeTier(rate, tiers) {
+  const k = feeTierIndex(rate, tiers);
+  return k < 0 ? null : FEE_TIER_LABELS[k];
+}
+const FEE_TIER_COLORS = { slow: '#3D8EFF', normal: '#00C97A', fast: '#F26822', fastest: '#FF4455' };
+
+/* ── first-sighting memory ────────────────────────────────────────────────
+   p4·M9a. The production node answers `receive_time: 0` on every pool tx, so
+   the node's clock says nothing about when a tx arrived (the client renders
+   an em-dash for it — app/src/data/map.ts). This function polls the pool
+   every few seconds, so it CAN know, honestly, when IT first listed a txid —
+   an observation, not a synthesis. It is a LOWER BOUND on the network age,
+   which is why the client labels it "seen" and never "age".
+     • A txid already in the pool when this instance first polled gets NOTHING:
+       the function never watched it arrive and has no honest sighting for it.
+       `first_seen_since` is published beside the rows so a reader of the JSON
+       can tell "unknown" from "not stamped yet".
+     • Warm-Lambda lifetime only, like _nodes.js's health map. A cold start
+       forgets everything, correctly; the client carries a sighting forward
+       across polls (map.ts) so a recycled instance does not regress an age a
+       page already knows. Concurrent instances each keep their own memory —
+       the client's carry-forward takes the EARLIEST sighting it has ever been
+       handed, so an age never moves backwards on a reader's screen.
+     • Bounded by construction: an entry whose txid left the pool is dropped on
+       the next answered poll, so the map is never larger than the pool.
+     • NEVER updated from a failed poll. An upstream outage answers no list, and
+       pruning against an empty list would forget every sighting the outage did
+       not actually end. */
+function newFirstSeenState() { return { seen: new Map(), baseline: null, since: null }; }
+const FIRST_SEEN = newFirstSeenState();
+function noteFirstSightings(state, txids, nowS) {
+  const present = new Set(txids);
+  if (state.baseline === null) {
+    state.baseline = present;
+    state.since = nowS;
+  } else {
+    for (const id of present) {
+      if (!state.seen.has(id) && !state.baseline.has(id)) state.seen.set(id, nowS);
+    }
+  }
+  for (const id of [...state.seen.keys()]) if (!present.has(id)) state.seen.delete(id);
+  for (const id of [...state.baseline]) if (!present.has(id)) state.baseline.delete(id);
+  return state;
 }
 
-function feeColor(rate) {
-  const t = feeTier(rate);
-  return { stuck: '#444444', economy: '#3D8EFF', normal: '#00C97A', fast: '#F26822', priority: '#FF4455' }[t];
+/* One /get_transaction_pool entry → one API row. Pure, exported for
+   api/_tests/verify-tx-parse.mjs. `tiers` is the node's get_fee_estimate
+   array (or null); `firstSeenHere` is this instance's own sighting (or null). */
+function poolTxRow(t, tiers, firstSeenHere) {
+  const rate = t.blob_size > 0 ? t.fee / t.blob_size : 0;
+  let txJson = {};
+  try { txJson = typeof t.tx_json === 'string' ? JSON.parse(t.tx_json || '{}') : (t.tx_json || {}); } catch (_) { txJson = {}; }
+  const vin = Array.isArray(txJson.vin) ? txJson.vin : [];
+  const vout = Array.isArray(txJson.vout) ? txJson.vout : [];
+  /* ring_size is the RING LENGTH — vin[0].key.key_offsets.length, exactly what
+     parseTransaction reads for /api/xmr/tx. Until p4·M9a it was `vin.length`,
+     the INPUT COUNT, so a one-input tx reported ring_size 1 on a chain whose
+     rings have been 16 by consensus since v15 — for every row, by
+     construction. The 16 fallback is that consensus rule, not a guess. */
+  const ring = Array.isArray(vin[0]?.key?.key_offsets) ? vin[0].key.key_offsets.length : 16;
+  return {
+    txid: t.id_hash,
+    blob_size: t.blob_size,
+    fee: t.fee,
+    fee_rate: rate,
+    /* As the node reported it. 0 means it reported NOTHING (map.ts treats any
+       value before the chain's genesis as an absence) — passed through raw so
+       a reader of the JSON sees what the upstream said. */
+    receive_time: t.receive_time,
+    first_seen_here: firstSeenHere ?? null,
+    relayed: t.relayed,
+    double_spend_seen: t.double_spend_seen,
+    do_not_relay: t.do_not_relay,
+    kept_by_block: t.kept_by_block,
+    ring_size: ring,
+    rct_type: txJson.rct_signatures?.type || 6,
+    has_view_tags: !!(vout[0]?.target?.tagged_key),
+    unlock_time: txJson.unlock_time || 0,
+    output_count: vout.length || 2,
+    input_count: vin.length || 1,
+    fee_tier: feeTier(rate, tiers),
+  };
 }
 
 /* ── Edge caching ──────────────────────────────────────────────────────────
@@ -178,47 +268,33 @@ function cacheControlFor(sub, data) {
 // ── Route handlers ────────────────────────────────────────────────────────
 
 async function handleMempool() {
-  const [info, pool, stats] = await Promise.all([
+  const [info, pool, stats, feeEst] = await Promise.all([
     rpc('get_info'),
     rpcHttp('/get_transaction_pool'),
     rpcHttp('/get_transaction_pool_stats'),
+    rpc('get_fee_estimate'),   // p4·M9a: the tier vocabulary is the node's, fetched beside the pool it classifies
   ]);
 
   const poolStats = stats?.pool_stats || {};
-  const txs = (pool?.transactions || []).map(t => {
-    const rate = t.blob_size > 0 ? t.fee / t.blob_size : 0;
-    const txJson = typeof t.tx_json === 'string' ? JSON.parse(t.tx_json || '{}') : (t.tx_json || {});
-    return {
-      txid: t.id_hash,
-      blob_size: t.blob_size,
-      fee: t.fee,
-      fee_rate: rate,
-      receive_time: t.receive_time,
-      relayed: t.relayed,
-      double_spend_seen: t.double_spend_seen,
-      do_not_relay: t.do_not_relay,
-      kept_by_block: t.kept_by_block,
-      ring_size: Array.isArray(txJson.vin) ? txJson.vin.length : 16,
-      rct_type: txJson.rct_signatures?.type || 6,
-      has_view_tags: !!(txJson.vout && txJson.vout[0]?.target?.tagged_key),
-      unlock_time: txJson.unlock_time || 0,
-      output_count: Array.isArray(txJson.vout) ? txJson.vout.length : 2,
-      input_count: Array.isArray(txJson.vin) ? txJson.vin.length : 1,
-      fee_tier: feeTier(rate),
-    };
-  });
+  const tiers = Array.isArray(feeEst?.fees) && feeEst.fees.length === 4 ? feeEst.fees : null;
+  const nowS = Math.floor(Date.now() / 1000);
+  const rawTxs = Array.isArray(pool?.transactions) ? pool.transactions : null;
+  if (rawTxs) noteFirstSightings(FIRST_SEEN, rawTxs.map(t => t.id_hash), nowS);   // never from a failed poll
+  const txs = (rawTxs || []).map(t => poolTxRow(t, tiers, FIRST_SEEN.seen.get(t.id_hash) ?? null));
 
-  // Build fee histogram from raw txs (5 tiers)
-  const buckets = { stuck:[], economy:[], normal:[], fast:[], priority:[] };
-  txs.forEach(t => buckets[t.fee_tier].push(t));
-  const feeHistogram = Object.entries(buckets).map(([key, arr]) => ({
-    fee_rate_min: { stuck:0, economy:1, normal:5, fast:20, priority:80 }[key],
-    fee_rate_max: { stuck:1, economy:5, normal:20, fast:80, priority:Infinity }[key],
-    tx_count: arr.length,
-    bytes: arr.reduce((s,t) => s + t.blob_size, 0),
+  // Fee histogram — one bucket per NODE tier, or null when the node gave no
+  // tiers (a histogram over a vocabulary nobody published is a fabrication).
+  const buckets = { slow:[], normal:[], fast:[], fastest:[] };
+  let untiered = 0;
+  txs.forEach(t => { if (t.fee_tier) buckets[t.fee_tier].push(t); else untiered++; });
+  const feeHistogram = tiers ? FEE_TIER_LABELS.map((key, k) => ({
+    fee_rate_min: k === 0 ? 0 : tiers[k],
+    fee_rate_max: k === 3 ? null : tiers[k + 1],
+    tx_count: buckets[key].length,
+    bytes: buckets[key].reduce((s,t) => s + t.blob_size, 0),
     label: key.toUpperCase(),
-    color: feeColor(({ stuck:0.5, economy:2, normal:12, fast:50, priority:100 })[key]),
-  }));
+    color: FEE_TIER_COLORS[key],
+  })) : null;
 
   // Projected block. `reportedLimit` is null when the node didn't tell us the
   // dynamic block weight limit; the packing loop still needs a bound, so it uses
@@ -228,12 +304,12 @@ async function handleMempool() {
   const blockLimit = reportedLimit || 600000;
   const sorted = [...txs].sort((a,b) => b.fee_rate - a.fee_rate);
   const inBlock = []; let projBytes = 0;
-  const tierBytes = { stuck:0, economy:0, normal:0, fast:0, priority:0 };
+  const tierBytes = { slow:0, normal:0, fast:0, fastest:0 };
   for (const t of sorted) {
     if (projBytes + t.blob_size > blockLimit) break;
     inBlock.push(t);
     projBytes += t.blob_size;
-    tierBytes[t.fee_tier] += t.blob_size;
+    if (t.fee_tier) tierBytes[t.fee_tier] += t.blob_size;
   }
   const projFees = inBlock.reduce((s,t) => s + t.fee, 0);
   const rates = inBlock.map(t => t.fee_rate).sort((a,b) => a-b);
@@ -246,7 +322,7 @@ async function handleMempool() {
     fill_pct: reportedLimit ? Math.round((projBytes/reportedLimit)*100) : null,
     total_fees: projFees,
     median_fee_rate: medRate,
-    fee_tiers: tierBytes,
+    fee_tiers: tiers ? tierBytes : null,
   };
 
   const allRates = txs.map(t => t.fee_rate).sort((a,b) => a-b);
@@ -258,13 +334,22 @@ async function handleMempool() {
     bytes_total: poolStats.bytes_total || txs.reduce((s,t) => s+t.blob_size, 0),
     fees_total: poolStats.fee_total || txs.reduce((s,t) => s+t.fee, 0),
     fee_histogram: feeHistogram,
+    /* the node's own tier floors, pcn/B, slow → fastest — the vocabulary every
+       `fee_tier` above and every bucket in `fee_histogram` is keyed on */
+    fee_tiers: tiers,
+    /* txs no tier could classify because the node gave no estimate */
+    untiered_tx_count: untiered,
     recent_txs: txs.slice(0,100),
     projected_block: projectedBlock,
     median_fee_rate: medianFeeRate,
     p98_fee_rate: p98FeeRate,
-    oldest_tx_age_seconds: poolStats.oldest
-      ? Math.floor(Date.now()/1000) - poolStats.oldest
-      : 0,
+    /* the node's aggregate, from /get_transaction_pool_stats: null, never 0,
+       when it did not report one — 0 would read as "the oldest tx is brand new" */
+    oldest_tx_age_seconds: poolStats.oldest ? nowS - poolStats.oldest : null,
+    /* when this instance began watching the pool (unix s); a row whose
+       first_seen_here is null was already present then, or the poll that would
+       have stamped it has not happened */
+    first_seen_since: FIRST_SEEN.since,
   };
 }
 
@@ -1061,6 +1146,14 @@ module.exports = async function handler(req, res) {
 
 module.exports.parseTransaction = parseTransaction;
 module.exports.txSizeFromEntry = txSizeFromEntry;
+/* p4·M9a — the pool row builder, the node-tier classifier and the sighting
+   memory, exported for api/_tests/verify-tx-parse.mjs. `newFirstSeenState`
+   gives the test its own memory rather than the module's. */
+module.exports.poolTxRow = poolTxRow;
+module.exports.feeTierIndex = feeTierIndex;
+module.exports.FEE_TIER_LABELS = FEE_TIER_LABELS;
+module.exports.noteFirstSightings = noteFirstSightings;
+module.exports.newFirstSeenState = newFirstSeenState;
 
 /* Exported for api/verify-history.mjs (S1-CONTRACT.md D1-D7). Pure helpers
    plus the two RPC-calling handlers, which accept an injectable rpcImpl so

@@ -113,6 +113,13 @@ const now = () => FIXED_S;
 /** Flipped by §5 to prove the numbers track the feed rather than a constant. */
 let POOL_N = 240;
 
+/** p4·M9a — which clock the fixture reports arrivals on.
+ *    'node' : receive_time = now - age            (every gate in the suite until p4·M9a)
+ *    'zero' : receive_time = 0                    (what production answered on 2026-09-01)
+ *    'site' : receive_time = 0, first_seen_here = now - age on EVEN indices, null on odd
+ *  Switched by §6 and restored after it; §1-§5 run on 'node'. */
+let AGE_MODE = 'node';
+
 const txSize = (i) => 1200 + (i * 37) % 2400;
 const txRate = (i) => 15_000 + (i * 8117) % 900_000;
 const txAge = (i) => 5 + (i * 13) % 1750;
@@ -121,7 +128,9 @@ const mkMempool = () => ({
   recent_txs: Array.from({ length: POOL_N }, (_, i) => ({
     txid: (i.toString(16).padStart(4, '0') + 'c3f9a1e7b5d2').repeat(6).slice(0, 64),
     blob_size: txSize(i), fee: 30_720_000 + i * 1000, fee_rate: txRate(i),
-    receive_time: now() - txAge(i), ring_size: 16, input_count: 1 + (i % 3), output_count: 2,
+    receive_time: AGE_MODE === 'node' ? now() - txAge(i) : 0,
+    first_seen_here: AGE_MODE === 'site' && i % 2 === 0 ? now() - txAge(i) : null,
+    ring_size: 16, input_count: 1 + (i % 3), output_count: 2,
   })),
   fee_histogram: [{ tx_count: POOL_N, bytes: 400000 }],
 });
@@ -219,6 +228,61 @@ async function readView(p, id) {
   });
 }
 
+/** p4·M9a — the age-bearing surfaces of a view: the OLDEST emitter's basis
+ *  attribute and its rendered text, every visible text node in the view (for
+ *  the chain-age sweep), and the shared table's age cells. */
+async function readAges(p) {
+  return p.evaluate(() => {
+    const view = document.querySelector('.mem-view');
+    const oldest = document.querySelector('[data-memstat="oldest"]');
+    // innerText, not textContent: hidden nodes (display:none) carry no rendered
+    // duration a reader can meet, and the desktop `.mem-table` is one of them.
+    const text = view ? view.innerText : '';
+    const ageCells = [...document.querySelectorAll('.mem-tbl [data-col="age"][role="cell"]')].map((c) => c.textContent.trim());
+    // Leaf text nodes joined by ONE space. `textContent` concatenates block
+    // children with no separator ("OLDEST1747sage"), which is how the first
+    // run of this gate could not find the word "age" in a label that reads
+    // "age" — p4·M5's recorded trap, walked into again. And `innerText` on a
+    // `display: contents` wrapper (which the strip's emitters are) falls back
+    // to descendant text content, so it is the same string. Walk the leaves.
+    const leaves = (el) => {
+      const out = [];
+      const walk = (n) => { if (n.nodeType === 3) { const t = n.textContent.trim(); if (t) out.push(t); } else for (const c of n.childNodes) walk(c); };
+      walk(el);
+      return out.join(' ');
+    };
+    return {
+      basis: oldest ? oldest.getAttribute('data-memstat-basis') : null,
+      oldestText: oldest ? leaves(oldest) : '',
+      text,
+      ageCells,
+    };
+  });
+}
+
+/* ── the duration parser, shared by the offline control and the page sweep ─
+   Lower-case units only ("M" is millions on this site; "s", "m", "h" are the
+   duration idiom of every mempool surface), a digit run that may carry
+   thousands separators, and the two-part "Nh MMm" form fmtAgeShort emits.
+   Hex hashes cannot match (no s/m/h in [0-9a-f]); "txs", "min", "members" fail
+   the word boundary. Stated so a false positive is checkable, not hoped away. */
+const DURATION_RX = /(?<![\w.])(\d[\d,]*)\s?(h|m|s)\b(?:\s?(\d{1,2})m\b)?/g;
+function durationsIn(text) {
+  const out = [];
+  for (const m of text.matchAll(DURATION_RX)) {
+    const n = Number(m[1].replace(/,/g, ''));
+    if (!Number.isFinite(n)) continue;
+    let sec = m[2] === 'h' ? n * 3600 : m[2] === 'm' ? n * 60 : n;
+    if (m[2] === 'h' && m[3]) sec += Number(m[3]) * 60;
+    out.push({ raw: m[0].trim(), sec });
+  }
+  return out;
+}
+/** Block 0 is 2014-04-18T10:49:53Z. Nothing honest on this page is older than
+ *  the chain; a rendered duration past this is a timestamp wearing a unit. */
+const MONERO_GENESIS_S = 1_397_818_193;
+const CHAIN_AGE_S = FIXED_S - MONERO_GENESIS_S;
+
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 await p.clock.setFixedTime(FIXED_CLOCK);
 await p.route('**/api/**', fulfil);
@@ -304,6 +368,108 @@ for (const k of ['mempool', 'bytes', 'median']) {
   const distinct = [...new Set(vals)];
   R.ok(distinct.length === 1, `[${k}] still identical across ${vals.length} view(s) after the feed changed (${distinct.join(' ≠ ')})`);
 }
+
+/* ══ §6 · a clock nobody reported is an absence, never an epoch (p4·M9a) ═══
+   Production answered `receive_time: 0` on every pool tx on 2026-09-01, and
+   map.ts:220 read the zero as an epoch: `now - 0` rendered the current Unix
+   time as a duration — "1788295405s" under OLDEST, "496748h 43m" in every
+   table row. NO GATE COULD SEE IT: every fixture in the suite stamps a real
+   receive_time (17 files, grep'd), and no assertion reads a rendered duration.
+   Three instruments, each with its own control so a pass cannot be vacuous:
+     6a  the whole pool zeroed → OLDEST is EMPTY (an em-dash) on every view, and
+         every age cell in the shared table is the dash.
+     6b  a chain-age ceiling on every rendered duration in the view: nothing on
+         this page is older than block 0, so a duration past CHAIN_AGE_S is a
+         timestamp wearing a unit. It cannot false-positive. The parser is proven
+         on a synthetic string carrying both production renderings, and on the
+         real strip, where it must find the frozen fixture's oldest (1747s).
+     6c  the site's own sighting: `first_seen_here` supplied with a zeroed
+         receive_time → OLDEST is the site figure, the basis attribute reads
+         "site", and the label reads "seen" — never "age", because the site's
+         first sighting is a lower bound on the network age, not the age. */
+R.group('6 · a clock nobody reported is an absence, never an epoch');
+POOL_N = 240;
+
+// 6b's parser, offline, on the two renderings production produced plus the
+// honest neighbours that must NOT match.
+{
+  const synthetic = '1788295405s oldest · 496748h 43m · 12m · 1,747s · #3,700,123 · 61,236,904 txs · 0000c3f9…b5d2 · 5 min · 6.42 GH/s · 3.7M';
+  const found = durationsIn(synthetic);
+  R.ok(found.length === 4 && found.map((f) => f.sec).join(',') === '1788295405,1788295380,720,1747',
+    `6b-control · the parser reads exactly the four durations in the synthetic line (${found.map((f) => `${f.raw}=${f.sec}`).join(' ')})`);
+  R.ok(found.filter((f) => f.sec > CHAIN_AGE_S).length === 2,
+    `6b-control · two of them exceed the chain's age of ${CHAIN_AGE_S}s (the epoch-as-age renderings), two do not`);
+}
+
+// 6b's positive control on the REAL page: on the node-clock fixture the sweep
+// must see the strip's oldest, or a green sweep on a zeroed feed proves only
+// that the parser reads nothing.
+AGE_MODE = 'node';
+{
+  await readView(p, 'classic');
+  const a = await readAges(p);
+  const seen = durationsIn(a.text).map((f) => f.sec);
+  R.ok(seen.includes(exp.oldestAtLeast),
+    `6b-control · on the node-clock fixture the sweep sees the strip's oldest, ${exp.oldestAtLeast}s, among ${seen.length} durations`);
+  R.ok(a.ageCells.length > 0 && a.ageCells.every((c) => c !== '—'),
+    `6a-control · on the node-clock fixture the table's ${a.ageCells.length} age cells are all numbers, none a dash`);
+  R.ok(a.basis === 'node' && /\bage\b/i.test(a.oldestText) && !/seen/i.test(a.oldestText),
+    `6c-control · on the node-clock fixture OLDEST is labelled "age", basis "node" (${a.basis}: "${a.oldestText}")`);
+}
+
+// 6a + 6b · the zeroed feed, every view.
+AGE_MODE = 'zero';
+for (const id of VIEWS) {
+  let r, a;
+  try { r = await readView(p, id); a = await readAges(p); }
+  catch (e) { R.ok(false, `6 [${id}] could not be read`, String(e).split('\n')[0]); continue; }
+  R.ok(Number(r.mempool) === POOL_N,
+    `6a [${id}] · the pool still counts ${POOL_N} (got ${r.mempool}) — the zero is an absence, not a dropped tx`);
+  // Terminal never emits `oldest` as a data-memstat (its oldest is a row in
+  // the percentiles panel, "—" when unknown) — §2 requires each key to be
+  // rendered by SOME view, not every view. A non-emitter is covered by 6b's
+  // sweep of its rendered text; asserting an attribute it never had would be
+  // a red about the gate.
+  if ('oldest' in r) {
+    R.ok(r.oldest === '', `6a [${id}] · OLDEST is EMPTY when no tx carries an age (got "${r.oldest}")`);
+  } else {
+    R.info(`6a [${id}] · does not emit data-memstat="oldest" — its rendered text is swept by 6b`);
+  }
+  const over = durationsIn(a.text).filter((f) => f.sec > CHAIN_AGE_S);
+  R.ok(over.length === 0,
+    `6b [${id}] · no rendered duration exceeds the chain's age (${over.length} do${over.length ? ': ' + over.slice(0, 3).map((f) => f.raw).join(', ') : ''})`);
+  if (id === 'classic') {
+    R.ok(a.ageCells.length > 0 && a.ageCells.every((c) => c === '—'),
+      `6a [classic] · all ${a.ageCells.length} table age cells read "—" (${[...new Set(a.ageCells)].join(' ')})`);
+  }
+}
+
+// 6c · the site's own sighting.
+AGE_MODE = 'site';
+{
+  const siteOldest = Math.max(...Array.from({ length: POOL_N }, (_, i) => i).filter((i) => i % 2 === 0).map(txAge));
+  const r = await readView(p, 'classic');
+  const a = await readAges(p);
+  R.ok(Number(r.oldest) === siteOldest,
+    `6c [classic] · OLDEST is the max of the SITE sightings, ${siteOldest}s (got ${r.oldest}) — the unsighted half is not scored as 0`);
+  R.ok(a.basis === 'site', `6c [classic] · the basis attribute reads "site" (got "${a.basis}")`);
+  R.ok(/seen/i.test(a.oldestText) && !/\bage\b/i.test(a.oldestText),
+    `6c [classic] · the label reads "seen", not "age" ("${a.oldestText}")`);
+  const over = durationsIn(a.text).filter((f) => f.sec > CHAIN_AGE_S);
+  R.ok(over.length === 0, `6c [classic] · still no rendered duration past the chain's age (${over.length})`);
+  // A second witness, from the other branch of the strip where there is one:
+  // the first view in registry order (other than classic) that emits `oldest`.
+  const second = VIEWS.find((id) => id !== 'classic' && 'oldest' in readings[id]);
+  if (!second) {
+    R.ok(false, '6c · no second view emits data-memstat="oldest" — the parity claim has one witness');
+  } else {
+    const rc = await readView(p, second);
+    const ac = await readAges(p);
+    R.ok(Number(rc.oldest) === siteOldest && ac.basis === 'site' && /seen/i.test(ac.oldestText),
+      `6c [${second}] · a second view agrees: ${rc.oldest}s, basis "${ac.basis}", "${ac.oldestText}"`);
+  }
+}
+AGE_MODE = 'node';
 
 await p.close();
 await b.close();

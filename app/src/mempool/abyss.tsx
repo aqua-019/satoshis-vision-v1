@@ -215,6 +215,7 @@ export function AbyManifest({ data, field }: { data: MoneroLive; field: AbyField
       <AbyRow k="weight used" v={fillPct != null ? `${fillPct.toFixed(1)}%` : dash} />
       <AbyRow k="ceiling" v={ready && field.limit > 0 ? fmtBytes(field.limit) : dash} />
       <AbyRow k="left in the dark" v={waiting != null ? waiting.toLocaleString() : dash} />
+      <AbyRow k="no arrival time" v={field.total ? field.unaged.toLocaleString() : dash} tone={field.unaged > 0 ? "var(--y-50)" : undefined} />
       <AbyRow k="pool span" v={field.hi > 0 ? `${fmtPcn(field.lo)} – ${fmtPcn(field.hi)}` : dash} />
       <p className="mono dim" style={{ ...PROSE, fontSize: "var(--fs-label)", lineHeight: 1.55, marginTop: "var(--sp-3)", color: "var(--ink-40)" }}>
         Inferred, not a miner's template: this node publishes a weight ceiling,
@@ -524,7 +525,7 @@ export function AbyOverview({ data, tracking, focusBlock, onClearFocus, onPickTx
             <AbyRow k="tier" v={trackedPt.tier >= 0 ? FEE_TIER_LABELS[trackedPt.tier] : dash} />
             <AbyRow k="luminosity" v={`${trackedPt.lum + 1} of ${ABY_LUM_BUCKETS}`} />
             <AbyRow k="depth" v={fmtAge(trackedPt.age)} />
-            <AbyRow k="rank" v={`${trackedPt.rank + 1} of ${field.pts.length}`} />
+            <AbyRow k="rank" v={`${trackedPt.rank + 1} of ${field.total}`} />
             <AbyRow k="in next block" v={trackedPt.fits == null ? dash : trackedPt.fits ? "yes" : "waiting"}
               tone={trackedPt.fits ? "var(--g-50)" : undefined} />
           </AbyPanel>

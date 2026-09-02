@@ -6,7 +6,7 @@
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { parseTransaction, txSizeFromEntry } = require('../xmr.js');
+const { parseTransaction, txSizeFromEntry, poolTxRow, feeTierIndex, FEE_TIER_LABELS, noteFirstSightings, newFirstSeenState } = require('../xmr.js');
 
 let failed = 0;
 function check(label, cond) {
@@ -103,6 +103,67 @@ check('txSizeFromEntry(null) === null', txSizeFromEntry(null) === null);
 check('txSizeFromEntry({as_hex:"abcd"}) === 2', txSizeFromEntry({ as_hex: 'abcd' }) === 2);
 check('txSizeFromEntry falls back to pruned/prunable hex',
   txSizeFromEntry({ pruned_as_hex: '00'.repeat(10), prunable_as_hex: '00'.repeat(5) }) === 15);
+
+/* ── p4·M9a · the pool row ────────────────────────────────────────────────
+   /get_transaction_pool entries carry `tx_json` (a JSON string), `id_hash`,
+   `blob_size`, `fee`, `receive_time`. The pre-p4·M9a builder read ring_size as
+   `vin.length` — the INPUT COUNT — and tagged every mainnet tx `priority`
+   against thresholds three orders under the fee floor. Both are pinned here
+   with a FALSIFIABILITY PAIR each: the assertion, and a computation of what the
+   old derivation would have said on the same fixture, which must DIFFER — an
+   assertion the old code also satisfies proves nothing about the fix. */
+console.log('\n— pool row (p4·M9a) —');
+const NODE_TIERS = [20000, 80000, 320000, 4000000];   // monerod get_fee_estimate.fees, pcn/B
+const poolEntry = {
+  id_hash: 'c1'.repeat(32),
+  blob_size: 1532,
+  fee: 30640000,                 // 30640000 / 1532 = 20000 pcn/B — the floor, the production sample's rate
+  receive_time: 0,               // what production answered on 2026-09-01
+  relayed: true, double_spend_seen: false, do_not_relay: false, kept_by_block: false,
+  tx_json: asJson,               // two inputs, each a 16-member ring
+};
+const row = poolTxRow(poolEntry, NODE_TIERS, null);
+check('pool ring_size === 16 (vin[0].key.key_offsets.length)', row.ring_size === 16);
+check('pool input_count === 2 (vin.length)', row.input_count === 2);
+check('CONTROL · the pre-fix derivation (vin.length) reads 2 here, so the assertion above discriminates',
+  JSON.parse(asJson).vin.length === 2 && JSON.parse(asJson).vin.length !== row.ring_size);
+check('fee_rate === 20000', row.fee_rate === 20000);
+check("fee_tier === 'slow' — the node's floor tier, NOT 'priority'", row.fee_tier === 'slow');
+check('CONTROL · the pre-fix thresholds (>80 ⇒ priority) would have tagged this rate priority', 20000 > 80);
+check('receive_time 0 passes through as 0 (the client decides what an absence is)', row.receive_time === 0);
+check('first_seen_here is null when this instance has no sighting', row.first_seen_here === null);
+check('first_seen_here carries the sighting when given', poolTxRow(poolEntry, NODE_TIERS, 1718000100).first_seen_here === 1718000100);
+check('malformed tx_json degrades the row, not the endpoint (ring 16 by consensus, counts 1/2)',
+  (() => { const r = poolTxRow({ ...poolEntry, tx_json: '{not json' }, NODE_TIERS, null); return r.ring_size === 16 && r.input_count === 1 && r.output_count === 2; })());
+
+/* Boundary semantics must equal the client's feeTierIndex (app/src/data/map.ts):
+   strict `<` against tiers[1..3], so a rate EXACTLY at a tier floor belongs to
+   that tier. */
+check("feeTierIndex(19999) === 0 (slow)", feeTierIndex(19999, NODE_TIERS) === 0);
+check("feeTierIndex(80000) === 1 (normal — a rate AT the floor is IN the tier)", feeTierIndex(80000, NODE_TIERS) === 1);
+check("feeTierIndex(319999) === 1 (normal)", feeTierIndex(319999, NODE_TIERS) === 1);
+check("feeTierIndex(4000000) === 3 (fastest)", feeTierIndex(4000000, NODE_TIERS) === 3);
+check('feeTierIndex with no tiers === -1, and the row tags null — never a default',
+  feeTierIndex(20000, null) === -1 && poolTxRow(poolEntry, null, null).fee_tier === null);
+check("FEE_TIER_LABELS is slow·normal·fast·fastest", FEE_TIER_LABELS.join('·') === 'slow·normal·fast·fastest');
+
+/* ── p4·M9a · the sighting memory ─────────────────────────────────────────
+   Driven with its own state object over four polls. */
+console.log('\n— first-sighting memory (p4·M9a) —');
+const st = newFirstSeenState();
+noteFirstSightings(st, ['a', 'b'], 1000);            // cold start: a, b already present
+check('poll 1 · a txid present at the first poll is NOT stamped', st.seen.size === 0 && st.baseline.has('a') && st.baseline.has('b'));
+check('poll 1 · first_seen_since is the first poll', st.since === 1000);
+noteFirstSightings(st, ['a', 'b', 'c'], 1003);       // c arrives while watched
+check('poll 2 · a txid that arrived while watched is stamped at THAT poll', st.seen.get('c') === 1003);
+check('poll 2 · the baseline txids are still not stamped', !st.seen.has('a') && !st.seen.has('b'));
+noteFirstSightings(st, ['a', 'c'], 1006);            // b mined
+check('poll 3 · c keeps its ORIGINAL stamp on a later poll', st.seen.get('c') === 1003);
+check('poll 3 · a baseline txid that left the pool is dropped from the baseline', !st.baseline.has('b') && st.baseline.has('a'));
+noteFirstSightings(st, ['a'], 1009);                 // c mined
+check('poll 4 · a stamped txid that left the pool is forgotten (bounded by the pool)', !st.seen.has('c') && st.seen.size === 0);
+noteFirstSightings(st, ['a', 'b'], 1012);            // b's hash returns (a reorg re-adds it)
+check('poll 5 · a txid that left and came back is stamped as a new arrival', st.seen.get('b') === 1012);
 
 if (failed > 0) {
   console.log(`\n${failed} check(s) FAILED`);

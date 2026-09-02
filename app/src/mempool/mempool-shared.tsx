@@ -537,7 +537,8 @@ const COL_WIDTH: Record<MemTxColumn, string> = {
   age: "68px", inout: "74px", ring: "56px", fee: "110px",
 };
 
-const fmtAgeShort = (sec: number): string => {
+const fmtAgeShort = (sec: number | null): string => {
+  if (sec == null || !Number.isFinite(sec)) return "—";   // no clock reported an arrival (p4·M9a)
   const s = Math.max(0, Math.round(sec));
   if (s < 90) return `${s}s`;
   if (s < 3600) return `${Math.round(s / 60)}m`;
@@ -555,7 +556,9 @@ export function MemTxTable({ data, tracking, viewId, columns, cap = 60, onPickTx
 }): JSX.Element {
   const trackedId = tracking?.kind === "tx" ? tracking.id.toLowerCase() : null;
   const rows = React.useMemo(
-    () => [...data.mempool].sort((a, b) => a.age - b.age).slice(0, cap),
+    // Newest first; a tx with no known age sorts LAST rather than as 0 (which
+    // would put every unaged tx at the top as if it had just arrived).
+    () => [...data.mempool].sort((a, b) => (a.age ?? Infinity) - (b.age ?? Infinity)).slice(0, cap),
     [data.mempool, cap],
   );
   const grid = columns.map((c) => COL_WIDTH[c]).join(" ");

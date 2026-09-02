@@ -85,8 +85,8 @@ import { NodeProvenance, PanelFrame } from "@/design/primitives";
 import { MemViewShell, TrackChip, useMempoolTracking, type Tracking, MemTxTable } from "@/mempool/mempool-shared";
 import { useMemStats } from "@/mempool/mem-stats";
 import { CONF_UNLOCK, confOf, RIBBON_BLOCKS } from "@/mempool/conf";
-import type { MoneroLive, Tx } from "@/data/types";
-import { fmtBytes, shortHash } from "@/data/types";
+import type { AgedTx, MoneroLive, Tx } from "@/data/types";
+import { fmtAgeS, fmtBytes, isAged, shortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents, type FeedEvent } from "@/data/useFeedEvents";
 import { hasData, oldestFreshAt } from "@/data/feed-status";
@@ -106,8 +106,9 @@ function conTierToken(perB: number, tiers: number[]): string {
   return i >= 0 ? CON_TIER_TOKENS[i] : CON_TIER_FALLBACK;
 }
 
-/** Newest = smallest age (seconds since arrival). */
-const newestFirst = (txs: Tx[]): Tx[] => [...txs].sort((a, b) => a.age - b.age);
+/** Newest = smallest age (seconds since arrival). A tx with no reported
+ *  arrival sorts last — it is not "newest", it is unknown (p4·M9a). */
+const newestFirst = (txs: Tx[]): Tx[] => [...txs].sort((a, b) => (a.age ?? Infinity) - (b.age ?? Infinity));
 
 function onEnterKey(fn: () => void) {
   return (e: React.KeyboardEvent) => {
@@ -167,11 +168,16 @@ function conLimbKeep(id: string, rnorm: number): boolean {
    silent index-order slice. Truncation is DISCLOSED in the header text
    (drawn/total, "ranked by fee/B"), never presented as the whole pool. */
 const MAX_SPHERE_NODES = 190;
-function conSelectField(mempool: Tx[]): { drawn: Tx[]; truncated: boolean; total: number } {
+function conSelectField(mempool: Tx[]): { drawn: AgedTx[]; truncated: boolean; total: number; unaged: number } {
   const total = mempool.length;
-  if (total <= MAX_SPHERE_NODES) return { drawn: mempool, truncated: false, total };
-  const sorted = [...mempool].sort((a, b) => b.perB - a.perB);
-  return { drawn: sorted.slice(0, MAX_SPHERE_NODES), truncated: true, total };
+  // rFrac IS age (see ConNode), so a tx whose arrival no clock reported has no
+  // radius to be drawn at. It is counted — the caption says how many — never
+  // placed at a made-up depth (p4·M9a).
+  const aged = mempool.filter(isAged);
+  const unaged = total - aged.length;
+  if (aged.length <= MAX_SPHERE_NODES) return { drawn: aged, truncated: false, total, unaged };
+  const sorted = [...aged].sort((a, b) => b.perB - a.perB);
+  return { drawn: sorted.slice(0, MAX_SPHERE_NODES), truncated: true, total, unaged };
 }
 
 /** Below this a diffuse field reads as empty space, not a population.
@@ -197,7 +203,7 @@ interface ConNode {
 const CON_R_MIN = 1.0;
 const CON_R_MAX = 3.6;
 
-function conBuildNodes(drawn: Tx[], maxAge: number, maxSize: number, tiers: number[]): ConNode[] {
+function conBuildNodes(drawn: AgedTx[], maxAge: number, maxSize: number, tiers: number[]): ConNode[] {
   return drawn.map((tx) => {
     const lat = (hashToUnit(tx.id) - 0.5) * 160 * (Math.PI / 180);
     const lon = (hashToUnit(tx.id + "·") * 360 - 180) * (Math.PI / 180);
@@ -371,7 +377,7 @@ export function ConSphere({ txs, tiers, ready, trackedTxId, onPickTx, size = 460
   const t = useAnimationSeconds({ fps: 20, enabled: !reduced });
   const cx = size / 2, cy = size / 2, R = size / 2 - 26;
 
-  const { drawn, truncated, total } = React.useMemo(() => conSelectField(txs), [txs]);
+  const { drawn, truncated, total, unaged } = React.useMemo(() => conSelectField(txs), [txs]);
   const maxAge = Math.max(1, ...drawn.map((tx) => tx.age));
   const maxSize = Math.max(1, ...drawn.map((tx) => tx.size));
   const nodes = React.useMemo(() => conBuildNodes(drawn, maxAge, maxSize, tiers), [drawn, maxAge, maxSize, tiers]);
@@ -385,7 +391,10 @@ export function ConSphere({ txs, tiers, ready, trackedTxId, onPickTx, size = 460
   const trackedNode = React.useMemo(() => {
     if (!trackedTxId) return null;
     const tx = txs.find((x) => x.id === trackedTxId);
-    return tx ? conBuildNodes([tx], maxAge, maxSize, tiers)[0] : null;
+    // A tracked tx with no reported arrival has no radius to sit at; it stays
+    // findable in the list below (data-tracked-tx), just not placed on the
+    // sphere at a depth nobody measured (p4·M9a).
+    return tx && isAged(tx) ? conBuildNodes([tx], maxAge, maxSize, tiers)[0] : null;
   }, [txs, trackedTxId, maxAge, maxSize, tiers]);
 
   // Decorative arcs between real nodes. High count: hash-picked partner,
@@ -476,7 +485,8 @@ export function ConSphere({ txs, tiers, ready, trackedTxId, onPickTx, size = 460
       <text x={cx} y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="var(--fs-label)" fill="var(--tk-accent)" letterSpacing="0.18em" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }}>
         {!ready ? "MEMPOOL · AWAITING FEED"
           : total === 0 ? "MEMPOOL · EMPTY"
-          : truncated ? `MEMPOOL · ${drawn.length} OF ${total} · LIVE` : `MEMPOOL · ${total} TX · LIVE`}
+          : (truncated ? `MEMPOOL · ${drawn.length} OF ${total} · LIVE` : `MEMPOOL · ${total} TX · LIVE`)
+            + (unaged > 0 ? ` · ${unaged} NO ARRIVAL TIME` : "")}
       </text>
       {truncated ? (
         // y=40, not 35: at --fs-label the rendered line box is ~1.27em, so a
@@ -509,7 +519,7 @@ function ConNewestTx({ data, onPickTx }: { data: MoneroLive; onPickTx: (id: stri
           <div className="kv"><span className="k">Size</span><span className="v">{fmtBytes(tx.size)}</span></div>
           <div className="kv"><span className="k">Rate</span><span className="v">{Math.round(tx.perB)} pcn/B</span></div>
           <div className="kv"><span className="k">Ring</span><span className="v">{tx.ringSize}</span></div>
-          <div className="kv"><span className="k">Age</span><span className="v">{tx.age}s</span></div>
+          <div className="kv"><span className="k">Age</span><span className="v">{fmtAgeS(tx.age)}</span></div>
           <div className="kv"><span className="k">Tier</span><span className="v" style={{ color: conTierToken(tx.perB, data.feeTiers) }}>{tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx] : "—"}</span></div>
         </div>
       ) : (
@@ -530,12 +540,16 @@ function ConMempoolRadar({ data, trackedTxId, onPickTx }: { data: MoneroLive; tr
   // The tracked tx keeps its bearing/dot even if it fell outside the base-60
   // sample — same "always show what's tracked" rule as the sphere above.
   const trackedTx = trackedTxId ? data.mempool.find((t) => t.id === trackedTxId) : null;
-  const txs = trackedTx && !base.some((t) => t.id === trackedTx.id) ? [...base, trackedTx] : base;
+  const all = trackedTx && !base.some((t) => t.id === trackedTx.id) ? [...base, trackedTx] : base;
+  // Radius IS age here, so only txs with a reported arrival are plotted; the
+  // rest are counted in the header, never drawn at a radius nobody measured.
+  const txs = all.filter(isAged);
+  const unaged = all.length - txs.length;
   const maxAge = Math.max(1, ...txs.map((t) => t.age));
   return (
     <PanelFrame
       title="Mempool polar · age vs fee"
-      right={<span className="dim">{txs.length ? `${txs.length} tx` : "—"}</span>}
+      right={<span className="dim">{all.length ? `${txs.length} tx${unaged ? ` · ${unaged} no arrival time` : ""}` : "—"}</span>}
       dataKey="mempool"
       updatedAt={oldestFreshAt(data.status, ["mempool"])}
     >

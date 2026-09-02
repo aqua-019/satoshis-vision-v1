@@ -320,8 +320,14 @@ export interface AbyField {
   limit: number;
   /** ms epoch of the mempool snapshot these ages were measured at */
   snapAt: number;
-  /** the depth domain — the shared strip's `oldest`, passed in, never re-derived */
+  /** the depth domain — the shared strip's `oldest`, passed in, never re-derived.
+   *  0 when the strip has no oldest (no tx carries an age); `pts` is empty then. */
   maxAgeSec: number;
+  /** the whole pool, placed or not — `pts` holds only the placeable */
+  total: number;
+  /** txs whose arrival no clock reported: depth IS age, so they have no
+   *  water to sink through. Counted in the manifest, never drawn (p4·M9a). */
+  unaged: number;
 }
 
 /**
@@ -341,7 +347,7 @@ export interface AbyField {
  * SESSION-computed and labelled inferred — a miner's real template is
  * unobservable from a public node.
  */
-export function useAbyssField(data: MoneroLive, oldestAgeSec: number): AbyField {
+export function useAbyssField(data: MoneroLive, oldestAgeSec: number | null): AbyField {
   return React.useMemo<AbyField>(() => {
     const pts: AbyPoint[] = [];
     const sorted = [...data.mempool].sort((a, b) => b.perB - a.perB);
@@ -364,8 +370,12 @@ export function useAbyssField(data: MoneroLive, oldestAgeSec: number): AbyField 
 
     const sizeLo = n ? Math.min(...sorted.map((t) => t.size)) : 0;
     const sizeHi = n ? Math.max(...sorted.map((t) => t.size)) : 0;
+    let unaged = 0;
     for (let i = 0; i < n; i++) {
       const t = sorted[i];
+      // The cut walk above ran over the WHOLE fee-sorted pool; only the
+      // placing is age-bound.
+      if (t.age == null) { unaged++; continue; }
       const sizeU = sizeHi > sizeLo ? (t.size - sizeLo) / (sizeHi - sizeLo) : 0;
       const u = abyFeeUnit(t.perB, lo, hi);
       pts.push({
@@ -397,7 +407,9 @@ export function useAbyssField(data: MoneroLive, oldestAgeSec: number): AbyField 
       cutU: cutPerB == null ? null : abyFeeUnit(cutPerB, lo, hi),
       cumAtCut, limit,
       snapAt: freshAt(data.status.mempool),
-      maxAgeSec: oldestAgeSec,
+      maxAgeSec: oldestAgeSec ?? 0,
+      total: n,
+      unaged,
     };
   }, [data.mempool, data.feeTiers, data.blockWeightMedian, data.blockWeightLimit, data.status.mempool, oldestAgeSec]);
 }

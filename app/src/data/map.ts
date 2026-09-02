@@ -121,7 +121,14 @@ interface XmrRecentTx {
   blob_size?: number;
   fee?: number; // piconero
   fee_rate?: number; // piconero/B
-  receive_time?: number; // unix seconds
+  /** unix seconds, as the node reported it. 0 (or absent) means the node did
+   *  NOT report one — see toTx(); it is never an epoch. */
+  receive_time?: number | null;
+  /** unix seconds of the first /api/xmr/mempool poll that listed this txid,
+   *  from the function's warm memory (api/xmr.js, p4·M9a). null for a txid that
+   *  was already in the pool when the function cold-started — it never watched
+   *  that one arrive, so it has nothing honest to say about when it did. */
+  first_seen_here?: number | null;
   ring_size?: number;
   input_count?: number;
   output_count?: number;
@@ -208,16 +215,54 @@ export function mapFees(f: XmrFees, prev: MoneroLive): Partial<MoneroLive> {
   };
 }
 
-/** A single relay/REST mempool tx → MoneroLive Tx. */
-function toTx(t: XmrRecentTx): Tx {
+/** Block 0's timestamp — 2014-04-18T10:49:53Z. No transaction was received
+ *  before the chain existed, so a "sighting" earlier than this is not a sighting.
+ *  This is what makes `receive_time: 0` an ABSENCE rather than an epoch (and
+ *  catches 1, 1000, or any other placeholder an upstream might write). */
+export const MONERO_GENESIS_S = 1_397_818_193;
+
+/** A reported sighting, or null when the field is absent, non-numeric, zero, or
+ *  predates the chain. */
+const seenAt = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) && v >= MONERO_GENESIS_S ? v : null;
+
+/** A single relay/REST mempool tx → MoneroLive Tx.
+ *
+ *  `age` is `now - firstSeenAt`, and `firstSeenAt` is the EARLIEST sighting any
+ *  clock reported: the node's own `receive_time` when it gave one (source
+ *  "node"), else the site's `first_seen_here` or the sighting carried from the
+ *  previous snapshot (source "site"), else null — never `now`, which the
+ *  pre-p4·M9a line fell back to and which rendered the Unix epoch as an age
+ *  the moment the node started answering 0. */
+function toTx(t: XmrRecentTx, now: number, carried: Tx | undefined): Tx {
   const fee = num(t.fee, 0) / PICO;
+  const nodeSeen = seenAt(t.receive_time);
+  const siteSeen = seenAt(t.first_seen_here);
+  const prevSeen = carried?.firstSeenAt ?? null;
+  let firstSeenAt: number | null = null;
+  let ageSource: Tx["ageSource"] = null;
+  if (nodeSeen != null) {
+    firstSeenAt = nodeSeen;
+    ageSource = "node";
+  } else {
+    const known = [siteSeen, prevSeen].filter((v): v is number => v != null);
+    if (known.length) {
+      firstSeenAt = Math.min(...known);
+      // A node-reported sighting carried from an earlier poll keeps its label:
+      // the cascade may have moved to a node that reports nothing, but the
+      // earlier node's clock is still the earlier node's clock.
+      ageSource = carried?.ageSource === "node" && firstSeenAt === prevSeen ? "node" : "site";
+    }
+  }
   return {
     id: t.txid,
     size: num(t.blob_size, 0),
     fee,
     ringSize: num(t.ring_size, 16),
     perB: num(t.fee_rate, 0),
-    age: Math.max(0, nowSec() - num(t.receive_time, nowSec())),
+    age: firstSeenAt == null ? null : Math.max(0, now - firstSeenAt),
+    ageSource,
+    firstSeenAt,
     inputs: num(t.input_count, 1),
     outputs: num(t.output_count, 2),
     seed: hashToUnit(t.txid),
@@ -237,7 +282,15 @@ function feeHistFromBuckets(buckets: { tx_count?: number }[]): number[] | null {
 
 /** /api/xmr/mempool → mempool[] + derived feeHist. */
 export function mapMempool(mp: XmrMempool, prev: MoneroLive): Partial<MoneroLive> {
-  const txs = Array.isArray(mp.recent_txs) ? mp.recent_txs.filter((t) => t && t.txid).map(toTx) : null;
+  const now = nowSec();
+  // Sightings survive across polls (see toTx). Keyed once per snapshot, not
+  // per tx — a 240-tx pool against a 240-tx previous snapshot is 480 lookups,
+  // not 57,600 scans.
+  const prevById = new Map<string, Tx>();
+  for (const t of prev.mempool) prevById.set(t.id, t);
+  const txs = Array.isArray(mp.recent_txs)
+    ? mp.recent_txs.filter((t) => t && t.txid).map((t) => toTx(t, now, prevById.get(t.txid)))
+    : null;
   const feeHist = Array.isArray(mp.fee_histogram) ? feeHistFromBuckets(mp.fee_histogram) : null;
   return {
     mempool: txs && txs.length ? txs : prev.mempool,

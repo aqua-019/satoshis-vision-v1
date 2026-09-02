@@ -46,7 +46,7 @@ import { observeDrawable } from "@/design/usePageActive";
 import { NodeProvenance, PanelFrame } from "@/design/primitives";
 import { AXIS, GRID, ChartCrosshair, ChartTip, useGradientId, useSvgCursor, VB_W } from "@/design/chart-kit";
 import { useChartMetrics, spreadLabels, tickCount } from "@/design/useChartMetrics";
-import { fmtBytes, shortHash as ShortHash } from "@/data/types";
+import { fmtAgeS, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
 import { useMempoolTracking, MemViewShell, TrackChip, MemTxTable } from "@/mempool/mempool-shared";
@@ -553,7 +553,7 @@ function BrgTapeRow({ lvl, tone, msg, ts, tracked }: {
 }
 
 export function BrgAlertTape({ data, oldestAgeSec, trackedTxId, trackedHeight, trackedConf }: {
-  data: MoneroLive; oldestAgeSec: number;
+  data: MoneroLive; oldestAgeSec: number | null;
   trackedTxId?: string | null; trackedHeight?: number | null; trackedConf?: number | null;
 }) {
   const events = useFeedEvents(data, 20);
@@ -619,7 +619,7 @@ export function BrgAlertTape({ data, oldestAgeSec, trackedTxId, trackedHeight, t
      printing the same string regardless of the feed is decoration, so there
      isn't one. The mockup's "ZMQ unavailable · polling 15s" is exactly that and
      is deliberately NOT ported: true of this pipeline, but a constant. */
-  const blocksBehind = oldestAgeSec > 0 && (data.blockTarget || 120) > 0
+  const blocksBehind = oldestAgeSec != null && oldestAgeSec > 0 && (data.blockTarget || 120) > 0
     ? Math.floor(oldestAgeSec / (data.blockTarget || 120)) : 0;
   const weightRatio = ready && data.blockWeightLimit > 0 ? data.blockWeightMedian / data.blockWeightLimit : null;
   const states: { lvl: string; tone: string; msg: string }[] = ready ? [
@@ -631,9 +631,13 @@ export function BrgAlertTape({ data, oldestAgeSec, trackedTxId, trackedHeight, t
       : weightRatio >= 0.8
         ? { lvl: "WATCH", tone: "y", msg: `median weight ${Math.round(weightRatio * 100)}% of the ${fmtBytes(data.blockWeightLimit)} limit` }
         : { lvl: "OK", tone: "g", msg: `median weight ${Math.round(weightRatio * 100)}% of the ${fmtBytes(data.blockWeightLimit)} limit` },
-    blocksBehind >= 2
-      ? { lvl: "WATCH", tone: "y", msg: `oldest tx ${Math.round(oldestAgeSec / 60)}m · ~${blocksBehind} blocks unmined` }
-      : { lvl: "OK", tone: "g", msg: `oldest tx ${oldestAgeSec}s · under one block target` },
+    // p4·M9a — a pool whose node reports no arrival times has no oldest tx to
+    // grade; INFO, the same shape as "block weight not reported" above.
+    oldestAgeSec == null
+      ? { lvl: "INFO", tone: "m", msg: "oldest tx age unknown · no arrival time reported" }
+      : blocksBehind >= 2
+        ? { lvl: "WATCH", tone: "y", msg: `oldest tx ${Math.round(oldestAgeSec / 60)}m · ~${blocksBehind} blocks unmined` }
+        : { lvl: "OK", tone: "g", msg: `oldest tx ${oldestAgeSec}s · under one block target` },
     data.altBlocksCount > 0
       ? { lvl: "WATCH", tone: "y", msg: `${data.altBlocksCount} alt block${data.altBlocksCount === 1 ? "" : "s"} held · possible reorg` }
       : { lvl: "OK", tone: "g", msg: "0 alt blocks · no reorg" },
@@ -719,7 +723,7 @@ export function BrgTxConsole({ data, cut, tracking, onPickTx }: {
               <span className="dim">{fmtBytes(t.size)}</span>
               <span className="acc">{fmtPcn(t.perB)}</span>
               <span className="dim">{t.ringSize}</span>
-              <span className="dim2">{t.age}s</span>
+              <span className="dim2">{fmtAgeS(t.age)}</span>
               <span style={{ color: fits == null ? "var(--ink-40)" : fits ? "var(--g-50)" : "var(--ink-40)" }}>{fits == null ? "—" : fits ? "in" : "wait"}</span>
             </div>
             {isTracked ? (
@@ -800,10 +804,13 @@ export function BrgPoolDist({ data }: { data: MoneroLive }) {
 export function BrgOverview({ data, tracking, onPickTx }: { data: MoneroLive; tracking: Tracking; onPickTx: (id: string) => void }) {
   const cut = useNextBlockCut(data);
   const poolBytes = React.useMemo(() => data.mempool.reduce((a, t) => a + t.size, 0), [data.mempool]);
-  const oldestAgeSec = React.useMemo(
-    () => (data.mempool.length ? Math.max(...data.mempool.map((t) => t.age)) : 0),
-    [data.mempool],
-  );
+  // The oldest KNOWN age, or null — a tx with no reported arrival is skipped,
+  // never scored as 0 (p4·M9a; the strip's useMemStats makes the same call).
+  const oldestAgeSec = React.useMemo(() => {
+    let max: number | null = null;
+    for (const t of data.mempool) if (t.age != null && (max == null || t.age > max)) max = t.age;
+    return max;
+  }, [data.mempool]);
 
   // Tracked tx, resolved once via useMempoolTracking + confOf everywhere —
   // pending (still in mempool) shows on the radar/console; confirmed (left the

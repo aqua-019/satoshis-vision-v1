@@ -454,13 +454,17 @@ export function PlsWindow({ data, field, focusBlock, onClearFocus, onPickBlock }
         <>
           <PlsRow k="window" v={field.windowSec > 0 ? `${fmtSpan(field.windowSec)} of past` : dash} tone="var(--o-60)" />
           <PlsRow k="bin" v={fmtSpan(field.binSec)} />
-          <PlsRow k="pool reaches back" v={field.oldestAgeSec > 0 ? fmtSpan(field.oldestAgeSec) : dash} />
+          <PlsRow k="pool reaches back" v={field.oldestAgeSec != null && field.oldestAgeSec > 0 ? fmtSpan(field.oldestAgeSec) : dash} />
           {/* Never silently dropped. The window is a rung chosen to hold the
               pool, so this is 0 in the ordinary case and non-zero only at the
               ladder's top rung — which is exactly the outlier case the clamp
               exists for, and the case a reader most needs told about. */}
           <PlsRow k="older than window" v={field.txs.length ? field.offWindow.toLocaleString() : dash}
             tone={field.offWindow > 0 ? "var(--y-50)" : undefined} />
+          {/* p4·M9a — a tx whose arrival no clock reported has no x on a
+              timeline. Counted here so placed + off-window + this = the pool. */}
+          <PlsRow k="no arrival time" v={field.total ? field.unaged.toLocaleString() : dash}
+            tone={field.unaged > 0 ? "var(--y-50)" : undefined} />
           <PlsRow k="chain tip" v={ready ? `#${tip.toLocaleString()}` : dash} tone="var(--o-60)" />
           <PlsRow k="alt blocks" v={ready ? data.altBlocksCount.toLocaleString() : dash} />
         </>
@@ -620,7 +624,7 @@ export function PlsOverview({ data, tracking, focusBlock, onClearFocus, onPickTx
             <PlsRow k="arrived" v={`${fmtSpan(trackedA.age)} ago`} />
             <PlsRow k="fee/B" v={fmtPcn(trackedA.perB)} />
             <PlsRow k="tier" v={trackedA.tier >= 0 ? FEE_TIER_LABELS[trackedA.tier] : dash} />
-            <PlsRow k="rank" v={`${trackedA.rank + 1} of ${field.txs.length}`} />
+            <PlsRow k="rank" v={`${trackedA.rank + 1} of ${field.total}`} />
             <PlsRow k="past the cut" v={trackedA.fits == null ? dash : trackedA.fits ? "yes" : "waiting"}
               tone={trackedA.fits ? "var(--g-50)" : undefined} />
           </PlsPanel>
