@@ -3651,6 +3651,14 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      brief allows exactly one. The number and its unit may stack; nothing else
      in the card can yield. Inert above this width, where the row never fills. */
   .classic-tier-fig { flex-wrap: wrap; }
+  /* p4·M9a — the card's figure is the node's tier RATE now (classic.tsx), and
+     the fastest tier is nine characters: "4,000,000" at 22px measures 119px,
+     wider than a 2-up card's 110px cell at 320 however the row wraps (the
+     median it replaced was six or seven characters, which is why the wrap
+     above was once enough). One step down where the cell is that narrow;
+     `!important` because the size is an inline style on the number itself.
+     verify-memphone §3b is the gate; it read `.classic-tier-fig 119/110`. */
+  @media (max-width: 360px) { .classic-tier-fig > .mono:first-child { font-size: 18px !important; } }
 
   /* Four fee cards stacked is ~1000px of one number each. 2x2 halves it and
      keeps the coloured top borders — which the brief correctly calls the
