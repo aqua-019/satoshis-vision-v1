@@ -337,7 +337,17 @@ const BUDGETS = {
      ten views, in both states it renders in, costs a handful of bytes. Comments
      are free (Vite minifies the production sheet), so the long arguments in
      both sheets cost 0 B. */
-  cssGz: 19_000,
+  cssGz: 19_500,        // p4·M9b: built 19,011 on the FINAL tree, margin 489 (2.5%).
+  //   RED-THEN-GREEN: 19,011 against the old 19,000 — over by ELEVEN BYTES.
+  //   Raised to built + ~2.5%, which is the proportion this budget's own note
+  //   below says it is deliberately run at (the JS ceilings run ~10%), and the
+  //   same shape p4·M8 used raising it from 18,200 while green.
+  //   THE ARITHMETIC WAS DONE BEFORE THE FIRST RULE, not after the red. A
+  //   candidate block — the sheet plus a phone layout for four components,
+  //   1,447 raw bytes written the way the build emits — appended to the built
+  //   sheet and re-gzipped with gzipSync(level:9) measured +344 B against a
+  //   401 B margin: it would have fitted by 57 B, which is a coin flip. The
+  //   shipped block is larger and the ceiling was planned for it.
   // Every JS chunk, counted once. The drift detector for "we shipped 200 kB of
   // lazy code nobody has opened yet". Successor to PERF-BASELINE.md:75's
   // 673.8 kB.
@@ -706,7 +716,16 @@ const BUDGETS = {
      eagerJsRaw 280,000 + lazyJsRaw 986,000 = 1,266,000 against this line's
      1,251,000, so the "sum of the two real budgets" construction has now been
      lapsed for thirteen releases. */
-  totalJsRaw: 1_262_000,  // p4·M6c: built 1,258,300 on the FINAL tree, margin 3,700 (0.29%).
+  totalJsRaw: 1_266_000,  // p4·M9b: built 1,263,109 on the FINAL tree, margin 2,891 (0.23%).
+  //   MOVED WITH lazyJsRaw BY THE SAME 4,000, so the documented gap between the
+  //   two holds at 265,000 — this row's own construction, kept rather than
+  //   quietly broken. eager +736 (the entry alone; its lazy sibling in the
+  //   `index` stem is BYTE-IDENTICAL at 2,253) plus lazy +1,440 = +2,176, which
+  //   IS this figure's whole delta. The two `index` chunks are split by reading
+  //   dist/index.html's own <script src> rather than by basename — p2·9's trap,
+  //   where they moved in opposite directions and one was lazy while the other
+  //   was eager.
+  // p4·M6c: built 1,258,300, margin 3,700 (0.29%).
   //   MOVED WITH lazyJsRaw BY THE SAME 4,000 so the documented gap between the
   //   two holds at 265,000 — this row's own construction, kept rather than
   //   drifted. (That construction's ORIGINAL sense, "the sum of the two real
@@ -1395,7 +1414,17 @@ const BUDGETS = {
      to one lazy view and one lazy shared component should read as. Chunk count
      76 = 76, nothing minted: `useLadderAnchor.ts` is a new module but every one
      of its importers is already inside classic's chunk group. */
-  lazyJsRaw: 997_000,   // p4·M6c: built 993,843 on the FINAL tree, margin 3,157 (0.32%).
+  lazyJsRaw: 1_001_000, // p4·M9b: built 997,403 on the FINAL tree, margin 3,597 (0.36%).
+  //   RED-THEN-GREEN at 997,403 against 997,000. Attribution is RESIDUAL ZERO
+  //   over three terms, paired per chunk STEM by MULTISET against a snapshot of
+  //   the untouched 8dc7a56 build: SectionSheet 0 -> 1,147 (minted) + classic
+  //   +228 (the tier footer's spans) + V6Modal +65 (the optional variant prop)
+  //   = +1,440, which IS this budget's whole delta. 72 of 76 slots are
+  //   size-identical. The stem is taken with the LAST -<8 chars>.js stripped:
+  //   a Vite hash draws from [A-Za-z0-9_-], so the dash is IN the alphabet and
+  //   rsplit('-',1) mis-pairs — p4·M6c recorded exactly that, reporting 37
+  //   stems moved where 2 had.
+  // p4·M6c: built 993,843, margin 3,157 (0.32%).
   //   Two peer entries of prose in pages/future/data.ts. The delta is +3,256
   //   against a MEASURED base of 990,587 at 9f9e176 — which is also exactly
   //   the figure #204's report implies, so the derivation and the build agree.
@@ -2187,7 +2216,20 @@ const ROUTE_BUDGET_GZ = {
  * difference is chunk-boundary overhead. That extraction is the whole reason
  * the explorer's own closure is four chunks instead of dragging ProtoArtboard,
  * ProtoCanvas and react-router-dom in behind one pure function. */
-const CHUNK_COUNT = 73;
+/* p4·M9b — RE-CENTRED 73 -> 74, and the band's WIDTH is untouched at ±4.
+   The build measures 77, which is INSIDE [69, 77] and exactly ON its ceiling —
+   the state this file's own history says to re-centre out of rather than pass
+   through, because a per-release DRIFT DETECTOR sitting on its own limit
+   reports the next mint as a budget failure instead of as news about the build.
+   [70, 78] restores one rung of upward headroom and keeps the ±4 sensitivity
+   that a wider band would spend.
+   The falsifying test this file demands of a re-centre is met: the release can
+   NAME the new chunk. It is `SectionSheet`, 1,147 B, and it is a net-new lazy
+   component reached only from a tab tap — deliberately lazy, because
+   BottomTabBar is a static import of the eager NavTop and a static import of
+   the sheet would pull V6Modal's chunk into the entry (measured: 0 occurrences
+   of `v6-modal-veil` in the eager entry after the change). */
+const CHUNK_COUNT = 74;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

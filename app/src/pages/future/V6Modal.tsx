@@ -75,9 +75,18 @@ export interface V6ModalProps {
   onClose: () => void;
   labelledBy: string; // id of the <h2> that titles the dialog
   children: React.ReactNode;
+  /** p4·M9b — an OPTIONAL geometry variant, added so the mobile section sheet
+   *  could reuse every behaviour in this file (portal, trap, capture/restore,
+   *  Escape, two-target scroll lock, the D0666 exit frame) without a second
+   *  copy of any of it. When present it APPENDS `v6-modal--<variant>` to the
+   *  box and `v6-modal-veil--<variant>` to the veil; both base classes stay,
+   *  so `verify-discrete`'s bare `.v6-modal` / `.v6-modal-veil` queries and
+   *  its `.v6-modal-veil.is-open` stylesheet assertion are untouched. Omitted
+   *  by every pre-existing caller, which therefore renders byte-identically. */
+  variant?: string;
 }
 
-export function V6Modal({ open, onClose, labelledBy, children }: V6ModalProps) {
+export function V6Modal({ open, onClose, labelledBy, children, variant }: V6ModalProps) {
   const boxRef = React.useRef<HTMLDivElement | null>(null);
   const veilRef = React.useRef<HTMLDivElement | null>(null);
   const priorFocusRef = React.useRef<HTMLElement | null>(null);
@@ -177,7 +186,9 @@ export function V6Modal({ open, onClose, labelledBy, children }: V6ModalProps) {
   return ReactDOM.createPortal(
     <div
       ref={veilRef}
-      className={"v6-modal-veil" + (open ? " is-open" : "")}
+      className={
+        "v6-modal-veil" + (variant ? ` v6-modal-veil--${variant}` : "") + (open ? " is-open" : "")
+      }
       // Out of the a11y tree the moment it starts leaving. The node outlives
       // the close by design, but a screen reader should not be able to land
       // in a dialog that is on its way out. Focus has already been restored
@@ -192,7 +203,7 @@ export function V6Modal({ open, onClose, labelledBy, children }: V6ModalProps) {
     >
       <div
         ref={boxRef}
-        className="v6-modal"
+        className={"v6-modal" + (variant ? ` v6-modal--${variant}` : "")}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}

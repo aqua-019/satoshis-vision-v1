@@ -39,11 +39,13 @@
  */
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { coldBootOffBrowser } from './verify-lib.mjs';
 import { makeReporter } from './verify-reporter.mjs';
 import { ROUTES } from './scripts/routes.mjs';
 
-const BASE = 'http://localhost:4173';
+const BASE = process.env.VERIFY_BASE || 'http://localhost:4173';
 const FLOOR = 12;          // px. The whole point of the file.
 const EPS = 0.01;          // computed sizes are floats; 11.999 is 12.
 const TAB_MIN = 40;        // px. Minimum comfortable touch target.
@@ -57,6 +59,7 @@ const TAP_MIN = 44;
 const PHONE = { width: 390, height: 844 };
 const NARROW = { width: 320, height: 568 };
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const R = makeReporter('verify-mobile');
 
 /* Prefer WebKit (the mobile-Safari engine) and fall back to Chromium: some
@@ -626,6 +629,169 @@ R.group(`§9 · /operate/peers — the "our brief" control is a real ${TAP_MIN}�
     + '  — flexShrink:0 + whiteSpace:nowrap on the control, flexWrap on the row.');
 
   await ctx.close();
+}
+
+
+/* ═══ §10 · EVERY IA DESTINATION IS REACHABLE FROM THE TAB BAR ══════════════
+ * p4·M9b. The tab bar navigates each tab to `section.cols[0].items[0].p`, and
+ * NavTop.tsx recorded that as replacing a drawer holding "the same 6
+ * destinations". It did not hold 6. MEASURED on the base at 390×844, against
+ * the RENDERED page rather than the source — the six landings read off
+ * `a.tabbar-item`, then every IA item's pathname checked for a VISIBLE
+ * affordance on the page its own section's tab lands on:
+ *
+ *     27 distinct pathnames across the IA's 68 items
+ *      6 are tab landings                                        1 tap
+ *     10 are the /monero chapters and /learn tabs, which their
+ *        landing page renders as BUTTONS, not anchors            2 taps
+ *     11 had no affordance on any landing page at all            UNREACHABLE
+ *
+ * That anchors-vs-buttons split is why this is asserted through TAPS rather
+ * than through hrefs: an href sweep reports those ten unreachable, and did.
+ *
+ * THE LIST IS DERIVED, NEVER TYPED. `src/nav/ia.ts` is importable under bare
+ * Node — verify-ia.mjs §7 already does it, and nav/registries.mjs exists to
+ * make that work — so a seventh section, or a nineteenth route, moves this
+ * gate's subject on its own. A hand-copied array here would be the defect
+ * verify-reduce.mjs:70 records against itself.
+ *
+ * WHAT IT DOES NOT ASSERT: that two taps is the RIGHT number, or that the
+ * sheet is well composed. It asserts reachability, which is the property that
+ * was silently false. */
+R.group('§10 · every IA destination is reachable from the tab bar in ≤2 taps');
+{
+  const iaMod = await import(pathToFileURL(join(__dirname, 'src', 'nav', 'ia.ts')).href);
+  const IA = iaMod.IA;
+  R.ok(Array.isArray(IA) && IA.length === 6,
+    `10a · ia.ts exports 6 sections (got ${Array.isArray(IA) ? IA.length : typeof IA}) — the floor, so nothing below can pass over an empty list`);
+
+  const items = IA.flatMap((sec, si) =>
+    sec.cols.flatMap((c) => c.items.map((it) => ({ sec: sec.key, si, label: it.l, p: it.p }))));
+  R.ok(items.length >= 60,
+    `10b · the IA declares ${items.length} leaf items across all columns — a sheet listing only cols[0] would collapse this`);
+
+  for (const vp of [PHONE, NARROW]) {
+    const tag = `${vp.width}×${vp.height}`;
+    const { ctx, page: p } = await phone(vp);
+    await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+    /* networkidle, NOT domcontentloaded. Measured while writing this: at DCL
+     * `a.tabbar-item` matches 0 and at idle it matches 6, so a probe that read
+     * the landings at DCL classified all 68 items unreachable and printed a
+     * plausible, entirely false "27". An empty result is evidence only once
+     * its scope is verified. */
+    await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+
+    const tabs = await p.locator('a.tabbar-item').count();
+    R.ok(tabs === 6, `10c [${tag}] · six tab targets (got ${tabs})`);
+
+    const rows = [];
+    for (let si = 0; si < IA.length; si++) {
+      const mine = items.filter((it) => it.si === si);
+      // tap 1
+      await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+      await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+      await p.locator('a.tabbar-item').nth(si).click();
+      let opened = true;
+      await p.waitForSelector('[role="dialog"] .sheet-item', { timeout: 6000 }).catch(() => { opened = false; });
+      if (!opened) {
+        for (const it of mine) rows.push({ ...it, taps: null, why: 'no sheet' });
+        continue;
+      }
+      // every item the sheet offers, by its href — one tap each from here
+      const offered = await p.evaluate(() =>
+        [...document.querySelectorAll('[role="dialog"] .sheet-item')]
+          .filter((a) => { const b = a.getBoundingClientRect(); return b.width > 0 && b.height > 0; })
+          .map((a) => a.getAttribute('href')));
+      for (const it of mine) rows.push({ ...it, taps: offered.includes(it.p) ? 2 : null, why: 'not in sheet' });
+    }
+
+    const unreachable = rows.filter((r) => r.taps === null);
+    R.ok(unreachable.length === 0,
+      `10d [${tag}] · all ${rows.length} IA items reachable in ≤2 taps (${unreachable.length} not: ${unreachable.slice(0, 12).map((u) => u.label).join(', ') || 'none'})`,
+      rows.map((r) => `${r.taps ?? 'UNREACHABLE'}  ${r.label}  ${r.p}`).join('\n'));
+
+    /* p4·M9b — THE SHEET'S OWN TAP FLOOR, and it exists because a break test
+       refused to fire. Shrinking a row to 40px left all 67 assertions green:
+       reachability says a destination is OFFERED, and says nothing about
+       whether a thumb can land on it. §3 above measures the six tab items and
+       verify-memphone §6 is scoped to the classic view, so the rows this
+       release adds were governed by nothing. Measured at ship: 44px exactly,
+       0 under, at both widths. Floored so it cannot pass over an empty match —
+       a sheet that rendered no rows would otherwise satisfy "none is short". */
+    // Open a KNOWN section rather than measuring whatever the loop above left
+    // on screen — that would make the floor depend on which section happens to
+    // be last in the IA, and on how many items it happens to carry.
+    await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+    await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+    await p.locator('a.tabbar-item').nth(0).click();
+    await p.waitForSelector('[role="dialog"] .sheet-item', { timeout: 6000 });
+    const sheetRows = await p.evaluate((min) => {
+      const rows = [...document.querySelectorAll('[role="dialog"] .sheet-item')];
+      const boxes = rows.map((r) => r.getBoundingClientRect());
+      return {
+        n: rows.length,
+        short: boxes.filter((b) => b.height < min - 0.5).length,
+        smallest: boxes.length ? Math.round(Math.min(...boxes.map((b) => b.height)) * 10) / 10 : null,
+      };
+    }, TAP_MIN);
+    R.ok(sheetRows.n >= 3,
+      `10f [${tag}] · the open sheet renders ${sheetRows.n} rows — the floor for the check below`);
+    R.ok(sheetRows.n >= 3 && sheetRows.short === 0,
+      `10g [${tag}] · every sheet row is at least ${TAP_MIN}px tall (${sheetRows.short} under; smallest ${sheetRows.smallest}px)`);
+
+    /* PLANTED POSITIVE CONTROL. Every assertion above is satisfied by a sheet
+     * that lists everything; none of them can tell that apart from a gate
+     * reading the wrong DOM. Ask for a destination the IA does NOT contain and
+     * require the same machinery to answer NO. */
+    const ghost = rows.some((r) => r.p === '/there/is/no/such/route');
+    R.ok(ghost === false,
+      `10e [${tag}] · the same reader reports a route the IA does not declare as absent — so 10d is reading the sheet, not passing vacuously`);
+
+    await ctx.close();
+  }
+
+  /* p4·M9b — REDUCED MOTION, BOTH POLARITIES, and it needed no rule of its own.
+     The sheet carries `.v6-modal-veil` / `.v6-modal` alongside its variant
+     classes, so styles.css's existing D0666 reduce block reaches it, and
+     V6Modal's unmount delay is READ from the element's own computed
+     transition-duration rather than hardcoded — a preference that zeroes the
+     duration therefore unmounts on the next tick with no branch in either file.
+     Asserted HERE rather than by adding a 28th entry to verify-reduce's MEM
+     array: that array is a hand copy its own comment forbids extending by hand
+     (verify-reduce.mjs:70), and this gate already has the sheet open.
+     THE SECOND HALF IS THE POINT — "no motion" is satisfied by a sheet that
+     renders nothing, so the row count and the text length must MATCH the
+     animated build. Measured: 18 rows and 278 chars in both. */
+  for (const [pref, wantRunning] of [['reduce', 0], ['no-preference', null]]) {
+    const ctx = await browser.newContext({
+      viewport: PHONE, hasTouch: true,
+      isMobile: engine === 'chromium' ? true : undefined,
+      deviceScaleFactor: 2, reducedMotion: pref,
+    });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+    await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+    await p.locator('a.tabbar-item').nth(0).click();
+    await p.waitForSelector('[role="dialog"] .sheet-item', { timeout: 6000 });
+    const m = await p.evaluate(() => {
+      const veil = document.querySelector('.v6-modal-veil');
+      const box = document.querySelector('.v6-modal');
+      const anims = [...veil.getAnimations(), ...box.getAnimations()];
+      return {
+        running: anims.filter((a) => a.playState === 'running').length,
+        rows: document.querySelectorAll('[role="dialog"] .sheet-item').length,
+        smil: document.querySelectorAll('[role="dialog"] animate, [role="dialog"] animateTransform').length,
+        chars: (document.querySelector('[role="dialog"]').textContent || '').replace(/\s+/g, ' ').length,
+      };
+    });
+    if (wantRunning === 0) {
+      R.ok(m.running === 0 && m.smil === 0,
+        `10h · under prefers-reduced-motion the sheet runs no animation and renders no SMIL (${m.running} running, ${m.smil} SMIL)`);
+    }
+    R.ok(m.rows === 18 && m.chars > 200,
+      `10i [${pref}] · and it still offers the whole section (${m.rows} rows, ${m.chars} chars) — "no motion" must not be satisfied by rendering nothing`);
+    await ctx.close();
+  }
 }
 
 await browser.close();

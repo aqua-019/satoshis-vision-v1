@@ -249,6 +249,14 @@ const READ = () => {
     if (d) {
       const db = d.getBoundingClientRect();
       ladder.dividerFrac = +((db.left + db.width / 2 - lb.left) / lad.clientWidth).toFixed(4);
+    // p4·M9b — the edge treatment, read through the same reader as everything
+    // else here (a gate whose halves use two probes cannot tell drift from
+    // method). `maskImage` is the standardised property; WebKit still needs the
+    // prefixed one, and verify-lib prefers WebKit when a build is present.
+    {
+      const ms = getComputedStyle(lad);
+      ladder.mask = ms.maskImage && ms.maskImage !== 'none' ? ms.maskImage : (ms.webkitMaskImage || 'none');
+    }
       // VISIBLE means visible to the READER, so it is bounded by the viewport
       // as well as by the ladder's own box. Measuring against the box alone is
       // a true statement about the wrong subject: the ladder is deliberately
@@ -348,7 +356,9 @@ const READ = () => {
   const det = q('[data-mem-detail]');
   const back = q('.mp-backbtn');
 
+  const ladderMask = ladder ? ladder.mask : null;
   return {
+    ladderMask,
     innerWidth, dpr: devicePixelRatio,
     docSW: document.documentElement.scrollWidth,
     docH: document.documentElement.scrollHeight,
@@ -572,6 +582,19 @@ for (const stage of STAGES) {
     `5d [${stage.tag}] · one block either side of NOW is fully visible (${L ? L.cardsLeft : '?'} left, ${L ? L.cardsRight : '?'} right)`);
   R.ok(L && L.scrollLeft > 0,
     `5e [${stage.tag}] · the ladder did not open at its far-left card (scrollLeft ${L ? L.scrollLeft : '?'})`);
+  /* p4·M9b — 5a-5e place the ladder; this one is about what its EDGE looks
+     like. Anchoring the divider mid-box necessarily leaves the card to its
+     left straddling the left edge — measured on the base, 0.38 / 0.56 / 0.70 /
+     0.89 of that card cut at 430 / 390 / 360 / 320 — so it was sliced through
+     a word and read as breakage rather than as a scroller.
+     SCROLL-SNAP IS NOT THE FIX AND CANNOT BE: the ladder's card starts are
+     0, 112, 248.2, 380 … with the divider centred at 243.7, so at 430 the only
+     candidates are 0, which fails 5e, and 112, which puts the fraction at
+     (243.7 − 112) / 406 = 0.324 and fails 5c. No snap point at that width
+     satisfies both. A mask moves no geometry at all, which is why 5c/5d/5e
+     read the SAME numbers before and after it — verified, not assumed. */
+  R.ok(m.ladderMask && m.ladderMask !== 'none',
+    `5f [${stage.tag}] · the ladder's cut edge is faded rather than sliced (mask ${m.ladderMask ? m.ladderMask.slice(0, 34) : 'MISSING'})`);
   await ctx.close();
 }
 
