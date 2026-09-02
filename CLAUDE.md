@@ -1046,6 +1046,44 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   ls-remote` returns **401 refs**, none matching `m9b` or `preserv` case-insensitively,
   and **zero tags** — scope stated because an absence is evidence only once it is. The
   work here is rebuilt from the brief, not recovered.
+  **THE SUITE, AND THE ONE RED IS PAIRED RATHER THAN WAVED AT.** `verify:static` exit 0.
+  **`verify:e2e` ran ALL 39 members — 38 green, one red, and it is `verify-vitals`**
+  (`/` blocking 570ms ≤ 400, `/live/markets` LCP 4516ms ≤ 2600). The gates most exposed to
+  this change are green IN-CHAIN rather than only standalone: `verify-memphone` **451**,
+  `verify-nav` **129** (the six `a.tabbar-item` assertion that decided the tab stays an
+  anchor), `verify-reduce` 31, `verify-cls` 20, `verify-discrete` all.
+  **AND THIS ONE COULD NOT BE DISMISSED THE WAY PREVIOUS RELEASES DISMISSED THEIRS.** The
+  usual argument is that the red routes load no chunk the diff touches; here `eagerJsRaw`
+  moved **+736** and `/` and `/live/markets` both load the entry, so the diff really does
+  reach them. It was therefore PAIRED, on this machine, interleaved, two rounds each,
+  against the PRISTINE BASE BUILD — snapshotted before the first edit and served on its
+  own port from a copy of `serve-dist`, with the two trees proven distinct by their entry
+  hashes (`index-BnlXjjxL` base against `index-CgzL-Emj` head) and each port's holder
+  confirmed by `/proc/<pid>/cwd`:
+
+  | assertion | base r1 · r2 | head r1 · r2 |
+  |---|---|---|
+  | `/` blocking ≤ 400 | **475 ❌ · 440 ❌** | **431 ❌ · 414 ❌** |
+  | `/live/markets` blocking ≤ 400 | **497 ❌ · 449 ❌** | 403 · **407 ❌** |
+  | `/live/markets` LCP ≤ 2600 | **4640 ❌ · 4600 ❌** | 4540 · **4572 ❌** |
+  | `/live/mempool` blocking ≤ 300 | 277 ✅ · **312 ❌** | 287 ✅ · 275 ✅ |
+  | `/` LCP ≤ 2500 · `/learn/sim` | ✅ | ✅ |
+
+  **The BASE fails 3 and 4 assertions across its two rounds; the head fails 1 and 3, and
+  the head is BETTER OR EQUAL on every shared metric** — including `/live/mempool`
+  blocking, where the base went red and the head never did. `/live/markets`' 2,600ms LCP
+  ceiling is unreachable in this sandbox on EITHER tree at ~4,600ms, which reproduces
+  p4·M7's recorded factor-of-two between this machine and the runner.
+  **AND CI SETTLES IT OUTRIGHT: all three checks GREEN on the head** — `hardening gates`,
+  which runs this same 39-member chain including `verify-vitals`, reports **success**,
+  alongside `typecheck + build + offline gates` and the Vercel preview, which deployed
+  Ready. This file's standing claim — a local vitals red is not evidence, CI is the
+  calibrated environment — has direct evidence again rather than an argument from spread.
+  **THE FINAL TREE WAS REBUILT SO THE DIST IS STAMPED FROM HEAD**, because
+  `verify-coldboot-live` §0a compares the STAMP and not the content (p4·01's recorded
+  guard, which was right). Every budget figure came back BYTE-IDENTICAL across that
+  rebuild — eager 265,706 · lazy 997,403 · total 1,263,109 · cssGz 19,011 · chunks 77 —
+  so "the docs commit is build-neutral" is a measurement here rather than an assumption.
   **No human has seen the rendered result in a browser** — read from screenshots at 390
   and 320, the sheet open on the widest and narrowest sections, and the classic view in
   both feed states.
