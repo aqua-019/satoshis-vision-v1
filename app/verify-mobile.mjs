@@ -749,6 +749,49 @@ R.group('§10 · every IA destination is reachable from the tab bar in ≤2 taps
 
     await ctx.close();
   }
+
+  /* p4·M9b — REDUCED MOTION, BOTH POLARITIES, and it needed no rule of its own.
+     The sheet carries `.v6-modal-veil` / `.v6-modal` alongside its variant
+     classes, so styles.css's existing D0666 reduce block reaches it, and
+     V6Modal's unmount delay is READ from the element's own computed
+     transition-duration rather than hardcoded — a preference that zeroes the
+     duration therefore unmounts on the next tick with no branch in either file.
+     Asserted HERE rather than by adding a 28th entry to verify-reduce's MEM
+     array: that array is a hand copy its own comment forbids extending by hand
+     (verify-reduce.mjs:70), and this gate already has the sheet open.
+     THE SECOND HALF IS THE POINT — "no motion" is satisfied by a sheet that
+     renders nothing, so the row count and the text length must MATCH the
+     animated build. Measured: 18 rows and 278 chars in both. */
+  for (const [pref, wantRunning] of [['reduce', 0], ['no-preference', null]]) {
+    const ctx = await browser.newContext({
+      viewport: PHONE, hasTouch: true,
+      isMobile: engine === 'chromium' ? true : undefined,
+      deviceScaleFactor: 2, reducedMotion: pref,
+    });
+    const p = await ctx.newPage();
+    await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+    await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+    await p.locator('a.tabbar-item').nth(0).click();
+    await p.waitForSelector('[role="dialog"] .sheet-item', { timeout: 6000 });
+    const m = await p.evaluate(() => {
+      const veil = document.querySelector('.v6-modal-veil');
+      const box = document.querySelector('.v6-modal');
+      const anims = [...veil.getAnimations(), ...box.getAnimations()];
+      return {
+        running: anims.filter((a) => a.playState === 'running').length,
+        rows: document.querySelectorAll('[role="dialog"] .sheet-item').length,
+        smil: document.querySelectorAll('[role="dialog"] animate, [role="dialog"] animateTransform').length,
+        chars: (document.querySelector('[role="dialog"]').textContent || '').replace(/\s+/g, ' ').length,
+      };
+    });
+    if (wantRunning === 0) {
+      R.ok(m.running === 0 && m.smil === 0,
+        `10h · under prefers-reduced-motion the sheet runs no animation and renders no SMIL (${m.running} running, ${m.smil} SMIL)`);
+    }
+    R.ok(m.rows === 18 && m.chars > 200,
+      `10i [${pref}] · and it still offers the whole section (${m.rows} rows, ${m.chars} chars) — "no motion" must not be satisfied by rendering nothing`);
+    await ctx.close();
+  }
 }
 
 await browser.close();
