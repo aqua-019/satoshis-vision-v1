@@ -486,11 +486,11 @@ jobs:
       #
       # Counts are stated so a silent drop is visible: a gate that stops
       # reporting its total has stopped being evidence.
-      - name: 'Gate: tracked tx — mempool→block transition, per-view idiom, depth 0→10, the ?tx= address, all views (183)'
+      - name: 'Gate: tracked tx — mempool→block transition, per-view idiom, depth 0→10, the ?tx= address, all views (184)'
         if: always()
         run: npm run verify:tracking
 
-      - name: 'Gate: MemStatStrip parity — one feed, one set of numbers, all views (36)'
+      - name: 'Gate: MemStatStrip parity — one feed, one set of numbers, all views (80)'
         if: always()
         run: npm run verify:memstats
 

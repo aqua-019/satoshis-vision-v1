@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260902-M10
 branch: claude/new-session-iyr4hc
-status: in_progress            # open -> in_progress -> done | blocked
+status: done                   # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, brief attached as p4M10txdeeplink.md)
 owner: claude-code
 ---
@@ -63,28 +63,28 @@ copy-pasted `focusBlock` effects.
 - Do not touch: `api/`, `vercel.json`, `styles*.css`, `scripts/routes.mjs`.
 
 ## 5 · DONE-CRITERIA  — the gate reads ONLY this section
-- [ ] `npm run build` exits 0 (typecheck is its first step)
-- [ ] `verify-bundle.mjs:1626`'s `/live/mempool` row re-baselined from a build of `cabab9c`, in
+- [x] `npm run build` exits 0 (typecheck is its first step)
+- [x] `verify-bundle.mjs:1626`'s `/live/mempool` row re-baselined from a build of `cabab9c`, in
       its own commit, old figure visible in the diff
-- [ ] `verify-tracking.mjs`: on EVERY registered view, a cold `?v=<id>&tx=<tracked>` opens the
+- [x] `verify-tracking.mjs`: on EVERY registered view, a cold `?v=<id>&tx=<tracked>` opens the
       chip on the SAME txid (short-hash re-read), the typed search WRITES `tx=` with `v=` intact,
       and Clear tracked REMOVES `tx=` with `v=` intact
-- [ ] `verify-tracking.mjs` §7 (classic): 63-hex `?tx=` → no chip, no detail, no pageerror;
+- [x] `verify-tracking.mjs` §7 (classic): 63-hex `?tx=` → no chip, no detail, no pageerror;
       unknown 64-hex → chip + "Not returned by the node"; `?block=&tx=` in BOTH orders → the tx;
       typed track PUSHES exactly one entry; Clear REPLACES (history length unchanged);
       A then B, Back → A, Back → none, Forward → A, Forward → B; a view switch keeps `tx=` and
       the new view shows the chip; a block search while a tx is tracked drops `tx=` and Back
       returns to the tx
-- [ ] Break test M1: the tx write reverted to the OBJECT form `setParams({ tx })` → named
+- [x] Break test M1: the tx write reverted to the OBJECT form `setParams({ tx })` → named
       reds (the `v=` survivors), transcript captured; M2: 63-hex → degrades, no throw
-- [ ] Every new assertion has a two-polarity transcript (M1/M2 plus the fixture's own controls)
-- [ ] Budget: `/live/mempool` before/after byte-exact against the base build, delta attributed
+- [x] Every new assertion has a two-polarity transcript (M1/M2 plus the fixture's own controls)
+- [x] Budget: `/live/mempool` before/after byte-exact against the base build, delta attributed
       to residual zero, no ceiling raised unless crossed (red-then-green if so)
-- [ ] `npm run verify:static` exit 0; `verify-nav`, `verify-memviews`, `verify-memdetail`,
+- [x] `npm run verify:static` exit 0; `verify-nav`, `verify-memviews`, `verify-memdetail`,
       `verify-glide`, `verify-memphone`, `verify-memstats`, `verify-nojs` green on the final tree
-- [ ] `SITE_PR` = 210 (`logMax + 1` at commit time), LOG.md line, CLAUDE.md note carrying the
+- [x] `SITE_PR` = 210 (`logMax + 1` at commit time), LOG.md line, CLAUDE.md note carrying the
       one-sentence statement of what a shared link carries — same push as the tree
-- [ ] Branch pushed · draft PR opened via the GitHub MCP (`gh` absent in cloud sessions)
+- [x] Branch pushed · draft PR opened via the GitHub MCP (`gh` absent in cloud sessions)
 
 ## 6 · VERIFY COMMANDS
 ```
@@ -97,12 +97,44 @@ cd app && npm run verify:static
 ```
 
 ## 7 · REPORT  — claude code fills this on exit, completely
-status:
-pr:
+status: done — every §5 box passes on the final tree (`verify:static` exit 0; verify-tracking 184,
+  verify-nav 129, memviews, memdetail, glide, memphone 451, memstats 80, nojs all green;
+  verify-bundle 32, nothing raised). The full 39-member `verify:e2e` chain is CI's to run on the
+  PR head; this sandbox ran the eight gates the handoff names plus the static chain.
+pr: PR_URL_PENDING
 commits:
-deps added:
+  - docs(handoffs): the handoff, before feature work
+  - test(bundle): re-baseline the /live/mempool row from a build of cabab9c (96,835 → 106,038; margin 962)
+  - feat(mempool): ?tx= read/written in useMempoolTracking; precedence in MempoolPage; verify-tracking 89 → 183
+  - fix(mempool): a ?block= deep link no longer consumes itself on arrival (verify-nav §4a's catch); control hardened → 184
+  - docs: CLAUDE.md note, LOG line, README claims-table row, SITE_PR 210, ci.yml step counts (61 → 184, 36 → 80)
+deps added: none
 deviations from spec:
-notes for ARCHITECTURE.md patch:
+  - The brief's §3 sketches the read in MempoolPage "exactly as ?block= is". It is in useMempoolTracking
+    instead, because the page's ?block= read is turned into a search by an effect every one of the ten
+    views carries by hand; a page-level ?tx= read would have been an eleventh copy. The page keeps ONE
+    expression — precedence — and the hook keeps the read, the write and the clear.
+  - useUrlState is NOT used for ?tx= (its spec demands an enumerated values list); its policy is
+    followed and quoted, its functional-form idiom is reproduced, and M1 proves the gate now holds it.
+  - A block search drops a stale `block=` claim (naming a different block) and any `tx=` claim, by a
+    PUSH. The brief asked only for mutual exclusion + stated precedence; the extra rule is what keeps
+    the URL from claiming a thing not on screen after a hand-composed URL. The first cut dropped
+    `block=` unconditionally and broke the Home ribbon's deep link — caught by verify-nav §4a, fixed,
+    gated (§8c control), break-tested (M7).
+  - One README row added (the reader-facing sentence §5 item 8 asks for); the brief named no file.
+  - Seven break tests, not two: M3–M7 cover precedence, the two-writes hazard, push vs replace, the
+    URL → state effect, and the deep-link regression.
+notes for ARCHITECTURE.md patch: `/live/mempool` query surface is now `?v=` (view, push) · `?block=`
+  (Home-ribbon block deep link, read; never written by in-view clicks) · `?tx=` (tracked transaction,
+  push on track, replace on clear). Both `block` and `tx` drive ONE tracking slot; a well-formed `tx`
+  wins. The one txid validator is `TXID_RE` in mempool-shared.tsx (live-detail.ts keeps a private
+  copy to avoid an import cycle).
 open questions:
+  - `?tx=` vs `#tx=` is the operator's call; `?tx=` is recommended and the fragment is priced in the
+    CLAUDE.md note (a second URL-state idiom, useUrlState does no hashes).
+  - Writing `?block=` on IN-VIEW block clicks would make the slot round-trip fully (today Forward from
+    a block entry is lossy, because a block has no URL claim of its own). A scope decision, not taken.
+  - RouteAnnouncer announces "Navigated to Mempool" on a track, because its effect keys on
+    location.search by design. Consistent with ?v=; a little odd; untouched.
 
 ## 8 · LOOP FEEDBACK  — cowork appends here when verify (step 04) fails
