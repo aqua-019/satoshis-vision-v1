@@ -147,7 +147,7 @@ cd app && set -o pipefail; npm run verify:e2e 2>&1 | tee /tmp/e2e.log
 
 ## 7 · REPORT — filled on exit
 status: in_progress — M9a LANDED (`67c2e9f`, `83f5793`); M9b in flight on the same branch
-pr: PR_URL_PENDING
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/207
 commits (M9a): `67c2e9f` fix(mempool): p4·M9a — a receive_time of 0 is an absence, not an epoch · `83f5793` fix(classic): the fastest tier's nine-digit rate fits a 2-up card at 320
 deps added: none
 deviations from spec:
