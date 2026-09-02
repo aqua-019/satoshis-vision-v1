@@ -164,8 +164,12 @@ interface EcoShotBase {
  *               Renders "captured <date>". The date is the honesty: a reading
  *               of another site starts aging the moment it is taken, and
  *               undated it silently claims to be current.
- *   "artwork" — an image the partner SUPPLIED. Renders "artwork · supplied by
- *               <name>" and CARRIES NO DATE AT ALL.
+ *   "artwork" — an image the partner AUTHORED. Renders "artwork · <name>'s
+ *               own" and CARRIES NO DATE AT ALL. It says AUTHORSHIP and not
+ *               delivery, deliberately: Kathie sent hers, Cake Wallet's was
+ *               downloaded from the page they publish it on, and this field
+ *               does not record which — so a caption reading "supplied by"
+ *               would be false of the second (p4·M6c-shot).
  *
  * ── WHY ARTWORK IS UNDATED, AND WHY IT IS A UNION AND NOT AN OPTIONAL FIELD ──
  * p4·M6b shipped `captured` on both arms and rendered "artwork · supplied
