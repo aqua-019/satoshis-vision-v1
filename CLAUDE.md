@@ -929,15 +929,19 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   measured: the brief is the tallest on the page — 828 px at 1440 (xmr.club 578, Kathie 779),
   fitting a 900 px viewport — and at 390 a 1,734 px scroll with the 356x493 figure 1,188 px
   down, below the prose (2.05 viewports against 0.98), zero overflow. Recorded, not changed.
-  **BUDGETS: RESIDUAL ZERO, ONE TERM, AND THE RE-MEASURE RULE FIRED ON THE ROUTE ROWS.** Paired
-  per chunk stem against an isolated worktree build of `1c5425e`: **75 of 76 slots
-  size-identical**, `repoPulse` 30,917 → 31,525 = **+608**, which IS `lazyJsRaw`'s whole delta
-  (993,843 → 994,451) and `totalJsRaw`'s (1,258,300 → 1,258,908) — and the minified `shot:{…}`
-  literal in that chunk measures 607 B + its comma = 608. `eagerJsRaw` BYTE-IDENTICAL 264,457 ·
-  `cssGz` BYTE-IDENTICAL 18,586 · chunks 76 = 76. The three route rows read +249/+249/+248 on
-  the tree before the SITE_PR bump and +236/+236/+235 after it: a route row is eager gz PLUS
-  closure gz, so the entry's compressibility term (+15 then +2, raw unmoved) flows into every
-  row. Re-derive after the LAST src commit — the rule's tenth or so sighting.
+  **BUDGETS: RESIDUAL ZERO, TWO TERMS, AND THE RE-MEASURE RULE FIRED THREE TIMES.** Paired per
+  chunk stem against an isolated worktree build of `1c5425e`: **74 of 76 slots size-identical**,
+  `repoPulse` 30,917 → 31,525 = **+608** (the minified `shot:{…}` literal measures 607 B + its
+  comma = 608) and `EcoPopup` 5,022 → 5,016 = **−6**, the caption template getting SHORTER —
+  "artwork · supplied by " is 22 characters of literal against "artwork · " plus "'s own" at 16.
+  +608 − 6 = **+602**, which IS `lazyJsRaw`'s whole delta (993,843 → 994,445) and `totalJsRaw`'s
+  (1,258,300 → 1,258,902). `eagerJsRaw` BYTE-IDENTICAL 264,457 · `cssGz` BYTE-IDENTICAL 18,586 ·
+  chunks 76 = 76. The three route rows read +249/+249/+248 before the SITE_PR bump, +236/+236/+235
+  after it, and **+228/+224/+221** after the caption fix: a route row is eager gz PLUS closure gz,
+  so the entry's compressibility term (+15, +2, then −4, raw unmoved throughout) flows into every
+  row. **A ONE-TERM ATTRIBUTION WAS PUBLISHED HERE AND WAS TRUE OF A TREE THAT NO LONGER EXISTS**
+  — two commits later it is two terms and every figure has moved, with every ceiling green the
+  whole way. Re-derive after the LAST src commit, not after the last green run.
   **THE BREAK TEST IS THE FINDING.** Shipped alpha flattened onto white (0 % transparent, corners
   (255,255,255,255), 39,662 B), mutation proven landed, rebuilt with the stamp checked, served
   with the server proven to hold the mutated bytes, then every browser gate that reaches the

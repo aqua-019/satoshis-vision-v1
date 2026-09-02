@@ -176,18 +176,23 @@ answers 000 for `*.vercel.app` as it does for `xmr.irish`, so the deployed
 asset could not be fetched from here; not claimed.
 
 ### Budgets (final tree vs isolated base build of `1c5425e`, paired per stem)
-eagerJsRaw **264,457 BYTE-IDENTICAL** · eagerJsGz 88,511 → 88,513 (+2,
-compressibility only: SITE_PR's three digits at identical length) · cssGz
-**18,586 BYTE-IDENTICAL** (no stylesheet rule) · lazyJsRaw 993,843 → 994,451
-(**+608**) · totalJsRaw 1,258,300 → 1,258,908 (**+608**) · chunks 76 = 76 ·
-/operate/peers 106,687 → 106,923 (+236 gz) · /operate/superstress 109,404 →
-109,640 (+236) · /future 112,326 → 112,561 (+235). **75 of 76 chunk slots
-size-identical; `repoPulse` 30,917 → 31,525 = +608, and the minified
-`shot:{…}` literal in that chunk measures 607 B + its comma = 608. Residual
-zero, one term.** No ceiling raised or crossed. THE RE-MEASURE RULE FIRED: the
-three route rows read +249/+249/+248 on the tree before the SITE_PR bump and
-the LOG line was corrected to the final tree's figures in the same edit that
-substituted the PR URL.
+eagerJsRaw **264,457 BYTE-IDENTICAL** · eagerJsGz 88,511 → 88,507 (**−4**,
+compressibility only, raw unmoved) · cssGz **18,586 BYTE-IDENTICAL** (no
+stylesheet rule) · lazyJsRaw 993,843 → 994,445 (**+602**) · totalJsRaw
+1,258,300 → 1,258,902 (**+602**) · chunks 76 = 76 · /operate/peers 106,687 →
+106,915 (+228 gz) · /operate/superstress 109,404 → 109,628 (+224) · /future
+112,326 → 112,547 (+221). **74 of 76 chunk slots size-identical; TWO terms:
+`repoPulse` 30,917 → 31,525 = +608, whose minified `shot:{…}` literal measures
+607 B + its comma = 608, and `EcoPopup` 5,022 → 5,016 = −6, which is the
+caption template getting SHORTER ("artwork · supplied by " is 22 chars of
+literal, "artwork · " + "'s own" is 16). +608 − 6 = +602 = lazy's whole delta
+and total's. Residual zero.** No ceiling raised or crossed.
+THE RE-MEASURE RULE FIRED TWICE. The three route rows read +249/+249/+248
+before the SITE_PR bump and +236/+236/+235 after it; the caption fix then moved
+every figure again, and this table is the FINAL tree's. A one-term attribution
+was true of the tree that existed when it was written and false two commits
+later, with every ceiling green throughout — which is the whole content of the
+rule: re-derive after the LAST src commit, not after the last green run.
 
 ### The break test — the finding
 Shipped alpha flattened onto white (0 % transparent, corners (255,255,255,255),
