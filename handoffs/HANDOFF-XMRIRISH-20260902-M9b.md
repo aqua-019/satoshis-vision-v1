@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260902-M9b
 branch: claude/new-session-mxn17f
-status: in_progress
+status: done
 written_by: claude-code (manual mode — task arrived as a prompt)
 owner: claude-code
 ---
@@ -118,10 +118,56 @@ node verify-mobile.mjs
 npm run verify:e2e
 ```
 
-## 7 · REPORT — filled on exit
-status:
-pr:
-commits:
+## 7 · REPORT
+status: **done**
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/209 (draft)
+commits: `0b5e61d` the sheet + classic · `8e0c55b` §10f/§10g · `9e781d7` reduce polarity
++ four ceilings · plus the records commit
+
+### What shipped
+- `layout/SectionSheet.tsx` (new, lazy) + `BottomTabBar` wiring + one optional `variant`
+  prop on `V6Modal`. All **68** IA items reachable in ≤2 taps at 390 and 320.
+- Classic: the tier footer stacks its two readings and drops the separator; ≤360 goes
+  one-up; the ladder's cut edge is faded rather than sliced.
+- `verify-mobile` §10 (reachability, tap floor, reduced-motion polarity) and
+  `verify-memphone` 5f.
+
+### Numbers
+| | base | head |
+|---|---|---|
+| verify-mobile | 59 | **74** |
+| verify-memphone | 436 | **451** |
+| verify-bundle | 32 | **32** |
+| short-string wraps in classic @390 | 7 | **0** |
+| short-string wraps in classic @320 | 7 | **2** (both long captions, accepted) |
+| tier footer lines, all 15 stages | 2–3 | **1** |
+| §5 divider frac / scrollLeft | 0.499 / 96·61·41 | **identical** |
+| chunks | 76 | 77 |
+
+### The four raises, red-then-green on the final tree
+`cssGz` 19,000 → 19,500 (built 19,011) · `lazyJsRaw` 997,000 → 1,001,000 (997,403) ·
+`totalJsRaw` 1,262,000 → 1,266,000 (1,263,109) · `CHUNK_COUNT` re-centred 73 → 74.
+Attribution residual **zero** on both halves. `/live/mempool` held at 106,038 of 107,000.
+
+### What the brief got wrong, with the measurement
+1. Budget table two releases stale; `/live/mempool` had 1,213 B, not ~10,000.
+2. "The only phone-specific classic rule on this tree" — measured **29**.
+3. §2.2.3 stat-strip tiles "cannot hold their values" — every tile is one line, unclipped.
+4. §2.2.5 "topbar is two rows at 390" — it is 91 px at 390 and 360, 121 px at 320.
+5. §2.3's mandatory scroll-snap conflicts with `verify-memphone` §5 at 430 (0.324 vs 1/3).
+
+### What I got wrong
+1. A reachability probe that read landings at `domcontentloaded` printed a plausible,
+   entirely false "27" — `a.tabbar-item` is 0 at DCL and 6 at idle.
+2. A line-count instrument that divided height by line-height counted 5 px of cell
+   padding as a second line and flagged every table cell.
+3. The first tier-footer rule was inert (an inline `letterSpacing` beat it) and passed
+   anyway, because the 390 column is exactly the string's width — a 0.0 px pass.
+4. The ≤360 one-up rule was placed before the 2-up rule and lost on source order while
+   looking correct in the sheet.
+5. Break test M2's first mutation removed only the `-webkit-` mask declaration.
+6. I read a mid-transition screenshot as a transparency defect; settled, the box is
+   opaque `rgb(10,9,7)` with zero running animations.
 
 ## 8 · LOOP FEEDBACK
 - The brief's §0′ budget table was two releases stale and its `/live/mempool`

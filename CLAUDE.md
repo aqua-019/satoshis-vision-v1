@@ -882,6 +882,174 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-09-02**: p4·M9b "MOBILE 2.0: NAV REACHABILITY AND A PHONE LAYOUT FOR CLASSIC"
+  (app/) — eleven routes a phone could not reach, and the two classic defects p4·M8
+  did not already fix.
+  **THE BRIEF'S BUDGET TABLE WAS TWO RELEASES STALE AND ITS ONE "ROOMY" ROW WAS THE
+  TIGHTEST ON THE BOARD.** It quoted `/live/mempool` at 96,835 and called it "ANCIENT
+  — your main subject"; measured on the untouched base it is **105,787 of 107,000, a
+  margin of 1,213 B**. `lazyJsRaw` had 1,037 B and `totalJsRaw` 1,067 B. The brief
+  planned ONE raise (`cssGz`); the release needs four, and `CHUNK_COUNT` sat at 76 of
+  a 73±4 band — one mint from its edge. Found in the first ten minutes by running the
+  gate rather than reading the table.
+  **AND THE `cssGz` ARITHMETIC WAS DONE BEFORE THE FIRST RULE, which is what the brief
+  asked for and the one thing it was right to insist on.** A realistic candidate block
+  — the sheet plus a phone layout for four components, 1,447 raw bytes written the way
+  the build emits — appended to the built sheet and re-gzipped with `gzipSync(level:9)`
+  (the compressor `verify-bundle` judges with, per its own three-implementations
+  warning) costs **+344 B gzip** against a **401 B margin**. It would have fitted by
+  57 B, which is a coin flip rather than a margin.
+  **ELEVEN, AND THE INSTRUMENT IS WHY THE COUNT WAS ARGUABLE.** Derived from `ia.ts`
+  under bare Node, the IA holds **68 items over 27 distinct pathnames**; six are tab
+  landings. The brief said eleven unreachable, counting LITERAL leaves; a pathname
+  count says twenty-one. Both are right about different questions, and the deciding
+  measurement is neither: `/monero` and `/learn` render their chapters as **BUTTONS**,
+  so ten of the twenty-one are reachable in two taps by tapping, and an anchor-only
+  sweep reports them unreachable — **it did**. Eleven have no affordance on any landing
+  page. The brief's eleven, name for name, now with a rendered-affordance mechanism
+  behind them instead of a regex.
+  **AND MY OWN FIRST REACHABILITY PROBE PRODUCED A PLAUSIBLE, ENTIRELY FALSE "27".**
+  It read the six landings at `domcontentloaded` and the anchors at `networkidle`;
+  measured, `a.tabbar-item` matches **0 at DCL and 6 at idle**, so every item
+  classified unreachable and the output looked like a finding. An empty result is
+  evidence only once its scope is verified — this file's own rule, walked into by
+  someone who had just quoted it.
+  **THE SHEET REUSES `V6Modal` WHOLE.** Portal, `role="dialog"`, Tab trap, focus
+  capture/restore, document-level Escape, the two-target scroll lock (`document.body`
+  AND `main.main` — confirmed, not carried), D0666's exit frame, and an exit delay READ
+  from the element's own computed transition-duration, so the reduced-motion path falls
+  out with **no branch here and none there** and the existing `.v6-modal-veil,
+  .v6-modal { transition: none }` reduce block reaches the sheet with no rule of its
+  own. One optional `variant` prop is added, which is geometry; both base classes stay
+  on the element, so `verify-discrete`'s bare `.v6-modal` queries and its
+  `.v6-modal-veil.is-open` stylesheet assertion are untouched, and every pre-existing
+  caller omits it and renders identically.
+  **IT IS `React.lazy`, AND THAT IS MEASURED RATHER THAN STYLISTIC.** `BottomTabBar` is
+  a STATIC import of `NavTop`, which is eager — so a static import of the sheet would
+  pull `V6Modal`'s 1,954 B chunk into the entry, where every route's first load pays
+  for it, including the 1,213 B margin above. `CommandPalette` already establishes the
+  pattern one file over with its own written rationale. Negative control run rather
+  than assumed: after the change `v6-modal-veil` greps **0** times in the eager entry,
+  the sheet's own marker **0** in the entry and **1** in its own chunk.
+  **THE TAB STAYS AN ANCHOR, and that is load-bearing twice.** `verify-nav.mjs:813`
+  asserts exactly **6 `a.tabbar-item`**, and the prerendered bar is a real JS-off nav.
+  So the `href` is byte-unchanged and a scripted plain left click is intercepted
+  instead: with JS the tab opens its section, without JS it navigates where it always
+  did, and a modified click still reaches the landing page.
+  **AND IT DID NOT WORK, FOR A REASON NO AMOUNT OF READING THE COMPONENT WOULD FIND.**
+  Only the tab of the section you were already in opened a sheet; the other five
+  navigated. `routes/NavTransitions.tsx:71` registers a **CAPTURE-phase** document
+  click listener that upgrades in-app link clicks into a view transition — capture beats
+  React's bubble-phase delegation, so it called `preventDefault` and navigated before
+  this component's handler ran, and the sheet that had just opened was closed again by
+  its own route-change effect. The active tab appeared to work only because that
+  listener's own `samePage` guard already returned early for it. The fix is that file's
+  own documented opt-out, `data-no-vt`, scoped to the tabs that open a sheet so a future
+  one-item section still navigates WITH a transition.
+  **CLASSIC IS MUCH NARROWER THAN THE BRIEF IMPLIES, AND THE PREMISE IS COUNTABLE.**
+  It states that p4·M9a's ≤360 step-down is "the ONLY phone-specific classic rule on
+  this tree". Counted on the base with comments stripped: **29** classic/mempool-scoped
+  rules already sit inside phone media blocks. p4·M8 built the phone composition; what
+  was left was two defects.
+  **AND ONE OF THE BRIEF'S FIVE READINGS IS REFUTED.** §2.2.3 says the stat-strip tiles
+  cannot hold their values. Measured at both widths: five tiles, **one line each,
+  nothing clipped**. An earlier 0×0 reading of mine was the `display: contents`
+  wrappers — the real grid items are the `.stat` elements inside them, which is a note
+  worth keeping for anyone writing a gate against that strip.
+  **THE TIER FOOTER WAS ONE STRING DOING TWO JOBS.** "146 TX · 146 NEXT BLOCK" is 23
+  uppercase characters at 0.12em tracking in a 145px column — two lines at 390 and 414,
+  **three at 320**. It is two readings, so the phone stacks them and drops the
+  separator. **The first fix was INERT and passed anyway**: `.classic-tier-foot` carries
+  an inline `letterSpacing`, so the rule never applied — computed spacing was still
+  1.56px, the string needed 147px, and the 390 column is exactly **147px**. A 0.0px
+  pass is a dead zone, not a fit. With `!important` it is one line at all 15 stages with
+  12.6px of margin.
+  **AND AT ≤360 THE CARDS GO ONE-UP, which the brief provides for and the measurement
+  chooses.** 2-up gives 126px against 147px needed, and **125.2px even at zero
+  tracking** — and the type cannot come down, because `verify-memphone` §4 holds a 13px
+  floor inside this view that p4·M8 raised deliberately. **That rule lost silently in
+  its first position**: both it and the 2-up rule are one class with `!important`, so
+  source order settles it, and the computed template still read "144px 144px" at 320
+  while the rule sat in the sheet looking correct.
+  **THE LADDER'S EDGE IS FADED, NOT SNAPPED — and the brief's prescription is
+  refutable from the ladder's own geometry.** Centring the NOW divider necessarily
+  leaves the card to its left straddling the edge: measured **0.38 / 0.56 / 0.70 /
+  0.89** of it cut at 430 / 390 / 360 / 320, sliced through a word. The brief asks for
+  `scroll-snap-type: x mandatory`. The card starts are 0, 112, 248.2, 380 … with the
+  divider centred at 243.7, and `verify-memphone` §5 requires BOTH `dividerFrac` in
+  [1/3, 2/3] **and** `scrollLeft > 0`. At 430 the only candidates are 0, which fails 5e,
+  and 112, which gives (243.7 − 112)/406 = **0.324** and fails 5c. **No snap point at
+  that width satisfies both**, so mandatory snap cannot ship without weakening a gate
+  that is currently correct. A mask moves no geometry at all — and §5's numbers are
+  IDENTICAL before and after (frac 0.499 / 0.4992 / 0.4993, scrollLeft 96 / 61 / 41),
+  which is the proof rather than the hope.
+  **GATES.** `verify-mobile` §10 imports `ia.ts` under bare Node — the seam
+  `nav/registries.mjs` exists for, and what `verify-ia` §7 already does — so a seventh
+  section or a nineteenth route moves the gate's subject on its own; a hand-copied array
+  there would be the defect `verify-reduce.mjs:70` records against itself. It asserts
+  all **68** items reachable in ≤2 taps at 390 and 320, floored on the section count and
+  the item count, and PAIRED with a planted control that the same reader reports an
+  undeclared route as absent. `verify-memphone` gains **5f** so the edge treatment
+  cannot be reverted in silence. **59 → 71** and **436 → 451**.
+  **AND A BREAK TEST FOUND A GAP IN THIS RELEASE'S OWN GATE — the third recorded time
+  a refusal has pointed at the instrument rather than the code.** M3 shrank a sheet row
+  to 40px and left **all 67 assertions green**: reachability says a destination is
+  OFFERED and says nothing about whether a thumb can land on it, §3 measures the six tab
+  items, and `verify-memphone` §6 is scoped to the classic view — so the rows this
+  release adds were governed by **nothing**. §10f/§10g added, floored so they cannot
+  pass over an empty match, opening a KNOWN section rather than measuring whichever
+  sheet the loop left on screen.
+  **M2 ALSO REFUSED, AND THAT ONE WAS MY MUTATION.** It removed the `-webkit-` mask
+  declaration and left the standard one, so the mask still worked. Corrected to remove
+  both.
+  **BUDGETS: RESIDUAL ZERO ON BOTH HALVES, 72 OF 76 SLOTS SIZE-IDENTICAL.** Paired per
+  chunk STEM by MULTISET against a snapshot of the untouched base taken BEFORE the first
+  edit — equivalent to an isolated worktree build and free, since the pristine dist was
+  already on disk. Eager **+736**, which is the entry alone: the `index` stem holds two
+  chunks and its LAZY member is BYTE-IDENTICAL at 2,253, so they are split by reading
+  `dist/index.html`'s own `<script src>` rather than by basename (p2·9's trap, where the
+  two moved in opposite directions and one was lazy while the other was eager).
+  `SectionSheet` 0 → **1,147** (minted) + `classic` **+228** + `V6Modal` **+65** =
+  **+1,440**, which IS `lazyJsRaw`'s whole delta; +736 + 1,440 = **+2,176** = `totalJsRaw`'s.
+  The stem strips the LAST `-<8 chars>.js`, because a Vite hash draws from
+  `[A-Za-z0-9_-]` and the dash is IN the alphabet — p4·M6c recorded `rsplit('-',1)`
+  reporting 37 stems moved where 2 had.
+  **FOUR CEILINGS, ALL RED-THEN-GREEN ON THE FINAL TREE**: `cssGz` 19,000 → **19,500**
+  (built 19,011 — over by ELEVEN BYTES, which is exactly the margin the pre-flight
+  arithmetic said would not hold), `lazyJsRaw` 997,000 → **1,001,000** (built 997,403),
+  `totalJsRaw` 1,262,000 → **1,266,000**, moved with lazy by the same 4,000 so that row's
+  own documented 265,000 gap holds rather than being quietly broken. **`CHUNK_COUNT`
+  RE-CENTRED 73 → 74 and the WIDTH IS UNTOUCHED at ±4**: the build measures 77, INSIDE
+  [69, 77] and exactly ON its ceiling — the state this file says to re-centre out of,
+  because a per-release drift detector sitting on its own limit reports the next mint as
+  a budget failure instead of as news. The falsifying test is met: the new chunk is
+  NAMED, and it is `SectionSheet`.
+  **`/live/mempool` HELD at 106,038 of 107,000 — a 962 B margin, and that is what making
+  the sheet lazy bought.** Said out loud because it is where the next touch to that route
+  reds.
+  **`SITE_PR` IS UNCHANGED AT 209 AND NEEDS NO BUMP.** p4·M9a set it there on the
+  operator's instruction while recording that the label led its own PR (#207) by two;
+  this PR is **#209**, so `logMax` becomes 209 with this release's own LOG line and the
+  gate's `logMax <= SITE_PR <= logMax + 1` holds at equality. The lead CLOSED rather than
+  being corrected.
+  **NOT FIXED, and named**: two panel captions wrap to two lines at 320 and one at 360
+  (`Projected next block · #3,700,125`, `by tier · % of mempool weight`) — genuinely long
+  labels at the narrowest gated widths, recorded rather than tuned; `verify-reduce`'s
+  hand-copied `MEM` array is untouched for the reason its own comment gives, with the
+  sheet's reduced-motion behaviour asserted in `verify-mobile` §10h/§10i instead, both
+  polarities (0 running animations and 0 SMIL under reduce, and **18 rows / 278 chars in
+  BOTH states**, because "no motion" is satisfied by a sheet that renders nothing);
+  seven sub-44px targets in shared chrome (`skip-link` 39, `brand` 22, the version kicker
+  16, `nav-kbd` 36), pre-existing and in the eager `NavTop`.
+  **AND THE PRESERVED BRANCH THIS FILE NAMES DOES NOT EXIST.** The p4·M9a note and
+  `handoffs/LOG.md` both say M9b is "built and gated on `p4-m9b-preserved`". `git
+  ls-remote` returns **401 refs**, none matching `m9b` or `preserv` case-insensitively,
+  and **zero tags** — scope stated because an absence is evidence only once it is. The
+  work here is rebuilt from the brief, not recovered.
+  **No human has seen the rendered result in a browser** — read from screenshots at 390
+  and 320, the sheet open on the widest and narrowest sections, and the classic view in
+  both feed states.
+
 - **2026-09-02**: p4·M9a "THE POOL HAS NO AGES" (app/ + api/) — a live surface was printing a
   fabricated duration, and **THE BRIEF'S CAUSE FOR IT DID NOT SURVIVE THE SOURCE, WHICH IS WHY THE
   FIX DOES NOT DEPEND ON ONE.**
