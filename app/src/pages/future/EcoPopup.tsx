@@ -291,6 +291,17 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                 the source instead, from `e.name`, so it says where the image
                 came from without publishing a date nobody here established.
 
+                AND IT SAYS "'S OWN", NOT "SUPPLIED BY" (p4·M6c-shot). One
+                template serves two provenance modes: Kathie SENT her file,
+                and Cake Wallet's was downloaded from the page they publish it
+                on — nobody at Cake Labs handed it over. "Supplied by" is true
+                of the first and false of the second, and the union cannot tell
+                them apart because the distinction is not in the data. "<name>'s
+                own" is true of BOTH: it claims authorship, which is the thing
+                actually being asserted, and says nothing about how the file
+                travelled. If a future entry needs the delivery route on the
+                face of the caption, that is a new field, not a longer string.
+
                 NO onError FALLBACK, DELIBERATELY. A missing asset must look
                 broken: a shot that silently degrades to a placeholder is a
                 gate that can never go red, and verify-peers §9 asserts every
@@ -319,7 +330,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
                   style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}
                 >
                   {e.shot.kind === "artwork"
-                    ? `artwork · supplied by ${e.name}`
+                    ? `artwork · ${e.name}'s own`
                     : `captured ${e.shot.captured}`}
                 </figcaption>
               </figure>

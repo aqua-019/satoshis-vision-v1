@@ -691,15 +691,23 @@ try {
      carry one; artwork must carry NONE and names its source instead. So the
      artwork pattern is not "the same shape with a different noun" — it is a
      different claim, and the date-absence half is asserted separately below
-     rather than left to the shape of one regex. */
+     rather than left to the shape of one regex.
+
+     p4·M6c-shot — AND THE ARTWORK NOUN IS NOW "'S OWN", NOT "SUPPLIED BY".
+     The template said the file was supplied, which was true of Kathie (she
+     sent hers) and false of Cake Wallet (theirs was downloaded from the page
+     they publish it on). `kind: "artwork"` does not record the delivery route
+     and should not: what the caption asserts is AUTHORSHIP, and "<name>'s own"
+     is true of both. The pattern is anchored at BOTH ends so a caption that
+     merely starts right cannot pass. */
   const kindOf = new Map(shots.map((h) => [h.src.replace(/^\/peers\/peer-|\.webp$/g, ''), h.kind]));
   const wantCap = (id) => (kindOf.get(id) === 'artwork'
-    ? /^artwork · supplied by \S/i
+    ? /^artwork · \S.*'s own$/i
     : /^captured \d{4}-\d{2}-\d{2}$/i);
   const undated = withShot.filter((o) => !wantCap(o.id).test(o.cap || ''));
   R.ok(undated.length === 0,
     `§9 · every image renders a caption that matches what it is (${withShot.length - undated.length} of ${withShot.length}; e.g. "${withShot[0] ? withShot[0].cap : 'n/a'}")`,
-    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)} — expected ${kindOf.get(o.id) === 'artwork' ? 'artwork · supplied by <name>' : 'captured <date>'}`).join(', '));
+    undated.map((o) => `${o.id}: ${JSON.stringify(o.cap)} — expected ${kindOf.get(o.id) === 'artwork' ? "artwork · <name>'s own" : 'captured <date>'}`).join(', '));
 
   const artworkMiscalled = withShot.filter((o) => kindOf.get(o.id) === 'artwork' && /captured/i.test(o.cap || ''));
   R.ok(artworkMiscalled.length === 0,
