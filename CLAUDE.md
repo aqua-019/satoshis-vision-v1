@@ -876,6 +876,92 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-09-01**: p4·M6c-shot "THE EIGHTH PEER'S IMAGE, WHICH #205 COULD NOT FETCH" (app/) —
+  Cupcake's own published integration diagram ships in the Cake Wallet brief, 660x915 /
+  55,488 B, `kind: "artwork"`, no `captured`. One key on one record, no stylesheet rule, no
+  gate logic. PR https://github.com/aqua-019/satoshis-vision-v1/pull/206
+  **THE FILE ARRIVED TWO MINUTES AFTER THE FIRST SWEEP FOUND ONLY THE BRIEF.** The uploads
+  directory held one file at 21:08 and two at 21:10. p4·M6b recorded that an absence is scoped
+  to WHEN it was measured; this release walked into it and out again by re-running the sweep
+  before concluding anything. In a session that runs for hours, an empty directory is a reading
+  with a timestamp, not a fact.
+  **ALPHA IS PROVEN ON THE SHIPPED BYTES THROUGH THE READER'S OWN DECODER, and the two decoders
+  were reconciled first.** Chromium's census of the 1289x1787 original reproduces the brief's
+  Pillow census TO THE PIXEL (450,558 / 143,748 / 1,709,137 of 2,303,443; corners (0,0,0,0)),
+  which is what makes every later number comparable. Chromium canvas → `toDataURL("image/webp",
+  q)` round-trips the alpha plane IDENTICALLY at every q tried — alpha max diff 0 across 33
+  candidates — so the lossy encoder never touches it. Shipped: **19.65 % fully transparent,
+  6.33 % partial, 74.02 % opaque, all four corners (0,0,0,0).** "Downscale without re-encoding"
+  does not exist; the nearest thing, a lossless downscale (`q = 1`, which Skia encodes lossless
+  — verified pixel-identical), weighs 163,050 B at 620 wide. Loss over the opaque region: mean
+  1.049/255 (max 41) against a same-size lossless reference; 4.492 upscaled back to the original
+  grid, of which 4.038 is the resampling floor.
+  **THE RENDER-SIZE MAD WAS THE WRONG INSTRUMENT AT dpr1, AND A CONTROL CAUGHT IT.** At 498 CSS
+  px a 645-wide candidate scored 0.74 against a LOSSLESS 800-wide's 2.37. A lossless file cannot
+  be worse than a lossy one at the same job; what the number measured was Chromium's own mip
+  path agreeing with itself — 1289/645 ≈ 2, so the candidate reproduced the reference's first
+  halving step and the others did not. A metric that depends on the resampler's intermediate is
+  a fact about the resampler. The edge-share column (reference 22.41 %, candidates 22.1–23.5 %)
+  and the UPSAMPLED rows at 996/1074 px, where pixel count dominates and every candidate ≤ 900
+  wide is upsampled, decided it: 620 wide 5.07, 660 wide 3.54, 800 wide 2.72.
+  **MY ENCODER IS NOT THE BRIEF'S, so its q table was a second opinion and not a target.**
+  Chromium at nominal q lands ~12 % under Pillow/libwebp method=6 (620x860 q0.86 → 49,072 B here,
+  55,782 there). The choice was made under the register ceiling (≤ 55,798 B, Kathie's): 660x915
+  q0.84 is the most pixels that ceiling buys, 310 B under it. 800 wide at 76,580 B is one
+  regeneration away if the operator prefers pixels to bytes, and the table is in the PR.
+  **THE BRIEF'S ALT TEXT INVERTED THE DIRECTION THE #205 RECORD HAD ALREADY CORRECTED ONCE.**
+  It ended "the instruction to restore from Cake Wallet"; the back phone on screen reads
+  "navigate to Wallets → Restore from Cupcake" — Cupcake shows the code, Cake Wallet scans it,
+  #205's refuted claim 1. An alt is the only copy of the image a reader who cannot see it gets,
+  so it says what is on the screen and NAMES the part the front phone hides ("…from Cake
+  Wallet") rather than completing it. Found by looking at the image, which no gate does.
+  **AND "ONE KEY AND NOTHING ELSE", APPLIED LITERALLY, WOULD HAVE LEFT A PARAGRAPH DENYING THE
+  KEY DIRECTLY ABOVE IT.** The comment block over the record said "there is no `shot` key at
+  all" — p4·M6c's recorded defect (`data.ts` denying a `shot` a hundred lines above one). It is
+  ANNOTATED as a record of #205 on p4·01's rule, not rewritten: what #205 measured stays true
+  of #205.
+  **THE JUDGEMENT, MADE OUT LOUD: DELIBERATE, AND THE ALPHA STAYS.** `EcoPopup.tsx:312` gives
+  the `<img>` a 1px `--rule` border and `background: var(--bg-2)`, so a cut-out sits in the SAME
+  frame the seven captures use with the panel's ground around the phones — a dark-mode product
+  shot in a card beside xmr.club's edge-to-edge screenshot, not a missing background. White
+  would be a bright block in a dark UI; baking `--bg-2` would match one theme and mismatch two
+  (indigo #201E29, phosphor #0F1C0F), which preserved alpha handles for free. The tall image,
+  measured: the brief is the tallest on the page — 828 px at 1440 (xmr.club 578, Kathie 779),
+  fitting a 900 px viewport — and at 390 a 1,734 px scroll with the 356x493 figure 1,188 px
+  down, below the prose (2.05 viewports against 0.98), zero overflow. Recorded, not changed.
+  **BUDGETS: RESIDUAL ZERO, ONE TERM, AND THE RE-MEASURE RULE FIRED ON THE ROUTE ROWS.** Paired
+  per chunk stem against an isolated worktree build of `1c5425e`: **75 of 76 slots
+  size-identical**, `repoPulse` 30,917 → 31,525 = **+608**, which IS `lazyJsRaw`'s whole delta
+  (993,843 → 994,451) and `totalJsRaw`'s (1,258,300 → 1,258,908) — and the minified `shot:{…}`
+  literal in that chunk measures 607 B + its comma = 608. `eagerJsRaw` BYTE-IDENTICAL 264,457 ·
+  `cssGz` BYTE-IDENTICAL 18,586 · chunks 76 = 76. The three route rows read +249/+249/+248 on
+  the tree before the SITE_PR bump and +236/+236/+235 after it: a route row is eager gz PLUS
+  closure gz, so the entry's compressibility term (+15 then +2, raw unmoved) flows into every
+  row. Re-derive after the LAST src commit — the rule's tenth or so sighting.
+  **THE BREAK TEST IS THE FINDING.** Shipped alpha flattened onto white (0 % transparent, corners
+  (255,255,255,255), 39,662 B), mutation proven landed, rebuilt with the stamp checked, served
+  with the server proven to hold the mutated bytes, then every browser gate that reaches the
+  route or its assets: verify-peers **72 passed**, verify-origins, verify-future all passed,
+  verify-mobile 59 passed · 1 skipped. **Nothing noticed. No gate in this suite reads a pixel
+  of any shot**, so the property that makes this image right is held by a comment in `data.ts`,
+  the LOG line and this note. Restored in a `finally` (p4·M6c's rule), sha verified, rebuilt.
+  **verify-peers IGNORES `VERIFY_BASE`** — `:42` hardcodes `localhost:4173` — so a "base-side"
+  run against port 4174 measured the HEAD's server with the BASE's data file and reddened §9's
+  biconditional at "cakewallet, mac" for exactly the disagreement it exists to catch: a true
+  fact about the wrong subject, produced by accident across two trees. A port-substituted copy
+  run in the base worktree gave the real pairing — **72 passed on both sides, "7 of 9" → "8 of
+  9"** — the count unchanged and the derived subject moved, which is what a derived count does.
+  **THE GITHUB MCP ANSWERED `Bad credentials` TWICE, ITS THIRD RECORDED INSTANCE.** The PR was
+  opened through api.github.com with the environment's own token, as p4·M5 did for #202; the
+  branch was proven pushed by `git ls-remote`, not the tracking ref.
+  **ALSO CORRECTED**: #205's LOG line read `in_progress` against its handoff's `done`. **NOT
+  FIXED, and named**: the caption template renders "artwork · supplied by Cake Wallet" for an
+  image that was PUBLISHED by Cake Labs and downloaded, not sent — one template for two
+  provenance modes, raised for the operator; `verify-bundle.mjs`'s "Largest single shot:
+  53,936 B" comment has been stale since Kathie's 55,798. Census unchanged — no gate file added,
+  none wired. **`npm run verify:e2e`: running on the build stamped `eba7ad4` at the time of this commit — 7 of 39 members through (coldboot-live · palette · charts · memviews · memdetail · glide · memphone), 0 reds; the recorded exit lands in the final docs commit, and CI runs the same chain on #206.** **No human has seen the rendered result
+  in a browser** — read from screenshots at 1440 (dpr 1 and 2) and 390 (dpr 3).
+
 - **2026-08-31**: p4·M6 "THE HONESTY REPAIR" (README + app/) — the file whose thesis is
   *"an ethos you cannot check is a slogan"* carried claims that do not check out, and
   **every gate in the suite was green while it did.** Four files, no new module, no new
