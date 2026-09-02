@@ -29,7 +29,7 @@ import { NodeProvenance, PanelFrame } from "@/design/primitives";
 import { AXIS, GRID, ChartCrosshair, ChartTip, useSvgCursor, canvasCursor } from "@/design/chart-kit";
 import { FS_FALLBACK, tickCount } from "@/design/useChartMetrics";
 import { h3 } from "@/design/prng";
-import { fmtBytes, shortHash as ShortHash } from "@/data/types";
+import { fmtAgeS, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { MemViewShell, TrackChip, useMempoolTracking, type Tracking, MemTxTable } from "@/mempool/mempool-shared";
 import { useMemStats, BlockEta } from "@/mempool/mem-stats";
 import { CONF_UNLOCK, confOf, txHash32 } from "@/mempool/conf";
@@ -913,7 +913,7 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
             <div style={{ height: 6, background: "var(--line)", borderRadius: 3, overflow: "hidden", alignSelf: "center" }}>
               <div style={{ height: "100%", width: ((1 - depth) * 100).toFixed(0) + "%", background: "var(--tk-accent)" }} />
             </div>
-            <span className="dim2">{t.age}s</span>
+            <span className="dim2">{fmtAgeS(t.age)}</span>
           </div>
         );
       })}

@@ -88,9 +88,9 @@ export const PLS_TARGET_FALLBACK = 120;
  * `oldestAgeSec` IS the shared strip's `oldest`, passed in — see
  * `usePulseField`'s signature and contract §3.
  */
-export function plsWindowSec(oldestAgeSec: number, blockTargetSec: number): number {
+export function plsWindowSec(oldestAgeSec: number | null, blockTargetSec: number): number {
   const T = blockTargetSec > 0 ? blockTargetSec : PLS_TARGET_FALLBACK;
-  const want = oldestAgeSec > 0 ? oldestAgeSec : 0;
+  const want = oldestAgeSec != null && oldestAgeSec > 0 ? oldestAgeSec : 0;
   for (const step of PLS_WINDOW_STEPS) {
     if (T * step >= want) return Math.round(T * step);
   }
@@ -489,8 +489,13 @@ export interface PlsField {
   limit: number;
   /** ms epoch of the mempool snapshot these ages were measured at */
   snapAt: number;
-  /** the strip's `oldest`, passed in, never re-derived */
-  oldestAgeSec: number;
+  /** the strip's `oldest`, passed in, never re-derived — null when no tx carries an age */
+  oldestAgeSec: number | null;
+  /** the whole pool, placed or not — `txs` holds only the placeable */
+  total: number;
+  /** txs whose arrival no clock reported: x IS age, so a timeline cannot
+   *  place them. Counted in the cadence panel, never drawn (p4·M9a). */
+  unaged: number;
   /** the strip's next-block ETA at the snapshot instant. MAY BE NEGATIVE. */
   etaSec: number;
   blockTargetSec: number;
@@ -515,7 +520,7 @@ export interface PlsField {
  */
 export function usePulseField(
   data: MoneroLive,
-  oldestAgeSec: number,
+  oldestAgeSec: number | null,
   etaSec: number,
   innerW: number,
 ): PlsField {
@@ -553,8 +558,12 @@ export function usePulseField(
 
     const txs: PlsArrival[] = [];
     let offWindow = 0;
+    let unaged = 0;
     for (let i = 0; i < n; i++) {
       const t = sorted[i];
+      // The cut walk above ran over the WHOLE fee-sorted pool; only the
+      // placing is age-bound.
+      if (t.age == null) { unaged++; continue; }
       // Bin index counted back from now: age 0 lands in the newest bin.
       const k = Math.floor(t.age / binSec);
       const idx = k >= 0 && k < binCount ? binCount - 1 - k : -1;
@@ -594,6 +603,8 @@ export function usePulseField(
       cumAtCut, limit,
       snapAt: freshAt(data.status.mempool),
       oldestAgeSec, etaSec, blockTargetSec,
+      total: n,
+      unaged,
     };
   }, [
     data.mempool, data.feeTiers, data.blockWeightMedian, data.blockWeightLimit,

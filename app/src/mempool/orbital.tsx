@@ -285,6 +285,7 @@ export function OrbCadence({ data, field }: { data: MoneroLive; field: OrbField 
       <OrbRow k="busiest sector" v={total ? `${sectors.indexOf(peak) * 30}° · ${peak} tx` : dash} />
       <OrbRow k="lap length" v={lapTxt} />
       <OrbRow k="deepest wait" v={laps != null && total ? `${laps} lap${laps === 1 ? "" : "s"}` : dash} />
+      <OrbRow k="no arrival time" v={field.total ? field.unaged.toLocaleString() : dash} tone={field.unaged > 0 ? "var(--y-50)" : undefined} />
       <OrbRow k="snapshot age" v={field.snapAt > 0 ? `${Math.max(0, Math.round((Date.now() - field.snapAt) / 1000))}s` : dash} />
     </OrbPanel>
   );
@@ -486,7 +487,7 @@ export function OrbOverview({ data, tracking, focusBlock, onClearFocus, onPickTx
             <OrbRow k="txid" v={ShortHash(trackedPt.id)} tone="var(--y-50)" />
             <OrbRow k="ring" v={trackedPt.tier >= 0 ? FEE_TIER_LABELS[trackedPt.tier] : "—"} />
             <OrbRow k="radius" v={`${Math.round(trackedPt.u * 100)}% in`} />
-            <OrbRow k="rank" v={`${trackedPt.rank + 1} of ${field.pts.length}`} />
+            <OrbRow k="rank" v={`${trackedPt.rank + 1} of ${field.total}`} />
             <OrbRow k="in next block" v={trackedPt.fits == null ? "—" : trackedPt.fits ? "yes" : "waiting"}
               tone={trackedPt.fits ? "var(--g-50)" : undefined} />
           </OrbPanel>

@@ -1,7 +1,8 @@
 // AUTO-PORTED from mempool/classic.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { fmtBytes, shortHash as ShortHash } from "@/data/types";
+import { fmtAgeS, fmtBytes, shortHash as ShortHash } from "@/data/types";
+import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import type { MoneroLive, Tx } from "@/data/types";
 import { useMempoolTracking, MemViewShell, TrackChip, MemTxTable} from "@/mempool/mempool-shared";
 import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
@@ -329,70 +330,109 @@ export function ClassicBlockDetail({ block, onBack }: any) {
   );
 }
 
-/* ── v4-mimic fee tiers ─────────────────────────────────────
-   Mirrors mempool-explorer.html: Priority / Fast / Normal /
-   Economy, each with rate (pcn/B), per-tx cost, ETA, color.
-   ──────────────────────────────────────────────────────────── */
+/* ── fee tiers — the node's own four, ONE vocabulary ────────
+   p4·M9a. Three vocabularies used to meet in one viewport: the server tagged
+   every tx `priority` (its 1/5/20/80 pcn/B thresholds sat three orders under
+   mainnet's floor), the shared table printed the node's `slow`, and these
+   cards said NORMAL and ECONOMY for the SAME 20,000 pcn/B — because they
+   bucketed by pool QUARTILES, a relative ranking that collapses the moment the
+   pool is small or flat, and that no other surface on the site shares. The
+   node's `get_fee_estimate` tiers are the only classification with NODE
+   provenance and the only one that tracks the dynamic fee, so they are
+   canonical: the cards read the SAME `feeTierIndex` the table, the strip's fee
+   bands and the server's `fee_tier` read, in the same order, printing the same
+   words. Dearest first, because that is how the cards read left to right.
+   ─────────────────────────────────────────────────────────── */
 // Tier colour is a 4-way qualitative legend (fastest → slowest), the same
 // concept as terminal.tsx's TIER_COLORS array — not a single accent axis, so
 // it draws from the existing ramp rather than accent-structural/accent-data:
-// no blue role exists in the new vocabulary (economy was true blue) and forcing
+// no blue role exists in the new vocabulary (slow was true blue) and forcing
 // this array through the structural/data split would leave three of the four
 // hues untouched while "fast" alone became theme-reactive.
-const CLASSIC_TIERS = [
-  { id: "priority", label: "PRIORITY", color: "var(--r-50)",     eta: "Next block",  desc: "Confirms in the next block" },
-  { id: "fast",     label: "FAST",     color: "var(--tk-accent)", eta: "~4 min",      desc: "Within 1–2 blocks"          },
-  { id: "normal",   label: "NORMAL",   color: "var(--g-50)",     eta: "~10 min",     desc: "Within ~5 blocks"           },
-  { id: "economy",  label: "ECONOMY",  color: "var(--c-50)",     eta: "~60 min+",    desc: "When mempool clears"        },
+interface ClassicTier {
+  id: (typeof FEE_TIER_LABELS)[number];
+  /** index into the node's `feeTiers` / FEE_TIER_LABELS */
+  k: number;
+  label: string;
+  color: string;
+}
+const CLASSIC_TIERS: ClassicTier[] = [
+  { id: "fastest", k: 3, label: "FASTEST", color: "var(--r-50)" },
+  { id: "fast",    k: 2, label: "FAST",    color: "var(--tk-accent)" },
+  { id: "normal",  k: 1, label: "NORMAL",  color: "var(--g-50)" },
+  { id: "slow",    k: 0, label: "SLOW",    color: "var(--c-50)" },
 ];
 
-// Quartile-based thresholds computed from the live mempool, so bucketing
-// always produces a sensible distribution at any fee scale.
-function classicComputeThresholds(mempool: Tx[]) {
-  if (!mempool.length) return [800000, 600000, 400000];
-  const sorted = mempool.map((t) => t.perB).sort((a, b) => b - a);
-  const q = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))];
-  return [q(0.15), q(0.4), q(0.7)]; // top 15 / 25 / 30 / 30 split
+interface ClassicBuckets {
+  byTier: Record<ClassicTier["id"], Tx[]>;
+  /** Per tier, how many of its txs a fee-sorted fill fits under the node's
+   *  reported weight ceiling — the SAME cut walk the other views make. null
+   *  when the node reported no ceiling; never a guess. */
+  fitsByTier: Record<ClassicTier["id"], number> | null;
+  /** the node's tiers this bucketing was made against ([] until known) */
+  tiers: number[];
+  /** txs no tier could classify because the node's tiers are not known yet */
+  unclassified: number;
 }
 
-function classicTierOf(t: Tx, thr: number[]) {
-  if (t.perB >= thr[0]) return CLASSIC_TIERS[0];
-  if (t.perB >= thr[1]) return CLASSIC_TIERS[1];
-  if (t.perB >= thr[2]) return CLASSIC_TIERS[2];
-  return CLASSIC_TIERS[3];
+/** The node's tier for a tx, or null while the node's tiers are unknown. */
+function classicTierOf(t: Tx, tiers: number[]): ClassicTier | null {
+  const k = feeTierIndex(t.perB, tiers);
+  return k < 0 ? null : CLASSIC_TIERS[3 - k];
 }
 
-function classicBucketByTier(mempool: Tx[]) {
-  const thr = classicComputeThresholds(mempool);
-  const out: Record<string, any> = { priority: [], fast: [], normal: [], economy: [], thr };
-  mempool.forEach((t) => out[classicTierOf(t, thr).id].push(t));
-  return out;
+function classicBucketByTier(mempool: Tx[], tiers: number[], weightLimit: number): ClassicBuckets {
+  const byTier: ClassicBuckets["byTier"] = { fastest: [], fast: [], normal: [], slow: [] };
+  let unclassified = 0;
+  for (const t of mempool) {
+    const c = classicTierOf(t, tiers);
+    if (c) byTier[c.id].push(t); else unclassified++;
+  }
+  let fitsByTier: ClassicBuckets["fitsByTier"] = null;
+  if (weightLimit > 0 && mempool.length) {
+    fitsByTier = { fastest: 0, fast: 0, normal: 0, slow: 0 };
+    let cum = 0;
+    for (const t of [...mempool].sort((a, b) => b.perB - a.perB)) {
+      if (cum + t.size > weightLimit) break;
+      cum += t.size;
+      const c = classicTierOf(t, tiers);
+      if (c) fitsByTier[c.id]++;
+    }
+  }
+  return { byTier, fitsByTier, tiers, unclassified };
 }
 
 /* ── 4-card fee hero ──────────────────────────────────────── */
 
-export function ClassicFeeHero({ buckets, xmrUsd }: any) {
+export function ClassicFeeHero({ buckets, xmrUsd }: { buckets: ClassicBuckets; xmrUsd: number }) {
   const reduceMotion = useReducedMotion();
-  // Per-tier median + sample tx, computed ONCE per `buckets` change instead of
-  // on every render — this used to sort each tier's tx list inline inside the
-  // render-time .map() below (4 sorts/render regardless of whether the mempool
-  // actually changed).
+  // Per-tier figures, computed ONCE per `buckets` change instead of on every
+  // render. Every figure is a real one or an absence:
+  //   rate   — the node's own price for the tier (NODE), which is what a wallet
+  //            at that priority pays; distinct across the four cards however
+  //            small or flat the pool is, where the old per-tier MEDIAN was
+  //            20,000 on two cards at once.
+  //   sample — the median-fee tx IN the tier, whose real fee is the "≈ cost"
+  //            line. An empty tier has no sample; it used to invent one from
+  //            the quartile threshold × 1,800 bytes, a fabricated cost on a
+  //            live surface.
+  //   fits   — how many of the tier's txs a fee-sorted fill puts in the next
+  //            block, replacing four hard-coded ETA strings ("~4 min") that no
+  //            data produced and that the node's tiers do not mean.
   const tierStats = React.useMemo(
-    () => CLASSIC_TIERS.map((tier, ti) => {
-      const tx = buckets[tier.id];
-      const thrFallback = buckets.thr ? buckets.thr[Math.min(ti, 2)] : 1000;
-      const med = tx.length ? tx.map((t: any) => t.perB).sort((a: number, b: number) => a - b)[Math.floor(tx.length / 2)] : thrFallback;
-      const sampleTx = tx[0] || { fee: (thrFallback * 1800) / 1e12, perB: thrFallback };
-      return { tier, tx, med, sampleTx };
+    () => CLASSIC_TIERS.map((tier) => {
+      const tx = buckets.byTier[tier.id];
+      const rate = buckets.tiers.length === 4 ? buckets.tiers[tier.k] : null;
+      const sample = tx.length ? [...tx].sort((a, b) => a.perB - b.perB)[Math.floor(tx.length / 2)] : null;
+      const fits = buckets.fitsByTier ? buckets.fitsByTier[tier.id] : null;
+      return { tier, tx, rate, sample, fits };
     }),
     [buckets],
   );
 
   return (
     <section className="classic-tiers" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--sp-2)" }}>
-      {tierStats.map(({ tier, tx, med, sampleTx }) => {
-        const costXmr = sampleTx.fee;
-        const costUsd = costXmr * xmrUsd;
+      {tierStats.map(({ tier, tx, rate, sample, fits }) => {
         return (
           <div key={tier.id} style={{
             background: "var(--surface-raised)",
@@ -407,13 +447,17 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
             onMouseLeave={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(0)"; }}>
             <div className="mono" style={{ fontSize: "var(--fs-mono)", fontWeight: 700, letterSpacing: "0.18em", color: tier.color, marginBottom: "var(--sp-2)" }}>{tier.label}</div>
             <div className="classic-tier-fig" style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-1)", marginBottom: "var(--sp-1)" }}>
-              <span className="mono" style={{ fontSize: 22, fontWeight: 500, color: "var(--ink-100)" }}>{Math.round(med).toLocaleString()}</span>
+              <span className="mono" style={{ fontSize: 22, fontWeight: 500, color: "var(--ink-100)" }}>{rate != null ? Math.round(rate).toLocaleString() : "—"}</span>
               <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>pcn/B</span>
             </div>
             <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", marginBottom: 3 }}>
-              ≈ {costXmr.toFixed(6)} XMR <span className="dim">· ${costUsd.toFixed(4)}</span>
+              {sample
+                ? <>≈ {sample.fee.toFixed(6)} XMR{xmrUsd > 0 ? <span className="dim"> · ${(sample.fee * xmrUsd).toFixed(4)}</span> : null}</>
+                : <span className="dim">no tx at this tier</span>}
             </div>
-            <div className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.12em", textTransform: "uppercase" }}>{tier.eta} · {tx.length} tx</div>
+            <div className="mono classic-tier-foot" style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              {tx.length} tx{fits != null ? ` · ${fits} next block` : ""}
+            </div>
           </div>
         );
       })}
@@ -437,7 +481,7 @@ function ClassicCaption() {
 
 /* ── projected next-block strip ──────────────────────────── */
 
-export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
+export function ClassicProjBlock({ buckets, mempool, height, data }: { buckets: ClassicBuckets; mempool: Tx[]; height: number; data: MoneroLive }) {
   const reduceMotion = useReducedMotion();
   const total = mempool.length || 1;
   const totalBytes = mempool.reduce((a: number, t: any) => a + t.size, 0);
@@ -468,7 +512,7 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
         {(() => {
           let offset = 0;
           return CLASSIC_TIERS.map((tier, i) => {
-            const tx = buckets[tier.id];
+            const tx = buckets.byTier[tier.id];
             const pct = tx.length / total;
             const at = offset;
             offset += pct;
@@ -513,7 +557,7 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
         {CLASSIC_TIERS.map((tier) => (
           <span key={tier.id} style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)" }}>
             <span style={{ width: 8, height: 8, background: tier.color, borderRadius: 2 }} />
-            {tier.label} {buckets[tier.id].length}
+            {tier.label} {buckets.byTier[tier.id].length}
           </span>
         ))}
       </div>
@@ -523,9 +567,9 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
 
 /* ── fee depth (DOM bars) ────────────────────────────────── */
 
-export function ClassicFeeDepth({ buckets }: any) {
+export function ClassicFeeDepth({ buckets }: { buckets: ClassicBuckets }) {
   const reduceMotion = useReducedMotion();
-  const total = CLASSIC_TIERS.reduce((a, tier) => a + buckets[tier.id].reduce((s: number, t: any) => s + t.size, 0), 0) || 1;
+  const total = CLASSIC_TIERS.reduce((a, tier) => a + buckets.byTier[tier.id].reduce((s: number, t: Tx) => s + t.size, 0), 0) || 1;
   return (
     <div className="classic-panel" style={{
       background: "var(--surface-raised)", border: "1px solid var(--rule)",
@@ -537,8 +581,8 @@ export function ClassicFeeDepth({ buckets }: any) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
         {CLASSIC_TIERS.map((tier) => {
-          const tx = buckets[tier.id];
-          const bytes = tx.reduce((s: number, t: any) => s + t.size, 0);
+          const tx = buckets.byTier[tier.id];
+          const bytes = tx.reduce((s: number, t: Tx) => s + t.size, 0);
           const pct = bytes / total;
           // Floor carried over from the old `Math.max(2, pct * 100) + "%"`: an
           // empty tier still shows a sliver rather than vanishing. 0.02 of an
@@ -611,7 +655,7 @@ const CLASSIC_TX_ENTER_CSS = `
 .classic-tx-enter { animation: classic-tx-enter-kf var(--d-4) ease-out; }
 `;
 
-export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: any) {
+export function ClassicTxFeed({ mempool, onPickTx, tiers, trackedTxId, status }: any) {
   const rows = mempool.slice(0, 14);
   const reduceMotion = useReducedMotion();
 
@@ -651,7 +695,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
       </div>
       <div>
         {rows.map((t: any) => {
-          const tier = classicTierOf(t, thr);
+          const tier = classicTierOf(t, tiers);
           const entering = !reduceMotion && newIds.has(t.id);
           return (
             <div key={t.id} onClick={() => onPickTx(t.id)}
@@ -670,11 +714,13 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
               <span style={{ color: "var(--ink-80)" }}>{fmtBytes(t.size)}</span>
               <span style={{ color: "var(--tk-accent)" }}>{t.fee.toFixed(7)}</span>
               <span style={{ color: "var(--ink-80)" }}>{Math.round(t.perB).toLocaleString()}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)", color: tier.color, fontSize: "var(--fs-label)", letterSpacing: "0.14em" }}>
-                <span style={{ width: 7, height: 7, borderRadius: 4, background: tier.color, boxShadow: "0 0 4px " + tier.color }} />
-                {tier.label}
-              </span>
-              <span style={{ color: "var(--ink-60)" }}>{t.age}s</span>
+              {tier ? (
+                <span style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)", color: tier.color, fontSize: "var(--fs-label)", letterSpacing: "0.14em" }}>
+                  <span style={{ width: 7, height: 7, borderRadius: 4, background: tier.color, boxShadow: "0 0 4px " + tier.color }} />
+                  {tier.label}
+                </span>
+              ) : <span className="dim">—</span>}
+              <span style={{ color: "var(--ink-60)" }}>{fmtAgeS(t.age)}</span>
             </div>
           );
         })}
@@ -685,14 +731,20 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
 }
 
 export function ClassicLanding({ data, onPickTx, trackedTxId }: any) {
-  const buckets = React.useMemo(() => classicBucketByTier(data.mempool), [data.mempool]);
+  // Bucketed against the node's tiers and its weight ceiling, so the cards,
+  // the projected-block bar, the depth rows and the feed's tier column all
+  // classify the same way as the shared table below them.
+  const buckets = React.useMemo(
+    () => classicBucketByTier(data.mempool, data.feeTiers, data.blockWeightLimit || 0),
+    [data.mempool, data.feeTiers, data.blockWeightLimit],
+  );
   return (
     <div className="classic-landing" style={{ padding: "20px var(--sp-5) var(--sp-7)", display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
       <ClassicFeeHero buckets={buckets} xmrUsd={data.price || 0} />
       <ClassicCaption />
       <ClassicProjBlock buckets={buckets} mempool={data.mempool} height={data.height} data={data} />
       <ClassicFeeDepth buckets={buckets} />
-      <ClassicTxFeed mempool={data.mempool} onPickTx={onPickTx} thr={buckets.thr} trackedTxId={trackedTxId} status={data.status} />
+      <ClassicTxFeed mempool={data.mempool} onPickTx={onPickTx} tiers={buckets.tiers} trackedTxId={trackedTxId} status={data.status} />
     </div>
   );
 }

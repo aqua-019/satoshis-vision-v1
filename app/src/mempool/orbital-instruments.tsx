@@ -147,6 +147,11 @@ export interface OrbField {
   /** ms epoch of the mempool snapshot these ages were measured at */
   snapAt: number;
   periodSec: number;
+  /** the whole pool, placed or not — `pts` holds only the placeable */
+  total: number;
+  /** txs whose arrival no clock reported: bearing IS age, so they have no
+   *  spoke to sit on. Counted in the console, never drawn (p4·M9a). */
+  unaged: number;
 }
 
 /**
@@ -181,8 +186,12 @@ export function useOrbitalField(data: MoneroLive): OrbField {
 
     const sizeLo = n ? Math.min(...sorted.map((t) => t.size)) : 0;
     const sizeHi = n ? Math.max(...sorted.map((t) => t.size)) : 0;
+    let unaged = 0;
     for (let i = 0; i < n; i++) {
       const t = sorted[i];
+      // The cut walk above ran over the WHOLE fee-sorted pool (a fee threshold
+      // does not care when a tx arrived); only the placing is age-bound.
+      if (t.age == null) { unaged++; continue; }
       const sizeU = sizeHi > sizeLo ? (t.size - sizeLo) / (sizeHi - sizeLo) : 0;
       pts.push({
         id: t.id,
@@ -212,6 +221,8 @@ export function useOrbitalField(data: MoneroLive): OrbField {
       cumAtCut, limit,
       snapAt: freshAt(data.status.mempool),
       periodSec: data.blockTarget || 120,
+      total: n,
+      unaged,
     };
   }, [data.mempool, data.feeTiers, data.blockWeightMedian, data.blockWeightLimit, data.blockTarget, data.status.mempool]);
 }

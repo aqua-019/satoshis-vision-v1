@@ -28,7 +28,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { PanelFrame, MiniBar, NodeProvenance } from "@/design/primitives";
-import { fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
+import { fmtAgeS, fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
 import { oldestFreshAt } from "@/data/feed-status";
 import { FEE_TIER_LABELS, feeTierIndex, hashToUnit } from "@/data/map";
@@ -822,7 +822,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                               <span>·</span>
                               <span>{fmtBytes(tx.size)}</span>
                               <span>·</span>
-                              <span>{tx.age}s</span>
+                              <span>{fmtAgeS(tx.age)}</span>
                             </div>
                           </div>
                         </React.Fragment>

@@ -699,7 +699,9 @@ function TermBlocksRecent({ data }: { data: MoneroLive }) {
 /* ── $ pool --percentiles ────────────────────────────────────────────── */
 function TermPercentiles({ data, stats }: { data: MoneroLive; stats: MemStats }) {
   const fees = sortedNums(data.mempool.map((t) => t.perB));
-  const ages = sortedNums(data.mempool.map((t) => t.age));
+  // Percentiles over the ages that EXIST — a tx with no reported arrival is
+  // left out of the distribution, not counted as 0 (p4·M9a).
+  const ages = sortedNums(data.mempool.map((t) => t.age).filter((a): a is number => a != null));
   const poolReady = hasData(data.status.network) && stats.txCount > 0;
   const row = (label: string, v: number | null, suffix = "") => (
     <div key={label} className="kv"><span className="k">{label}</span><span className="v acc">{v != null ? Math.round(v).toLocaleString() + suffix : "—"}</span></div>

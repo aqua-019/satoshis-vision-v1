@@ -32,13 +32,35 @@ export interface Tx {
   ringSize: number;
   /** fee per byte (piconero / B), derived */
   perB: number;
-  /** age in seconds since arrival in mempool */
-  age: number;
+  /** Age in seconds at the snapshot instant, counted from `firstSeenAt` — or NULL
+   *  when no clock reported an arrival. p4·M9a: the production node answers
+   *  `receive_time: 0` on every pool tx, and `nowSec() - 0` rendered the current
+   *  Unix time as a duration ("1788295405s" under "age", "496748h 43m" in every
+   *  table row). Zero is not an epoch, it is an absence, and an absence renders
+   *  as an em-dash — never as 0 (which would claim "just arrived") and never as
+   *  a number. Every reader of this field must handle null; the compiler is the
+   *  sweep. */
+  age: number | null;
+  /** Which clock `age` counts from. "node": the node's own receive_time.
+   *  "site": the first /api/xmr/mempool poll in which THIS SITE listed the tx
+   *  (`first_seen_here`, p4·M9a) — a LOWER BOUND on the network age, which is why
+   *  surfaces label it "seen" and never "age". null iff `age` is null. */
+  ageSource: "node" | "site" | null;
+  /** Unix seconds of the sighting `age` counts from. Carried across polls by
+   *  mapMempool, so a sighting once known never regresses to unknown within a
+   *  session (a cold-started function forgets; the page does not). */
+  firstSeenAt: number | null;
   inputs: number;
   outputs: number;
   /** opaque seed for stable styling across re-renders */
   seed?: number;
 }
+
+/** A pool tx whose arrival some clock actually reported. The canvas views
+ *  place a tx by its age, so they select `AgedTx`s with `isAged` and COUNT the
+ *  rest rather than inventing a coordinate for them (p4·M9a). */
+export type AgedTx = Tx & { age: number };
+export const isAged = (t: Tx): t is AgedTx => t.age != null;
 
 export interface Block {
   height: number;
@@ -210,6 +232,13 @@ export const fmtN = (n: number | null | undefined, d = 0): string => {
 
 export const fmtFee = (n: number | null | undefined): string =>
   n == null ? "—" : n.toFixed(7) + " XMR";
+
+/** Seconds → "12s", or the em-dash for an age no clock reported. The ONE
+ *  formatter for the bare-seconds idiom the tx lists use; a template like
+ *  `${t.age}s` renders a null as a lone "s", which is neither a number nor an
+ *  absence, so every list goes through here instead (p4·M9a). */
+export const fmtAgeS = (s: number | null | undefined): string =>
+  s == null || !Number.isFinite(s) ? "—" : `${Math.max(0, Math.round(s))}s`;
 
 export const fmtBytes = (b: number | null | undefined): string =>
   b == null ? "—" : b < 1024 ? `${b} B` : `${(b / 1024).toFixed(1)} KB`;
