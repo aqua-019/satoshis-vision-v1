@@ -146,12 +146,24 @@ cd app && set -o pipefail; npm run verify:e2e 2>&1 | tee /tmp/e2e.log
 ```
 
 ## 7 · REPORT — filled on exit
-status:
-pr:
-commits:
-deps added:
+status: in_progress — M9a LANDED (`67c2e9f`, `83f5793`); M9b in flight on the same branch
+pr: PR_URL_PENDING
+commits (M9a): `67c2e9f` fix(mempool): p4·M9a — a receive_time of 0 is an absence, not an epoch · `83f5793` fix(classic): the fastest tier's nine-digit rate fits a 2-up card at 320
+deps added: none
 deviations from spec:
-notes for ARCHITECTURE.md patch:
+- ONE PR, not two — the session is pinned to one branch (§0). The sequencing the brief cares about is preserved as commit order.
+- The brief's cause ("restricted RPC withholds it") is NOT what monerod's source says for `/get_transaction_pool` (§2); recorded as "cause upstream of this repo, fix cause-agnostic" rather than as the brief's sentence.
+- The fee-tier decision went further than "decide": all three vocabularies now derive from the node's tiers (server tag, histogram, projected block, classic cards, table). Classic's cards lost their hard-coded ETA strings ("~4 min") for a derived `N next block` count, and the fabricated sample fee on an empty tier.
+- `oldest_tx_age_seconds` in the API is null (was 0) when the node reports no aggregate — NOT consumed by the client yet; see open questions.
+M9a evidence:
+- verify-memstats 80 passed · 0 failed (§6 new: 6a zeroed feed → oldest EMPTY on all ten views, 60/60 table cells "—"; 6b chain-age sweep green with parser controls; 6c site sighting → basis "site", label "seen", second witness reactor "1747s oldest seen").
+- Break test M1 (map.ts `receive_time` read as an epoch again): 25 reds — `OLDEST is EMPTY … (got "1786536000")` ×9 views, `no rendered duration exceeds the chain's age (15 do: 1786536000s…)`, `all 60 table age cells read "—" (496260h 00m)`, bridge `29775600m`, terminal `1,786,536,000s`. Restored from the committed blob, marker sweep empty, clean rebuild ok.
+- api/_tests/verify-tx-parse: 36 checks green including the pre-fix falsifiability pairs (vin.length reads 2 ≠ 16; 20000 > 80 ⇒ old `priority`).
+- verify:static: 21 gates green. Cluster: memviews 0 red · memdetail 0 · glide 0 · tracking 0 · memphone 436 passed after the ≤360 step-down (was 3 red: `.classic-tier-fig 119/110` at 320 ×3 dpr).
+- Offline importers of the changed modules: verify-txdetail, verify-stale, verify-tiers, api verify-status/nodes/nodehealth/history — all exit 0.
+notes for ARCHITECTURE.md patch: `Tx.age: number | null` + `ageSource` + `firstSeenAt` (types.ts); `MONERO_GENESIS_S` in map.ts (restated in detail-map.ts, which imports nothing at runtime); api/xmr.js exports `poolTxRow`, `feeTierIndex`, `FEE_TIER_LABELS`, `noteFirstSightings`, `newFirstSeenState`.
 open questions:
+- `/get_transaction_pool_stats`' aggregate `oldest` is likely REAL even where per-tx `receive_time` is withheld (tx_pool.cpp's `get_transaction_stats` reads `meta.receive_time` directly); consuming it for the OLDEST tile when no per-tx age exists is a follow-up, not done here.
+- Which node in the cascade answers `receive_time: 0`, and why, cannot be settled from this sandbox (no egress to the nodes).
 
 ## 8 · LOOP FEEDBACK
