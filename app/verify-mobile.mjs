@@ -710,6 +710,35 @@ R.group('§10 · every IA destination is reachable from the tab bar in ≤2 taps
       `10d [${tag}] · all ${rows.length} IA items reachable in ≤2 taps (${unreachable.length} not: ${unreachable.slice(0, 12).map((u) => u.label).join(', ') || 'none'})`,
       rows.map((r) => `${r.taps ?? 'UNREACHABLE'}  ${r.label}  ${r.p}`).join('\n'));
 
+    /* p4·M9b — THE SHEET'S OWN TAP FLOOR, and it exists because a break test
+       refused to fire. Shrinking a row to 40px left all 67 assertions green:
+       reachability says a destination is OFFERED, and says nothing about
+       whether a thumb can land on it. §3 above measures the six tab items and
+       verify-memphone §6 is scoped to the classic view, so the rows this
+       release adds were governed by nothing. Measured at ship: 44px exactly,
+       0 under, at both widths. Floored so it cannot pass over an empty match —
+       a sheet that rendered no rows would otherwise satisfy "none is short". */
+    // Open a KNOWN section rather than measuring whatever the loop above left
+    // on screen — that would make the floor depend on which section happens to
+    // be last in the IA, and on how many items it happens to carry.
+    await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+    await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+    await p.locator('a.tabbar-item').nth(0).click();
+    await p.waitForSelector('[role="dialog"] .sheet-item', { timeout: 6000 });
+    const sheetRows = await p.evaluate((min) => {
+      const rows = [...document.querySelectorAll('[role="dialog"] .sheet-item')];
+      const boxes = rows.map((r) => r.getBoundingClientRect());
+      return {
+        n: rows.length,
+        short: boxes.filter((b) => b.height < min - 0.5).length,
+        smallest: boxes.length ? Math.round(Math.min(...boxes.map((b) => b.height)) * 10) / 10 : null,
+      };
+    }, TAP_MIN);
+    R.ok(sheetRows.n >= 3,
+      `10f [${tag}] · the open sheet renders ${sheetRows.n} rows — the floor for the check below`);
+    R.ok(sheetRows.n >= 3 && sheetRows.short === 0,
+      `10g [${tag}] · every sheet row is at least ${TAP_MIN}px tall (${sheetRows.short} under; smallest ${sheetRows.smallest}px)`);
+
     /* PLANTED POSITIVE CONTROL. Every assertion above is satisfied by a sheet
      * that lists everything; none of them can tell that apart from a gate
      * reading the wrong DOM. Ask for a destination the IA does NOT contain and
