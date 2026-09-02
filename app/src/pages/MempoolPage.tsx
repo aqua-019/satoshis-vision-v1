@@ -19,7 +19,7 @@ import { Crumbs, DataLegend } from "@/design/primitives";
 import { useMoneroLive } from "@/data/DataContext";
 import { MEMPOOL_VIEWS } from "@/views";
 import { R } from "../../scripts/routes.mjs";
-import { MempoolHeartbeat } from "@/mempool/mempool-shared";
+import { MempoolHeartbeat, readTxParam } from "@/mempool/mempool-shared";
 import { useDragPan } from "@/mempool/useDragPan";
 import { FitView } from "@/mempool/FitView";
 import { useUrlState } from "@/routes/useUrlState";
@@ -49,18 +49,36 @@ export function MempoolPage() {
 
   // Deep-link: /mempool?v=classic&block=<height> opens that block's detail in
   // the active view. clearFocus drops ?block (keeping ?v) when the panel closes.
+  //
+  // p4·M10 — `?tx=<64-hex>` is the OTHER deep link into the same slot, read
+  // and written inside useMempoolTracking (every view calls it). The two are
+  // mutually exclusive, and PRECEDENCE IS THIS ONE EXPRESSION: a well-formed
+  // `?tx=` silences `?block=`, so a URL carrying both opens the transaction —
+  // the more specific claim, and the one this page mints itself. Decided here
+  // rather than by whichever effect runs last: the views' focusBlock effects
+  // and the hook's URL effect both write the slot, and an ordering argument
+  // between them would be a fact about React's effect schedule, not about
+  // the URL. A malformed `?tx=` is ABSENT (readTxParam), so it silences nothing.
+  const focusTx = readTxParam(params);
   const blockRaw = params.get("block");
-  const focusBlock = blockRaw != null && /^\d{1,8}$/.test(blockRaw) ? parseInt(blockRaw, 10) : null;
+  const focusBlock = focusTx == null && blockRaw != null && /^\d{1,8}$/.test(blockRaw) ? parseInt(blockRaw, 10) : null;
   const clearFocus = React.useCallback(() => {
+    // Deletes BOTH keys, and so does the hook's clearTracking — see "WHY EVERY
+    // CLEAR WRITE DELETES BOTH KEYS" in useMempoolTracking: the views call the
+    // two back to back, react-router composes both on the same render-time
+    // params, and only a pair that agree on the result converge on it. The
+    // guard keeps a page with neither key from issuing a navigation.
+    if (!params.has("block") && !params.has("tx")) return;
     setParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         next.delete("block");
+        next.delete("tx");
         return next;
       },
       { replace: true },
     );
-  }, [setParams]);
+  }, [params, setParams]);
 
   // Drag-to-pan the canvas (P4); scrollbar is hidden in CSS, wheel still scrolls.
   const panRef = useDragPan<HTMLDivElement>();
