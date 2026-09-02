@@ -29,6 +29,12 @@ chain and market data.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
 - Verification: **89** `verify-*.mjs` files (`app/` ×80, `app/scripts/` ×1, `api/_tests/` ×8) — **85 gates**
+  (p4·M9a RECOUNTED and every figure is UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6** — the correct
+  outcome for a release that EXTENDS one gate in place and adds no gate FILE. CONTROLLED against
+  FIVE commits first, all reproduced EXACTLY. **AND THE SCRIPT'S FIRST RUN WAS WRONG IN THE WAY
+  THIS FILE ALREADY RECORDS** — a `/` excluded from the filename lookbehind, so
+  `node ../api/_tests/verify-*.mjs` did not match and CI read **66** against a recorded 74. FOURTH
+  time the controls have caught this instrument; p4·M8's entry describes the same mechanism.)
   (p4·M6b RECOUNTED and every figure is UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6**, i.e. 81
   invocations − 6 duplicates — the correct outcome for a release that EDITS four existing
   gates, adds two SECTIONS to one of them, and adds no gate FILE. **THE HEAD FIGURE ~100
@@ -875,6 +881,70 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-09-02**: p4·M9a "THE POOL HAS NO AGES" (app/ + api/) — a live surface was printing a
+  fabricated duration, and **THE BRIEF'S CAUSE FOR IT DID NOT SURVIVE THE SOURCE, WHICH IS WHY THE
+  FIX DOES NOT DEPEND ON ONE.**
+  **A `receive_time` OF 0 IS AN ABSENCE AND WAS BEING READ AS AN EPOCH.** Production's
+  `/api/xmr/mempool` answers 0 on every pool transaction, and `map.ts` computed `now − 0`: the
+  OLDEST tile read **1788295405s** and every table row **496748h 43m** — on the site whose first
+  rule is that a number is real or it is an em-dash.
+  **THE BRIEF SAID "restricted RPC withholds it". monerod's own source says otherwise, on BOTH
+  branches.** Read at `raw.githubusercontent.com`: `core_rpc_server.h` maps
+  `/get_transaction_pool` with `MAP_URI_AUTO_JON2_IF(…, !m_restricted)` (v0.18 `:126`, master
+  `:117`), so a restricted instance **does not serve the endpoint at all**; v0.18's one
+  zero-writing line (`tx_pool.cpp:1220`) sits behind `allow_sensitive`, which is false only in the
+  state where the URI is unmapped; master passes sensitive data unconditionally. The strip that
+  DOES fire on a restricted node is `get_transaction_info` (`:627/636`), which feeds the
+  **tx-detail** path — where `detail-map.ts:189` carried the same `0 → now` defect, **found by
+  reading the source rather than by the report**. Conclusion recorded rather than guessed: stock
+  monerod at either head cannot answer `/get_transaction_pool` with `receive_time: 0`; the node
+  that does is not stock, not at these heads, or carrying 0 in its own metadata, and this sandbox
+  cannot see which. **So the client fix is CAUSE-AGNOSTIC**: `receive_time <= 0` is UNKNOWN,
+  `Tx.age` is `number | null`, and an unknown age renders an em-dash in all ten views, every table
+  cell and the stat strip. A fix keyed on the brief's mechanism would have been correct about a
+  cause nobody could confirm.
+  **THE SERVER LEARNS FIRST SIGHTINGS, AND THE LABEL SAYS SO.** `api/xmr.js` records
+  `first_seen_here` in warm-Lambda memory bounded by the pool, so a transaction seen twice gets a
+  real elapsed time — and the UI calls it **"seen"**, never "age", with `ageSource` on the row and
+  `data-memstat-basis` on the strip. A cold start carries no sighting and prints a dash. The
+  earliest sighting is CARRIED FORWARD across polls, so a reader's own clock cannot walk backwards.
+  **THE GATE IS A CEILING NOBODY CAN ARGUE WITH: THE CHAIN'S OWN AGE.** `verify-memstats` §6 sweeps
+  every rendered duration on `/live/mempool` against `now − 1,397,818,193` (block 0), with a frozen
+  clock and parser controls. Break test M1 (the epoch read restored) reds **25** assertions by
+  name — `OLDEST is EMPTY … (got "1786536000")` on nine views, `all 60 table age cells read "—"
+  (496260h 00m)`, bridge `29775600m`, terminal `1,786,536,000s`.
+  **TWO MORE DEFECTS IN THE SAME TWENTY LINES.** `api/xmr.js:201` derived `ring_size` from
+  `vin.length` — the INPUT COUNT — for every pool row, while the detail path two hundred lines away
+  reads `vin[0].key.key_offsets.length` correctly; the brief's 3/3 sample was the whole population.
+  And THREE fee vocabularies disagreed: the server's `feeTier()` thresholds (1/5/20/80 pcn/B) sit
+  three orders of magnitude below mainnet's floor, so every transaction was `priority`; classic's
+  cards used pool QUARTILES, which degenerate on a flat pool. One vocabulary now — the node's own
+  `get_fee_estimate` tiers — on the server tag, the histogram, the projected block and the cards,
+  with the cards' hard-coded "~4 min" ETA strings replaced by a derived `N next block` count.
+  **CENSUS RECOUNTED AND UNCHANGED — 89 / 85 / 22 / 39 / 75 / 6**, the correct outcome for a
+  release that extends one gate in place and adds no gate FILE. The instrument was CONTROLLED
+  against FIVE commits before being trusted (`768ba13` 85/81/22/35/71/6, `74bc561`
+  86/82/22/36/72/6, `0f00d26` 87/83/22/37/73/6, `e0c87ad` and `5854cbd` both 88/84/22/38/74/6), all
+  reproduced EXACTLY including the invocation arithmetic and the six orphans by name. **AND THE
+  COUNTING SCRIPT'S FIRST RUN WAS WRONG AGAIN, IN THE WAY THIS FILE ALREADY RECORDS**: its filename
+  lookbehind excluded `/`, so it could not match `node ../api/_tests/verify-*.mjs` and read CI **66**
+  at `e0c87ad` against a recorded 74 — p4·M8's defect, reproduced on the first run by someone who
+  had read the entry describing it. FOURTH recorded time the controls have caught this instrument.
+  **THIS PR CARRIES THE CORRECTNESS HALF ALONE, AND THAT IS A SCOPE DECISION TAKEN MID-SESSION.**
+  p4·M9b — the phone's section sheet, the extracted dialog hook, the classic phone composition and
+  three new `verify-mobile` sections — is BUILT, GREEN (verify-mobile 197 · verify-reduce 41 ·
+  verify-memphone 436 · verify-bundle 32) and break-tested in four rounds, and was withdrawn from
+  this PR on the operator's instruction once #206 merged. It is preserved at `p4-m9b-preserved` and
+  ships on its own branch. **Nothing about M9b is recorded here as shipped**, because it has not.
+  **NOT FIXED, and named**: `/get_transaction_pool_stats`' aggregate `oldest` is likely REAL even
+  where per-tx `receive_time` is withheld (`get_transaction_stats` reads `meta.receive_time`
+  directly), and consuming it for the OLDEST tile when no per-tx age exists is a follow-up this
+  release did not take; which node in the cascade answers `receive_time: 0`, and why, cannot be
+  settled from this sandbox (no egress to the nodes); the GitHub MCP server returned
+  `Bad credentials` for the THIRD recorded time, so the PR's CI was read through `api.github.com`
+  directly.
+  **No human has seen the rendered result in a browser.**
 
 - **2026-09-01**: p4·M6c-shot "THE EIGHTH PEER'S IMAGE, WHICH #205 COULD NOT FETCH" (app/) —
   Cupcake's own published integration diagram ships in the Cake Wallet brief, 660x915 /

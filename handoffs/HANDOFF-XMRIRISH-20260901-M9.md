@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260901-M9
 branch: claude/new-session-b31mfj
-status: in_progress
+status: done
 written_by: claude-code (manual mode)
 owner: claude-code
 ---
@@ -146,7 +146,8 @@ cd app && set -o pipefail; npm run verify:e2e 2>&1 | tee /tmp/e2e.log
 ```
 
 ## 7 · REPORT — filled on exit
-status: in_progress — M9a LANDED (`67c2e9f`, `83f5793`); M9b in flight on the same branch
+status: done (M9a) — M9b is BUILT AND GATED but deliberately NOT in this PR, on the operator's
+instruction after #206 merged; it is preserved at `p4-m9b-preserved` and ships on its own branch
 pr: https://github.com/aqua-019/satoshis-vision-v1/pull/207
 commits (M9a): `67c2e9f` fix(mempool): p4·M9a — a receive_time of 0 is an absence, not an epoch · `83f5793` fix(classic): the fastest tier's nine-digit rate fits a 2-up card at 320
 deps added: none
@@ -162,6 +163,21 @@ M9a evidence:
 - verify:static: 21 gates green. Cluster: memviews 0 red · memdetail 0 · glide 0 · tracking 0 · memphone 436 passed after the ≤360 step-down (was 3 red: `.classic-tier-fig 119/110` at 320 ×3 dpr).
 - Offline importers of the changed modules: verify-txdetail, verify-stale, verify-tiers, api verify-status/nodes/nodehealth/history — all exit 0.
 notes for ARCHITECTURE.md patch: `Tx.age: number | null` + `ageSource` + `firstSeenAt` (types.ts); `MONERO_GENESIS_S` in map.ts (restated in detail-map.ts, which imports nothing at runtime); api/xmr.js exports `poolTxRow`, `feeTierIndex`, `FEE_TIER_LABELS`, `noteFirstSightings`, `newFirstSeenState`.
+scope change, taken on the operator's instruction mid-session:
+- #206 merged while M9b was in flight. This PR is REBASED onto `f5a8e8a` and carries the M9a
+  commits ONLY — `bfea235` · `d7af37d` · `800f2c1` · `ce33ab4`, the same four rewritten onto the
+  new base. The LOG conflict was resolved by KEEPING BOTH RECORDS (main's M6c/M6cshot lines and
+  this task's), which is this repo's own convention for a concurrent-merge conflict.
+- **M9b is complete work, not abandoned work**: the section sheet, the extracted dialog hook, the
+  classic phone composition and three new verify-mobile sections are built, green (verify-mobile
+  197 · verify-reduce 41 · verify-memphone 436 · verify-bundle 32) and break-tested in four
+  rounds. It is preserved on the LOCAL branch `p4-m9b-preserved` (head `b6ec671`) and was pushed
+  to this branch once, so its commits remain retrievable from #207's force-push event. It needs
+  its own branch and PR; this session did not create one, because the harness pins it to a single
+  branch and no permission to push a second was given.
+- SITE_PR stays 207: #206 took 206, and `verify-releases` requires logMax <= SITE_PR <= logMax+1,
+  which holds at 207 = 207.
+
 open questions:
 - `/get_transaction_pool_stats`' aggregate `oldest` is likely REAL even where per-tx `receive_time` is withheld (tx_pool.cpp's `get_transaction_stats` reads `meta.receive_time` directly); consuming it for the OLDEST tile when no per-tx age exists is a follow-up, not done here.
 - Which node in the cascade answers `receive_time: 0`, and why, cannot be settled from this sandbox (no egress to the nodes).
