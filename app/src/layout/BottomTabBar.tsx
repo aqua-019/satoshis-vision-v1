@@ -34,6 +34,30 @@ import * as React from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { IA, sectionForPath } from "@/nav/ia";
+import type { IaSection } from "@/nav/ia";
+
+/* p4·M9b — the sheet is LAZY, and for the reason NavTop's own
+ * `LazyCommandPalette` comment already gives: defining the wrapper at module
+ * scope fetches nothing, because React.lazy's factory runs the first time the
+ * component is actually rendered.
+ *
+ * It has to be lazy. This component is imported STATICALLY by NavTop, which is
+ * eager, so a static import here would pull `pages/future/V6Modal` — today a
+ * 1,954 B chunk reached only through `React.lazy` — into the entry chunk. Every
+ * route's first load pays for that, and `/live/mempool` (this release's other
+ * subject) has 1,213 B of gzip margin. Measured, not assumed: V6Modal has its
+ * own chunk on the base precisely because CommandPalette, EcoPopup and
+ * ProtoPopup all reach it dynamically. */
+const LazySectionSheet = React.lazy(() =>
+  import("./SectionSheet").then((m) => ({ default: m.SectionSheet })),
+);
+
+/** Items across every column, which is what the sheet offers and what decides
+ *  whether a tab needs one at all. `cols[0].items[0]` — where a tab navigates —
+ *  is one of these; on the shipping IA the smallest section holds 3. */
+function itemCount(section: IaSection): number {
+  return section.cols.reduce((n, c) => n + c.items.length, 0);
+}
 
 /** Minimal line icons, one per section. Stroke-only, 20x20, no emoji. */
 function sectionIcon(key: string): React.ReactElement {
@@ -84,18 +108,73 @@ export function BottomTabBar() {
   const location = useLocation();
   const activeKey = sectionForPath(location.pathname)?.key ?? null;
 
+  const [sheetKey, setSheetKey] = React.useState<string | null>(null);
+  const [open, setOpen] = React.useState(false);
+  // Same shape as NavTop's `paletteEverOpened`: the chunk must not be
+  // REQUESTED until a tab is first tapped, but once it has been the component
+  // stays mounted and toggles its own `open` prop, so V6Modal can play its
+  // exit. "Mounted" is not "a dialog exists" — V6Modal returns null while
+  // closed, which is what keeps `[role="dialog"]` absent.
+  const [everOpened, setEverOpened] = React.useState(false);
+
+  const openSheet = React.useCallback((key: string) => {
+    setSheetKey(key);
+    setEverOpened(true);
+    setOpen(true);
+  }, []);
+  const closeSheet = React.useCallback(() => setOpen(false), []);
+  const sheetSection = React.useMemo(
+    () => IA.find((s) => s.key === sheetKey) ?? null,
+    [sheetKey],
+  );
+
   return (
     <div className="tabbar-anchor" aria-hidden={false}>
       <nav className="tabbar" aria-label="Sections">
         {IA.map((section) => {
           const isActive = section.key === activeKey;
           const target = section.cols[0].items[0].p;
+          const opensSheet = itemCount(section) > 1;
           return (
+            /* STILL AN ANCHOR, and that is load-bearing twice over.
+               `verify-nav.mjs:813` asserts exactly 6 `a.tabbar-item`, and the
+               prerendered bar is a real JS-off nav — `verify-nojs` reads the
+               app's own prerendered anchors. So the href stays exactly what it
+               was and a scripted plain left-click is intercepted instead:
+               with JS the tab opens its section, without JS it navigates where
+               it always did. Modified clicks and non-primary buttons fall
+               through to the browser, so long-press / open-in-new-tab still
+               reach the landing page. */
             <Link
               key={section.key}
               to={target}
               className="tabbar-item"
               aria-current={isActive ? "page" : undefined}
+              aria-haspopup={opensSheet ? "menu" : undefined}
+              /* routes/NavTransitions.tsx owns a CAPTURE-phase document click
+                 listener that upgrades in-app link clicks into a
+                 view-transitioned navigation. Capture beats React's
+                 bubble-phase delegation, so it calls preventDefault and
+                 navigates BEFORE the handler below ever runs — measured: on
+                 the base every tab but the active one navigated and the sheet
+                 that had just opened was closed again by its own route-change
+                 effect. The active tab appeared to work only because that
+                 listener's `samePage` guard already returned early for it.
+                 `data-no-vt` is that file's own documented opt-out ancestor;
+                 with the listener standing down, this component's
+                 preventDefault reaches react-router's Link, whose
+                 `!defaultPrevented` guard then backs off too. Scoped to the
+                 tabs that open a sheet, so a future one-item section still
+                 navigates WITH a transition. */
+              data-no-vt={opensSheet ? "" : undefined}
+              aria-expanded={opensSheet ? (open && sheetKey === section.key) : undefined}
+              onClick={(e) => {
+                if (!opensSheet) return;
+                if (e.defaultPrevented) return;
+                if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                openSheet(section.key);
+              }}
             >
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 {sectionIcon(section.key)}
@@ -105,6 +184,16 @@ export function BottomTabBar() {
           );
         })}
       </nav>
+
+      {/* Not requested until the first tab tap — see LazySectionSheet above.
+          `fallback={null}` matches NavTop's palette for the same reason: the
+          chunk is tiny and already resolving, and a visible "loading…" would
+          be a worse first frame than a one-tick-late sheet. */}
+      {everOpened ? (
+        <React.Suspense fallback={null}>
+          <LazySectionSheet section={sheetSection} open={open} onClose={closeSheet} />
+        </React.Suspense>
+      ) : null}
     </div>
   );
 }

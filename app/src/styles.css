@@ -2379,6 +2379,76 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 .v6-x:hover { border-color: var(--tk-accent); color: var(--tk-accent); }
 .v6-x:focus-visible { outline: none; border-color: var(--tk-accent); color: var(--tk-accent); box-shadow: var(--glow-1); }
 
+/* ── the phone's section sheet · layout/SectionSheet.tsx ──────────────────
+   p4·M9b. GEOMETRY ONLY. Every behaviour — portal, focus trap, focus
+   capture/restore, Escape, the two-target scroll lock, D0666's exit frame and
+   its measured-duration unmount — is V6Modal's, unchanged; this block is what
+   the `variant="sheet"` prop exists to select. Both base classes are still on
+   the element, so the reduce block below (`.v6-modal-veil, .v6-modal { … }`)
+   and verify-discrete's bare `.v6-modal` / `.v6-modal-veil.is-open` queries
+   reach it with no addition of their own: under reduced motion the sheet
+   snaps in with no travel and loses nothing, because a menu's content is
+   identical either way and only its arrival differs.
+
+   NOT wrapped in a media query, deliberately. The sheet is only reachable by
+   tapping `.tabbar-item`, which `@container navshell (max-width: 720px)` is
+   what makes visible — so the breakpoint is already expressed once, at the
+   only place that can open this. Restating it here would be a second copy of
+   the same threshold, and it would break a reader who rotates or resizes
+   while the sheet is open. */
+.v6-modal-veil--sheet {
+  place-items: end stretch;
+  padding: 0;
+  overflow: hidden; /* the SHEET scrolls, not the veil — else the backdrop
+                       scrolls away from under a long menu */
+}
+.v6-modal--sheet {
+  width: 100%; max-width: 720px; margin-inline: auto;
+  max-height: min(78vh, 720px);
+  border-radius: 14px 14px 0 0;
+  border-bottom: 0;
+  /* the home indicator on a modern phone sits over the last ~34px */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateY(12px);
+}
+.v6-modal-veil--sheet.is-open .v6-modal--sheet { transform: none; }
+@starting-style {
+  .v6-modal-veil--sheet.is-open .v6-modal--sheet { transform: translateY(12px); }
+}
+.sheet-grip {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--ink-20);
+  margin: 10px auto 2px;
+}
+.sheet-title {
+  display: flex; flex-direction: column; gap: 2px;
+  margin: 0; padding: 10px 18px 12px;
+  font: 600 16px/1.2 var(--f-sans);
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--rule);
+}
+.sheet-blurb { font: 12px/1.35 var(--f-sans); color: var(--ink-60); letter-spacing: 0; }
+.sheet-cols { padding: 4px 0 10px; }
+.sheet-colh {
+  margin: 0; padding: 14px 18px 4px;
+  font: 600 12px/1.2 var(--f-mono);
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-40);
+}
+/* 44px is this repo's tap floor (verify-mobile's TAP_MIN), and it is a
+   MIN-HEIGHT rather than a height so a row carrying a `note` grows instead of
+   clipping it. */
+.sheet-item {
+  display: flex; flex-direction: column; justify-content: center; gap: 1px;
+  min-height: 44px; padding: 7px 18px;
+  color: var(--ink-100); text-decoration: none;
+}
+.sheet-item__l { font: 14px/1.3 var(--f-sans); }
+.sheet-item__n { font: 12px/1.3 var(--f-sans); color: var(--ink-40); }
+.sheet-item[aria-current="page"] { background: var(--bg-2); box-shadow: inset 2px 0 0 var(--ui-accent); }
+.sheet-item[aria-current="page"] .sheet-item__l { color: var(--ui-accent); }
+.sheet-item:focus-visible { outline: none; background: var(--bg-2); box-shadow: inset 0 0 0 1px var(--ui-accent); }
+
 /* ── ⌘K command palette · nav/CommandPalette.tsx ─────────────────────
    Built on the same .v6-modal-veil/.v6-modal shell every future dialog
    uses (see V6Modal's own header) — these rules style the CONTENT this
@@ -3350,6 +3420,17 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      reader, so it is deleted rather than left as decoration. */
   .v6-rail { grid-template-columns: 1fr; }
   .v6-modal { width: 100vw; width: 100dvw; max-height: 100dvh; }
+  /* p4·M9b — the section sheet opts OUT of the full-screen treatment above.
+     That rule is right for a content brief (EcoPopup/ProtoPopup), which a
+     phone reader wants edge to edge; it is wrong for a nav menu, whose whole
+     affordance is that the page is still visible behind it. Declared HERE,
+     inside the same mobile block, rather than as a higher-specificity
+     selector elsewhere: `.v6-modal--sheet` and `.v6-modal` are both one
+     class, so this is settled by source order, and the two rules that
+     disagree should be readable together. Found by measuring the built
+     cascade — the sheet rendered 844px tall in an 844px viewport because a
+     rule 13,000 bytes further down the sheet quietly won. */
+  .v6-modal--sheet { width: 100%; max-height: min(78vh, 720px); }
   .v6-modal-head, .v6-modal-body { padding: 16px; }
   .open-cue { opacity: 1; }         /* no hover on touch */
 }
@@ -3659,11 +3740,94 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      `!important` because the size is an inline style on the number itself.
      verify-memphone §3b is the gate; it read `.classic-tier-fig 119/110`. */
   @media (max-width: 360px) { .classic-tier-fig > .mono:first-child { font-size: 18px !important; } }
+  /* p4·M9b — and at 360 and below the card's own gutter comes in, because the
+     column is the binding constraint rather than the type. The card carries an
+     inline `padding: var(--sp-4)`, so this needs !important to reach it — the
+     same reason the rules around it carry one. MEASURED: at 320 the footer
+     column is 110px and "146 NEXT BLOCK" is 14 characters at 13px mono (the
+     classic view RAISES --fs-label to 13 in styles-legibility.css, so the
+     12px site floor is not the number here) — about 116px. Narrowing the
+     gutter buys the ~16px that makes it one line, and it widens every other
+     line in the card by the same amount. */
 
   /* Four fee cards stacked is ~1000px of one number each. 2x2 halves it and
      keeps the coloured top borders — which the brief correctly calls the
      fastest read on the page — at the same size. */
   .classic-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  @media (max-width: 360px) {
+    .classic-tiers > * { padding-inline: var(--sp-2) !important; }
+    /* p4·M9b — AND AT 360 AND BELOW THE CARDS GO ONE-UP, which the brief
+       provides for ("2×2 … or 1×4 if they cannot. Decide by measurement").
+       The measurement: at 320 a 2-up card gives the footer a 126px column and
+       "146 NEXT BLOCK" needs 147px at 0.12em tracking, 125.2px at 0. Even the
+       zero-tracking case clears by 0.8px, which is a dead zone rather than a
+       fit — and the type cannot come down, because verify-memphone §4 holds a
+       13px floor inside this view that p4·M8 raised deliberately. One column
+       gives ~280px and the question stops being close.
+
+       PLACED AFTER the 2-up rule above, not beside the other ≤360 rule 15
+       lines up, and that is the whole reason it works: both carry !important
+       and both are one class, so this is settled by source order alone. In its
+       first position it lost silently — the computed template still read
+       "144px 144px" at 320 while the rule sat in the sheet looking correct. */
+    .classic-tiers { grid-template-columns: 1fr !important; }
+  }
+
+  /* p4·M9b — THE TIER CARD'S TWO FOOTER READINGS STACK, and the separator
+     goes with them. MEASURED at 390: the card is 179px wide with var(--sp-4)
+     of padding a side, so the footer gets 145px, and "146 TX · 146 NEXT
+     BLOCK" is 23 uppercase characters at --fs-label (12px below 720) with
+     0.12em tracking — about 199px. It wrapped to two lines at 390 and 414 and
+     to THREE at 320, breaking mid-figure. Two readings on two lines is the
+     honest shape; one reading broken across two lines is not.
+     The tracking comes down with it because 14 characters of "146 NEXT BLOCK"
+     is still 121px against 110px of column at 320. That is NOT the
+     scale-invariant squeeze CLAUDE.md records for flex labels — there the row
+     hands the label a FRACTION of itself, so tightening shrinks the box too.
+     Here the column width is set by the 2-up grid and does not move, so the
+     space bought is real. Measured after: 1 line at every gated width. */
+  /* !important because the element carries an INLINE letterSpacing: "0.12em",
+     which no ordinary author rule can beat. Measured before the important:
+     computed letter-spacing was still 1.56px and the string still needed 147px
+     — the rule was inert and the 390 column happened to be 147px, so it passed
+     by 0.0px. A fit with no margin is a dead zone, not a fit. */
+  .classic-tier-foot { display: flex; flex-direction: column; letter-spacing: 0.04em !important; }
+  .classic-tier-sep { display: none; }
+  /* Same shape one line up: "≈ 0.000031 XMR · $0.0099" does not fit 145px
+     either, and the break landed between the "·" and the figure. */
+  .classic-tier-usd { display: block; }
+
+  /* p4·M9b — THE LADDER'S CUT EDGE.
+     The ladder is the one element the phone composition lets scroll
+     horizontally, and useLadderAnchor centres the NOW divider in it — so at
+     rest the card to its left straddles the left edge and is sliced through a
+     word. MEASURED on the base: 0.38 / 0.56 / 0.70 / 0.89 of that card cut at
+     430 / 390 / 360 / 320, which is what the report of a leftmost card reading
+     "…IATIONS" is.
+
+     WHAT THIS IS NOT: scroll-snap. The brief asked for `scroll-snap-type: x
+     mandatory` with `scroll-snap-align: start`, and that is REFUTABLE from the
+     ladder's own geometry, which is fixed content: the card starts are 0,
+     112, 248.2, 380 … and the divider's centre sits at 243.7. Snapping puts
+     the resting offset on one of those starts, and verify-memphone §5 requires
+     BOTH `dividerFrac` in [1/3, 2/3] (5c) AND `scrollLeft > 0` (5e). At 430
+     (client 406) the only candidates are 0 — which fails 5e — and 112, which
+     gives (243.7 − 112) / 406 = 0.324 and fails 5c. There is no snap point at
+     that width that satisfies both, so mandatory snap cannot ship without
+     weakening a gate that is currently correct.
+
+     WHAT THIS IS: the edge is FADED rather than sliced. §5d already guarantees
+     one whole card either side of NOW, so the cut card is the second one out —
+     genuinely off-screen content in a scroller, which a fade is the ordinary
+     and honest way to signal. It changes no geometry at all, so §5's five
+     assertions are untouched by construction rather than by luck, and it works
+     at every width instead of at three of five. Nothing is hidden that was not
+     already half off-screen; what changes is that a partly-visible card now
+     reads as "there is more this way" instead of as a broken word. */
+  [data-mem-ladder] {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  }
 
   /* ── 4 · SAY IT ONCE ────────────────────────────────────────────────────
      Two `LIVE · UPDATED Ns AGO` pills, 234px apart, both pulsing. The one

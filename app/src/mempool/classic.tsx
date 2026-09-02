@@ -452,11 +452,27 @@ export function ClassicFeeHero({ buckets, xmrUsd }: { buckets: ClassicBuckets; x
             </div>
             <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", marginBottom: 3 }}>
               {sample
-                ? <>≈ {sample.fee.toFixed(6)} XMR{xmrUsd > 0 ? <span className="dim"> · ${(sample.fee * xmrUsd).toFixed(4)}</span> : null}</>
+                ? <>≈ {sample.fee.toFixed(6)} XMR{xmrUsd > 0 ? <span className="dim classic-tier-usd"> · ${(sample.fee * xmrUsd).toFixed(4)}</span> : null}</>
                 : <span className="dim">no tx at this tier</span>}
             </div>
             <div className="mono classic-tier-foot" style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
-              {tx.length} tx{fits != null ? ` · ${fits} next block` : ""}
+              {/* p4·M9b — three elements where this was one interpolated string.
+                  MEASURED at 390: "146 TX · 146 NEXT BLOCK" is 23 uppercase
+                  characters at --fs-label with 0.12em tracking in a 145px
+                  column, so it wrapped to 2 lines (3 at 320, where the column
+                  is 110px). It is TWO readings — how many transactions sit at
+                  this tier, and how many of them the next block has room for —
+                  so the phone stacks them and drops the separator, which is a
+                  deliberate two-line label rather than a one-line label that
+                  broke. Desktop is unchanged: the spans are inline and the
+                  separator renders, so the rendered string is identical. */}
+              <span className="classic-tier-foot__n">{tx.length} tx</span>
+              {fits != null ? (
+                <>
+                  <span className="classic-tier-sep"> · </span>
+                  <span className="classic-tier-foot__f">{fits} next block</span>
+                </>
+              ) : null}
             </div>
           </div>
         );

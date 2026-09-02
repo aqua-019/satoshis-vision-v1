@@ -39,11 +39,13 @@
  */
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { coldBootOffBrowser } from './verify-lib.mjs';
 import { makeReporter } from './verify-reporter.mjs';
 import { ROUTES } from './scripts/routes.mjs';
 
-const BASE = 'http://localhost:4173';
+const BASE = process.env.VERIFY_BASE || 'http://localhost:4173';
 const FLOOR = 12;          // px. The whole point of the file.
 const EPS = 0.01;          // computed sizes are floats; 11.999 is 12.
 const TAB_MIN = 40;        // px. Minimum comfortable touch target.
@@ -57,6 +59,7 @@ const TAP_MIN = 44;
 const PHONE = { width: 390, height: 844 };
 const NARROW = { width: 320, height: 568 };
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const R = makeReporter('verify-mobile');
 
 /* Prefer WebKit (the mobile-Safari engine) and fall back to Chromium: some
@@ -626,6 +629,97 @@ R.group(`§9 · /operate/peers — the "our brief" control is a real ${TAP_MIN}�
     + '  — flexShrink:0 + whiteSpace:nowrap on the control, flexWrap on the row.');
 
   await ctx.close();
+}
+
+
+/* ═══ §10 · EVERY IA DESTINATION IS REACHABLE FROM THE TAB BAR ══════════════
+ * p4·M9b. The tab bar navigates each tab to `section.cols[0].items[0].p`, and
+ * NavTop.tsx recorded that as replacing a drawer holding "the same 6
+ * destinations". It did not hold 6. MEASURED on the base at 390×844, against
+ * the RENDERED page rather than the source — the six landings read off
+ * `a.tabbar-item`, then every IA item's pathname checked for a VISIBLE
+ * affordance on the page its own section's tab lands on:
+ *
+ *     27 distinct pathnames across the IA's 68 items
+ *      6 are tab landings                                        1 tap
+ *     10 are the /monero chapters and /learn tabs, which their
+ *        landing page renders as BUTTONS, not anchors            2 taps
+ *     11 had no affordance on any landing page at all            UNREACHABLE
+ *
+ * That anchors-vs-buttons split is why this is asserted through TAPS rather
+ * than through hrefs: an href sweep reports those ten unreachable, and did.
+ *
+ * THE LIST IS DERIVED, NEVER TYPED. `src/nav/ia.ts` is importable under bare
+ * Node — verify-ia.mjs §7 already does it, and nav/registries.mjs exists to
+ * make that work — so a seventh section, or a nineteenth route, moves this
+ * gate's subject on its own. A hand-copied array here would be the defect
+ * verify-reduce.mjs:70 records against itself.
+ *
+ * WHAT IT DOES NOT ASSERT: that two taps is the RIGHT number, or that the
+ * sheet is well composed. It asserts reachability, which is the property that
+ * was silently false. */
+R.group('§10 · every IA destination is reachable from the tab bar in ≤2 taps');
+{
+  const iaMod = await import(pathToFileURL(join(__dirname, 'src', 'nav', 'ia.ts')).href);
+  const IA = iaMod.IA;
+  R.ok(Array.isArray(IA) && IA.length === 6,
+    `10a · ia.ts exports 6 sections (got ${Array.isArray(IA) ? IA.length : typeof IA}) — the floor, so nothing below can pass over an empty list`);
+
+  const items = IA.flatMap((sec, si) =>
+    sec.cols.flatMap((c) => c.items.map((it) => ({ sec: sec.key, si, label: it.l, p: it.p }))));
+  R.ok(items.length >= 60,
+    `10b · the IA declares ${items.length} leaf items across all columns — a sheet listing only cols[0] would collapse this`);
+
+  for (const vp of [PHONE, NARROW]) {
+    const tag = `${vp.width}×${vp.height}`;
+    const { ctx, page: p } = await phone(vp);
+    await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+    /* networkidle, NOT domcontentloaded. Measured while writing this: at DCL
+     * `a.tabbar-item` matches 0 and at idle it matches 6, so a probe that read
+     * the landings at DCL classified all 68 items unreachable and printed a
+     * plausible, entirely false "27". An empty result is evidence only once
+     * its scope is verified. */
+    await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+
+    const tabs = await p.locator('a.tabbar-item').count();
+    R.ok(tabs === 6, `10c [${tag}] · six tab targets (got ${tabs})`);
+
+    const rows = [];
+    for (let si = 0; si < IA.length; si++) {
+      const mine = items.filter((it) => it.si === si);
+      // tap 1
+      await p.goto(`${BASE}/live/mempool`, { waitUntil: 'networkidle' });
+      await p.waitForSelector('a.tabbar-item', { timeout: 15000 });
+      await p.locator('a.tabbar-item').nth(si).click();
+      let opened = true;
+      await p.waitForSelector('[role="dialog"] .sheet-item', { timeout: 6000 }).catch(() => { opened = false; });
+      if (!opened) {
+        for (const it of mine) rows.push({ ...it, taps: null, why: 'no sheet' });
+        continue;
+      }
+      // every item the sheet offers, by its href — one tap each from here
+      const offered = await p.evaluate(() =>
+        [...document.querySelectorAll('[role="dialog"] .sheet-item')]
+          .filter((a) => { const b = a.getBoundingClientRect(); return b.width > 0 && b.height > 0; })
+          .map((a) => a.getAttribute('href')));
+      for (const it of mine) rows.push({ ...it, taps: offered.includes(it.p) ? 2 : null, why: 'not in sheet' });
+    }
+
+    const unreachable = rows.filter((r) => r.taps === null);
+    R.ok(unreachable.length === 0,
+      `10d [${tag}] · all ${rows.length} IA items reachable in ≤2 taps (${unreachable.length} not: ${unreachable.slice(0, 12).map((u) => u.label).join(', ') || 'none'})`,
+      rows.map((r) => `${r.taps ?? 'UNREACHABLE'}  ${r.label}  ${r.p}`).join('\n'));
+
+    /* PLANTED POSITIVE CONTROL. Every assertion above is satisfied by a sheet
+     * that lists everything; none of them can tell that apart from a gate
+     * reading the wrong DOM. Ask for a destination the IA does NOT contain and
+     * require the same machinery to answer NO. */
+    const ghost = rows.some((r) => r.p === '/there/is/no/such/route');
+    R.ok(ghost === false,
+      `10e [${tag}] · the same reader reports a route the IA does not declare as absent — so 10d is reading the sheet, not passing vacuously`);
+
+    await ctx.close();
+  }
 }
 
 await browser.close();
