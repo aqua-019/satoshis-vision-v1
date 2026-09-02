@@ -145,7 +145,7 @@ a quality fact. The edge-share column and the upsampled rows decided it.
   (logMax 206, SITE_PR 206).
 - `verify-peers` **72 passed · 0 failed**: §1 nine PARTNERs; §9 "8 of 9 briefs
   declare a screenshot", decoded `1000x625, 1133x879, 660x915`, caption
-  "artwork · supplied by Cake Wallet", no date rendered, own intrinsic box; §11
+  "artwork · Cake Wallet's own", no date rendered, own intrinsic box; §11
   "8 real captions, 0 reservations"; §11b green. PAIRED against the base build
   in an isolated worktree served on port 4174 through a port-substituted copy
   of the gate: **72 passed there too**, "7 of 9". Count unchanged, derived
@@ -158,7 +158,7 @@ a quality fact. The edge-share column and the upsampled rows decided it.
 
 ### verify-frontend-change (the repo's own skill), steps 1-5
 1-2 · Served build opened, the brief opened by its own `?p=cakewallet` address,
-  image decoded at 660x915, caption "artwork · supplied by Cake Wallet".
+  image decoded at 660x915, caption "artwork · Cake Wallet's own".
 3 · Console: **7 errors on head, 7 on base, the identical set** — `/api/coingecko`,
   `/api/feeds`, `/api/xmr/{blocks,fees,mempool,network,tip}` answered 501 by
   `serve-dist`, the documented degraded feed state. Zero NEW errors, zero
@@ -223,10 +223,25 @@ deviations from spec:
   paragraph above the record saying "there is no `shot` key at all" directly
   above the key: p4·M6c's own recorded defect. Annotated as a record of #205 on
   p4·01's rule, not rewritten.
-- ACCEPTED with a caveat — the caption template renders "artwork · supplied by
-  Cake Wallet". This image was PUBLISHED by Cake Labs and downloaded from their
-  site, not sent to us as Kathie's was; one template serves two provenance
-  modes. Changing `EcoPopup`'s caption is out of scope and is raised, not done.
+- CORRECTED, on the operator's call after the first push — the caption template
+  read "artwork · supplied by <name>", true of Kathie (she sent her file) and
+  FALSE of Cake Wallet (theirs was downloaded from the page they publish it on).
+  This release first raised it as a caveat and shipped the wrong string. It is
+  now `artwork · <name>'s own`, true of both: the delivery route is not in
+  `EcoShot` at all, so no template keyed on `kind` could distinguish them, and
+  what the caption actually asserts is AUTHORSHIP. Three sites — the template,
+  verify-peers §9's pattern (now anchored at BOTH ends, so a caption that merely
+  starts right cannot pass) and its failure message, and the union docblock.
+  Read back off the render: "artwork · Cake Wallet's own" / "artwork · Kathie's
+  own"; the capture arm is untouched at "captured 2026-08-18". Break test: the
+  template reverted → 2 of 8 captions red (the 6 captures still matching),
+  restored clean at 72 passed.
+  AND THE BREAK HARNESS WIPED THE UNCOMMITTED FIX ON ITS FIRST RUN — p4·01's
+  recorded trap. Its guard correctly refused to start (the file was dirty
+  against HEAD, so a HEAD-restore could not be a restore) and its `trap … EXIT`
+  ran that restore ANYWAY on the way out, checking out the copy that still held
+  the old string. Re-applied, then COMMITTED BEFORE re-running: p3·12d's rule,
+  and the only thing that makes `git checkout` a restore rather than a revert.
 - The GitHub MCP answered `Bad credentials` twice; the PR was opened through
   api.github.com with the environment's token, as p4·M5 did for #202.
 

@@ -954,10 +954,29 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   **THE GITHUB MCP ANSWERED `Bad credentials` TWICE, ITS THIRD RECORDED INSTANCE.** The PR was
   opened through api.github.com with the environment's own token, as p4·M5 did for #202; the
   branch was proven pushed by `git ls-remote`, not the tracking ref.
-  **ALSO CORRECTED**: #205's LOG line read `in_progress` against its handoff's `done`. **NOT
-  FIXED, and named**: the caption template renders "artwork · supplied by Cake Wallet" for an
-  image that was PUBLISHED by Cake Labs and downloaded, not sent — one template for two
-  provenance modes, raised for the operator; `verify-bundle.mjs`'s "Largest single shot:
+  **ALSO CORRECTED**: #205's LOG line read `in_progress` against its handoff's `done`.
+  **AND THE CAPTION, ON THE OPERATOR'S CALL — IT CLAIMS AUTHORSHIP NOW, NOT DELIVERY.** It read
+  "artwork · supplied by <name>", which is true of Kathie (she sent her file) and FALSE of Cake
+  Wallet (theirs was downloaded from the page they publish it on; nobody at Cake Labs handed it
+  over). This release first raised that as a caveat for the operator and shipped the wrong
+  string; the operator ruled, and it is `artwork · <name>'s own`, which is true of both. The
+  distinction the old wording made — how the file TRAVELLED — is not in `EcoShot` at all, so no
+  template keyed on `kind` could have got it right; what the caption actually asserts is
+  AUTHORSHIP. Changed in the THREE places that state the wording (the template, verify-peers
+  §9's expectation and its failure message, the union docblock), with the gate's pattern now
+  ANCHORED AT BOTH ENDS so a caption that merely starts right cannot pass. Read back off the
+  render: "artwork · Cake Wallet's own", "artwork · Kathie's own", capture arm untouched at
+  "captured 2026-08-18". Break test — the template reverted → **2 of 8 captions red**, 6 of 8
+  being the captures, restored clean at 72 passed. **The three historical mentions of the old
+  string in this file (the p4·M6c and p4·M6b notes below) are SUPERSEDED and are deliberately
+  not rewritten**, on p4·01's rule: what those releases rendered stays true of those releases.
+  **AND THE BREAK HARNESS WIPED THE UNCOMMITTED FIX ON ITS FIRST RUN — p4·01's RECORDED TRAP,
+  WALKED INTO BY SOMEONE WHO HAD JUST READ IT.** Its guard correctly refused to start (the file
+  was dirty against HEAD, so a HEAD-restore could not be a restore) — and its `trap … EXIT` ran
+  the restore ANYWAY on the way out, checking out the HEAD copy that still held the old string.
+  A guard that aborts and a trap that fires unconditionally are the same code path here. The
+  edit was re-applied and COMMITTED BEFORE the break test, which is p3·12d's rule and the only
+  thing that makes `git checkout` a restore rather than a revert; `verify-bundle.mjs`'s "Largest single shot:
   53,936 B" comment has been stale since Kathie's 55,798. Census unchanged — no gate file added,
   none wired. **`npm run verify:e2e`: exit 0, all 39 members, 0 reds on the build stamped `eba7ad4` (verify-vitals 15 passed · 4 skipped by its own contention guard, both routes "would have PASSED").** **No human has seen the rendered result
   in a browser** — read from screenshots at 1440 (dpr 1 and 2) and 390 (dpr 3).
