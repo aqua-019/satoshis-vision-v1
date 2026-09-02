@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260901-M6cshot
 branch: claude/new-session-czzwi0
-status: in_progress
+status: done
 written_by: claude-code (manual mode — task arrived as a prompt)
 owner: claude-code
 ---
@@ -75,7 +75,7 @@ forbids re-attempting; the file is supplied).
       nine-PARTNER assertion, §9's biconditional (7→8 briefs declaring a shot)
       and §11/§11b all green
 - [x] `node verify-origins.mjs`: 0 failed, "declares a screenshot for 8 of the 9"
-- [ ] `npm run verify:static` exit 0 · `npm run verify:e2e` all 39 members run
+- [x] `npm run verify:static` exit 0 · `npm run verify:e2e` all 39 members run
       (recorded exit read, not the pipeline's), 0 failed
 - [x] `node verify-bundle.mjs` 0 failed; the five figures reported with the
       `alt` string's cost attributed byte-exactly against the isolated base build
@@ -154,7 +154,26 @@ a quality fact. The edge-share column and the upsampled rows decided it.
 - `verify-origins` green: "declares a screenshot for 8 of the 9 rendered
   briefs", all 8 loaded and decoded.
 - `npm run verify:static` exit 0, 0 reds.
-- `npm run verify:e2e`: running on the build stamped `eba7ad4` at the time of this commit — 7 of 39 members through (coldboot-live · palette · charts · memviews · memdetail · glide · memphone), 0 reds; the recorded exit lands in the final docs commit, and CI runs the same chain on #206.
+- `npm run verify:e2e`: **exit 0 (recorded `E2E_EXIT=0` off `PIPESTATUS`, not the pipeline's), all 39 members ran, 0 reds**, on the build stamped `eba7ad4` served with the held port's holder and cwd confirmed. Tail: verify-coldboot 220 · verify-orb 217 + 1 reasoned skip · verify-stream 17 · verify-vitals **15 passed · 4 skipped · 0 failed** — the four skips are the gate's own contention guard declining `/live/markets` (spread 79.4 %) and `/learn/sim` (77.2 %) as UNVERIFIABLE while printing both as "would have PASSED"; `/` and `/live/mempool` were judged and passed. verify-memphone 436 · verify-peers 72 · verify-superstress 90 · verify-explorer 82 · verify-nav 129.
+
+### verify-frontend-change (the repo's own skill), steps 1-5
+1-2 · Served build opened, the brief opened by its own `?p=cakewallet` address,
+  image decoded at 660x915, caption "artwork · supplied by Cake Wallet".
+3 · Console: **7 errors on head, 7 on base, the identical set** — `/api/coingecko`,
+  `/api/feeds`, `/api/xmr/{blocks,fees,mempool,network,tip}` answered 501 by
+  `serve-dist`, the documented degraded feed state. Zero NEW errors, zero
+  warnings, zero page errors, zero failed requests.
+4 · Responsive: 360x800@2 image 326x451 stacked below the prose, brief scroll
+  1,804 px · 768x1024@2 image 734x1,017 stacked, scroll 1,817 px · 1280x800@1
+  two tracks 597.8/498.2 px, image 498x690, dialog 736 px in an 800 px
+  viewport — **0 px horizontal overflow at every width**. Plus 1440 (dpr 1 and
+  2) and 390 (dpr 3) above.
+5 · No `lint` or `test` script exists in `app/package.json` and no eslint config
+  is present — N/A with reason; `typecheck`, the 22-gate static chain and the
+  39-gate e2e chain are the project's checks and all ran.
+The Vercel preview for this branch deployed ("Ready"), but the egress proxy
+answers 000 for `*.vercel.app` as it does for `xmr.irish`, so the deployed
+asset could not be fetched from here; not claimed.
 
 ### Budgets (final tree vs isolated base build of `1c5425e`, paired per stem)
 eagerJsRaw **264,457 BYTE-IDENTICAL** · eagerJsGz 88,511 → 88,513 (+2,

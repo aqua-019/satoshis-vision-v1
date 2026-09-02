@@ -959,7 +959,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   image that was PUBLISHED by Cake Labs and downloaded, not sent — one template for two
   provenance modes, raised for the operator; `verify-bundle.mjs`'s "Largest single shot:
   53,936 B" comment has been stale since Kathie's 55,798. Census unchanged — no gate file added,
-  none wired. **`npm run verify:e2e`: running on the build stamped `eba7ad4` at the time of this commit — 7 of 39 members through (coldboot-live · palette · charts · memviews · memdetail · glide · memphone), 0 reds; the recorded exit lands in the final docs commit, and CI runs the same chain on #206.** **No human has seen the rendered result
+  none wired. **`npm run verify:e2e`: exit 0, all 39 members, 0 reds on the build stamped `eba7ad4` (verify-vitals 15 passed · 4 skipped by its own contention guard, both routes "would have PASSED").** **No human has seen the rendered result
   in a browser** — read from screenshots at 1440 (dpr 1 and 2) and 390 (dpr 3).
 
 - **2026-08-31**: p4·M6 "THE HONESTY REPAIR" (README + app/) — the file whose thesis is
