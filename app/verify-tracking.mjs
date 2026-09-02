@@ -525,8 +525,18 @@ try {
   {
     const { p } = await fresh(`${base}/live/mempool?v=classic&block=${H}`);
     await p.waitForSelector('[data-mem-track-phase]', { timeout: 15000 });
+    await p.waitForTimeout(1500);
     const phase = await chipPhase(p);
+    const qc = await readQ(p);
     R.ok(phase === 'block', `§8c control: ?block= alone still opens the block (phase "${phase}")`);
+    /* The view's own focusBlock effect reaches onSearch({ kind: "block" }) by
+       way of this deep link, so a block search that dropped `block=`
+       unconditionally would make the link consume itself on arrival — the
+       panel opens and the URL forgets why. This release's first cut did exactly
+       that, and verify-nav §4a caught it where the phase check above could not:
+       "opens" and "survives" are different claims. */
+    R.ok(qc.get('block') === String(H),
+      `§8c control: and the deep link SURVIVES its own arrival — block= is still in the URL (?${qc})`);
     await p.close();
   }
 

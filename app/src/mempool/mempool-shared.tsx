@@ -213,14 +213,21 @@ export function useMempoolTracking(data: MoneroLive) {
     } else {
       const block = data.blocks.find((b) => b.height === q.height);
       setTracking({ kind: "block", height: q.height, block });
-      if (params.has("tx") || params.has("block")) {
-        // The slot is a block now; every URL claim about it goes. PUSHED, not
-        // replaced: the transaction (or the linked block) WAS the primary
-        // content, and Back should return to it.
+      // The slot is a block now, so a `tx` claim goes, and so does a `block`
+      // claim about a DIFFERENT block — a stale `block=` left standing would
+      // come back to life the moment `tx` went. A `block=` naming THIS height
+      // stays: it is the Home ribbon's deep link, and the views' own
+      // `focusBlock` effects reach this branch by way of it, so deleting it
+      // here would make every `?block=` link consume itself on arrival
+      // (verify-nav §4a caught exactly that in this release's first cut).
+      // PUSHED, not replaced: the transaction (or the linked block) WAS the
+      // primary content, and Back should return to it.
+      const staleBlock = params.has("block") && params.get("block") !== String(q.height);
+      if (params.has("tx") || staleBlock) {
         setParams((prev) => {
           const out = new URLSearchParams(prev);
           out.delete("tx");
-          out.delete("block");
+          if (staleBlock) out.delete("block");
           return out;
         });
       }
