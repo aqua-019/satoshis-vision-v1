@@ -1397,6 +1397,15 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     ],
   },
   /* ── THE EIGHTH PEER ────────────────────────────────────────────────────
+     [p4·M6c-shot — THE PARAGRAPH BELOW IS A RECORD OF #205, NOT OF THIS TREE.
+     The diagram it says could not be fetched arrived as a conversation upload
+     (285,558 B — the byte count it names) and ships in the record below at
+     660x915 / 55,488 B, re-encoded through Chromium's canvas with the alpha
+     plane proven identical on every pixel (19.65% fully transparent, all four
+     corners (0,0,0,0)) and NO `captured` key, exactly as the paragraph's own
+     last sentence said it would. ANNOTATED RATHER THAN REWRITTEN, on p4·01's
+     rule: what #205 measured stays true of #205, and a paragraph asserting the
+     absence of a key directly above that key is p4·M6c's recorded defect.]
      SHIPS WITHOUT A `shot`, AND THE ABSENCE IS MEASURED RATHER THAN CHOSEN.
      The intended image is Cupcake's own published integration diagram at
      cupcakewallet.com/static/two-phones-b432a9f5a5c9a382eab8c56ae5baad9c.webp
@@ -1456,6 +1465,34 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     kind: "Collaborator · wallet · air-gapped signing", status: "PARTNER", c: "#0ea5e9",
     url: "https://cakewallet.com/",
     blurb: "An open-source, non-custodial wallet whose companion app turns a second phone into the device that holds your keys.",
+    /* p4·M6c-shot — Cupcake's own published integration diagram, the file #205
+       could not fetch, re-encoded from the 1289x1787 RGBA master to 660x915 at
+       q 0.84: 55,488 B, inside the 9,050–55,798 B register the other seven set,
+       and the most pixels that register buys — dpr2 fidelity was the criterion,
+       measured at 996 device px against the original. `kind: "artwork"` because
+       the publisher drew it and this site captured nothing; the union makes a
+       date on it a compile error. THE ALPHA IS WHAT MAKES THIS FILE RIGHT: it is
+       a cut-out, not a rectangle — 19.65% of its pixels are fully transparent
+       and all four corners are (0,0,0,0) — and every plausible conversion
+       mistake (a JPEG step, an RGB convert, a pre-filled canvas) flattens it
+       onto white while looking fine in isolation. No gate in this suite reads a
+       pixel of any shot, so that property is held by this comment and by the
+       break test recorded in the p4·M6c-shot handoff, not by an assertion. */
+    shot: {
+      src: "/peers/peer-cakewallet.webp",
+      /* The brief's alt ended "above the instruction to restore from Cake
+         Wallet". READ OFF THE IMAGE, the instruction says the opposite:
+         "navigate to Wallets → Restore from Cupcake" — Cupcake shows the code,
+         Cake Wallet scans it, which is the pairing direction the record above
+         already corrected once (its refuted claim 1). An alt is the only copy
+         of the image a reader who cannot see it gets, so it says what is on
+         the screen, and names the part the front phone hides rather than
+         completing it. */
+      alt: "Cupcake's own integration diagram: two iPhones. The front phone shows Cake Wallet's Restore Wallet screen with five options, the second highlighted — “Cupcake app · New — Link with our companion air-gapped app, installed on a second phone.” The phone behind it shows Cupcake's own Restore Wallet screen: a large QR code with the Cupcake logo at its centre, above instructions partly hidden by the front phone — “…from Cake Wallet” and “navigate to Wallets → Restore from Cupcake” — and an Open Wallet button.",
+      kind: "artwork",
+      w: 660,
+      h: 915,
+    },
     body: [
       "Cake Labs — Cake Technologies, LLC on both App Store listings — ships three things. Cake Wallet is the multi-coin wallet, open source and non-custodial, dated by its own site to 2018. Monero.com is the same wallet built for Monero only. Cupcake is the third, and it is the one that belongs on this page: it runs on a phone that never goes online.",
       "The split is the mechanism, and the mechanism is the point. Cupcake holds the private keys. Cake Wallet holds only the view keys, so it can show you a balance and build a transaction but cannot sign one. To spend, Cake Wallet renders the unsigned transaction as an animated QR code; Cupcake reads it off the screen, shows you what it says, and signs it; Cupcake then renders the signed transaction as its own animated QR; Cake Wallet reads that back and broadcasts it. Nothing but light crosses the gap. Cupcake covers Monero, Bitcoin and Litecoin including MWEB, and runs on iOS and Android only — Cake Wallet itself also ships for macOS, Windows and Linux.",
