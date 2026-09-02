@@ -932,6 +932,10 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   at `e0c87ad` against a recorded 74 — p4·M8's defect, reproduced on the first run by someone who
   had read the entry describing it. FOURTH recorded time the controls have caught this instrument.
   **THIS PR CARRIES THE CORRECTNESS HALF ALONE, AND THAT IS A SCOPE DECISION TAKEN MID-SESSION.**
+  It was rebased TWICE while in flight — #206 merged, then #208 — so the branch sits on `76f54fb` and
+  `SITE_PR` is **209** on the operator's instruction. `verify-releases` reads logMax **208** from
+  main's own line, so 209 is exactly the lead-by-one bound the gate allows; **the label therefore
+  leads its own PR (#207) by two, which is recorded here rather than smoothed over.**
   p4·M9b — the phone's section sheet, the extracted dialog hook, the classic phone composition and
   three new `verify-mobile` sections — is BUILT, GREEN (verify-mobile 197 · verify-reduce 41 ·
   verify-memphone 436 · verify-bundle 32) and break-tested in four rounds, and was withdrawn from

@@ -164,7 +164,8 @@ M9a evidence:
 - Offline importers of the changed modules: verify-txdetail, verify-stale, verify-tiers, api verify-status/nodes/nodehealth/history — all exit 0.
 notes for ARCHITECTURE.md patch: `Tx.age: number | null` + `ageSource` + `firstSeenAt` (types.ts); `MONERO_GENESIS_S` in map.ts (restated in detail-map.ts, which imports nothing at runtime); api/xmr.js exports `poolTxRow`, `feeTierIndex`, `FEE_TIER_LABELS`, `noteFirstSightings`, `newFirstSeenState`.
 scope change, taken on the operator's instruction mid-session:
-- #206 merged while M9b was in flight. This PR is REBASED onto `f5a8e8a` and carries the M9a
+- #206 merged while M9b was in flight, then #208 merged too. This PR is REBASED TWICE, now onto
+  `76f54fb`, and carries the M9a
   commits ONLY — `bfea235` · `d7af37d` · `800f2c1` · `ce33ab4`, the same four rewritten onto the
   new base. The LOG conflict was resolved by KEEPING BOTH RECORDS (main's M6c/M6cshot lines and
   this task's), which is this repo's own convention for a concurrent-merge conflict.
@@ -175,8 +176,11 @@ scope change, taken on the operator's instruction mid-session:
   to this branch once, so its commits remain retrievable from #207's force-push event. It needs
   its own branch and PR; this session did not create one, because the harness pins it to a single
   branch and no permission to push a second was given.
-- SITE_PR stays 207: #206 took 206, and `verify-releases` requires logMax <= SITE_PR <= logMax+1,
-  which holds at 207 = 207.
+- SITE_PR is **209**, on the operator's instruction after #206 AND #208 both merged; this branch was
+  rebased a second time, onto `76f54fb`. `verify-releases` requires logMax <= SITE_PR <= logMax+1,
+  and logMax is 208 (main's own #208 line), so 209 sits exactly on the lead-by-one bound. Recorded
+  rather than smoothed over: this PR is #207, so the label leads its own PR by two — the gate's
+  arithmetic holds, and the number is the operator's.
 
 open questions:
 - `/get_transaction_pool_stats`' aggregate `oldest` is likely REAL even where per-tx `receive_time` is withheld (tx_pool.cpp's `get_transaction_stats` reads `meta.receive_time` directly); consuming it for the OLDEST tile when no per-tx age exists is a follow-up, not done here.
