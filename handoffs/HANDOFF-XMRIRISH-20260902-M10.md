@@ -99,8 +99,12 @@ cd app && npm run verify:static
 ## 7 · REPORT  — claude code fills this on exit, completely
 status: done — every §5 box passes on the final tree (`verify:static` exit 0; verify-tracking 184,
   verify-nav 129, memviews, memdetail, glide, memphone 451, memstats 80, nojs all green;
-  verify-bundle 32, nothing raised). The full 39-member `verify:e2e` chain is CI's to run on the
-  PR head; this sandbox ran the eight gates the handoff names plus the static chain.
+  verify-bundle 32, nothing raised). `verify:e2e` ran ALL 39 members on a fresh build of the head:
+  38 green, `verify-vitals` red on `/` blocking (438 ≤ 400) and `/live/markets` LCP (4424 ≤ 2600) —
+  PAIRED interleaved against the base build on its own port: markets is red on the base too
+  (4544/4524), `/` blocking straddles on both (base 399/370, head 399/438), and `/live/mempool`, the
+  one route this diff touches, is green on both and better on the head. CI's `hardening gates`
+  (the same chain) reports SUCCESS on `8c04900`, with the offline job and the Vercel preview green.
 pr: https://github.com/aqua-019/satoshis-vision-v1/pull/210
 commits:
   - docs(handoffs): the handoff, before feature work

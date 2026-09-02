@@ -991,6 +991,32 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   (`/mempool?v=terminal` is different content) and a tracked transaction is the same kind of thing
   — consistent, and a little odd; `live-detail.ts:61` keeps its own private `TXID_RE`, because
   importing the exported one would close an import cycle; `ci.yml`'s memstats step name read `(36)` against a measured **80** (p4·M9a took that gate 46 → 80 and never touched the title) — corrected from this run, the same stale-count-in-a-title defect as the tracking step's `(61)`, and the two were found the same way, by running the gate the title names.
+  **THE SUITE, AND THE ONE RED IS PAIRED RATHER THAN WAVED AT.** `verify:static` exit 0 (22 gates).
+  **`verify:e2e` ran ALL 39 members on a fresh build of the head — 38 green, one red, and it is
+  `verify-vitals`** (`/` blocking 438 ≤ 400, `/live/markets` LCP 4424 ≤ 2600), the same two assertions
+  p4·M9b, p4·M6c-shot and p4·M7 each recorded on this machine. Neither route loads either chunk this
+  diff moved and `eagerJsRaw` is byte-identical — but "implausible" is not "measured", so it was
+  PAIRED on this machine, interleaved, two rounds each, against the base build snapshotted from
+  `cabab9c` and served on its own port from a copy of `serve-dist` pointed at the snapshot, the two
+  trees proven distinct by entry hash (`index-CgzL-Emj` base, `index-DEj6_v9q` head) and each port's
+  holder confirmed by `/proc/<pid>/cwd`:
+
+  | assertion | base r1 · r2 | head r1 · r2 |
+  |---|---|---|
+  | `/` blocking ≤ 400 | 399 ✅ · 370 ✅ | 399 ✅ · **438 ❌** |
+  | `/live/markets` LCP ≤ 2600 | **4544 ❌ · 4524 ❌** | 4484 declined, "would have FAILED" · **4524 ❌** |
+  | `/live/markets` blocking ≤ 400 | **444 ❌ · 409 ❌** | 400 declined, "would have PASSED" · **450 ❌** |
+  | `/live/mempool` LCP ≤ 4350 · blocking ≤ 300 | 4016 · 3972 / 270 · 256 | **3908 · 3936 / 236 · 250** |
+  | `/` LCP ≤ 2500 · `/learn/sim` | ✅ (sim declined in r1) | ✅ |
+
+  `/live/markets` is red on the BASE in both rounds — that ceiling is unreachable in this sandbox on
+  either tree, p4·M7's recorded factor of two against the runner; `/` blocking straddles its ceiling
+  on both trees (p4·01's plateau — the base's 399 is one millisecond under); and `/live/mempool`, the
+  one route this diff touches, is green on both and BETTER on the head in all four readings.
+  **AND CI SETTLES IT: all three checks GREEN on the head `8c04900`** — `hardening gates`, which runs
+  this same 39-member chain including `verify-vitals`, reports **success** (23:11 → 23:42 UTC),
+  beside `typecheck + build + offline gates` and the Vercel preview, deployed Ready. A draft PR,
+  #210, mergeable, no review comments at the time of writing.
   **No human has seen the rendered result in a browser** — read from screenshots at 1440 and 390 (dpr 2): classic and orbital tracked from the URL alone (orbital's ring lights the tracked transaction and the chip reads `AAAAAAAA…AAAAAA · IN MEMPOOL ×`), the phone's panel brought into view by p4·M8's `useDetailReveal`, and the unknown-txid not-found state. **Classic's chip is clipped at the right edge at 1440** in both classic captures — `.mempool-search-bar` sits inside the wide `.mp-view` that pans — which p4·M8 already recorded ("off-screen on desktop too") and which is untouched here.
 
 - **2026-09-02**: p4·M9b "MOBILE 2.0: NAV REACHABILITY AND A PHONE LAYOUT FOR CLASSIC"
