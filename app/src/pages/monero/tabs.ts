@@ -35,6 +35,11 @@ export const MONERO_TABS: readonly MoneroTabMeta[] = [
   { id: "legality", label: "Legality" },
   { id: "comparison", label: "vs Bitcoin" },
   { id: "attacks", label: "Attacks survived" },
+  // p4·M11 — the demand thesis. Sits between "Attacks survived" and "Bottom
+  // Line" because it is the argument the bottom line concludes from. The tab
+  // component is the only LAZY one on this page; see ThesisTab.tsx's header
+  // for the measurement that forced it.
+  { id: "thesis", label: "Thesis" },
   // "future" retired in v6.0.1 — the roadmap now has its own top-level page at
   // /future (live repo pulses + feeds). /monero/future redirects there; see App.tsx.
   { id: "bottomline", label: "Bottom Line" },

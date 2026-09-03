@@ -337,7 +337,27 @@ const BUDGETS = {
      ten views, in both states it renders in, costs a handful of bytes. Comments
      are free (Vite minifies the production sheet), so the long arguments in
      both sheets cost 0 B. */
-  cssGz: 19_500,        // p4·M9b: built 19,011 on the FINAL tree, margin 489 (2.5%).
+  /* p4·M11 RAISE, 19,500 -> 21,700, and it is the largest single cssGz raise
+     in this file's history — said out loud rather than buried, because the
+     arithmetic was done BEFORE the first rule was written, which is the only
+     thing that makes a raise this size a decision rather than a discovery.
+       baseline (9847dfe, built)                       19,011  margin 489
+       the mockup's stylesheet appended verbatim       +2,756  -> would need 21,800
+       ... with its :root + both light-mode halves cut +2,060
+       WHAT SHIPS, measured on the built sheet         +2,156  -> 21,167 predicted
+       built on the FINAL tree                                    21,105
+     The shipped block is 30 rules leaner than the mockup's because four of the
+     seven pressure hues bind to tokens this repo already owns (see the block's
+     own header in styles.css for the CIEDE2000 table that forced that), the
+     nine restated token names are gone, and the entire light-mode half is dead
+     code here — this site has no light theme and no prefers-color-scheme rule
+     in any of the five sheets.
+     THE COST IS DIFFUSE AND THAT IS WHY IT CANNOT BE TRIMMED FURTHER: the ten
+     largest rules are 20.5% of the block, spread over ~107 units averaging
+     ~106 minified bytes. There is no fat rule to delete; it is one page's whole
+     visual system. 21,105 x 1.025 = 21,633, rounded to 21,700 -> margin 595,
+     the same ~2.5% shape p4·02, p4·M8 and p4·M9b each used. */
+  cssGz: 21_700,        // p4·M11: built 21,105 on the FINAL tree, margin 595 (2.8%).
   //   RED-THEN-GREEN: 19,011 against the old 19,000 — over by ELEVEN BYTES.
   //   Raised to built + ~2.5%, which is the proportion this budget's own note
   //   below says it is deliberately run at (the JS ceilings run ~10%), and the
@@ -716,7 +736,13 @@ const BUDGETS = {
      eagerJsRaw 280,000 + lazyJsRaw 986,000 = 1,266,000 against this line's
      1,251,000, so the "sum of the two real budgets" construction has now been
      lapsed for thirteen releases. */
-  totalJsRaw: 1_266_000,  // p4·M9b: built 1,263,109 on the FINAL tree, margin 2,891 (0.23%).
+  /* p4·M11 RAISE, 1,266,000 -> 1,309,000. MOVED WITH lazyJsRaw BY THE SAME
+     43,000, so the documented 265,000 gap between the two ceilings is
+     unchanged — this line stays the backstop it is and is not re-argued here.
+     The reconciliation this file has flagged as lapsed since p2·7 is STILL
+     lapsed (eagerJsRaw 280,000 + lazyJsRaw 1,044,000 = 1,324,000 against this
+     line's 1,309,000) and is still not this PR's to make. */
+  totalJsRaw: 1_309_000,  // p4·M11: built 1,306,187 on the FINAL tree, margin 2,813 (0.22%).
   //   MOVED WITH lazyJsRaw BY THE SAME 4,000, so the documented gap between the
   //   two holds at 265,000 — this row's own construction, kept rather than
   //   quietly broken. eager +736 (the entry alone; its lazy sibling in the
@@ -1414,7 +1440,21 @@ const BUDGETS = {
      to one lazy view and one lazy shared component should read as. Chunk count
      76 = 76, nothing minted: `useLadderAnchor.ts` is a new module but every one
      of its importers is already inside classic's chunk group. */
-  lazyJsRaw: 1_001_000, // p4·M9b: built 997,403 on the FINAL tree, margin 3,597 (0.36%).
+  /* p4·M11 RAISE, 1,001,000 -> 1,044,000. The whole delta is ONE MINTED CHUNK
+     plus its wiring, and it is attributable to residual ZERO: paired per chunk
+     STEM by multiset against an ISOLATED git-worktree build of 9847dfe, 75 of
+     79 slots are size-identical and the four that moved are
+       ThesisTab (lazy)   0 -> 41,673   MINTED — the tab and its data
+       MoneroPage (lazy)  71,000 -> 71,550   (+550, the React.lazy + Suspense)
+       index css          95,151 -> 106,788  (not JS)
+       index ENTRY        102,791 -> 102,820 (+29, the tab label, eager via ia.ts)
+     41,673 + 550 = 42,223 = lazyJsRaw's whole delta, exactly.
+     THE POINT OF THE MINT IS THAT `/monero` DID NOT PAY FOR IT: that route row
+     moved 113,862 -> 114,158, i.e. +296 B gzip for a tab carrying ~13.3 kB
+     gzip of prose, because React.lazy makes it a dynamicImport and :2288 above
+     records that a route's static closure excludes those. A static import
+     would have charged all seven other tabs for a tab they never render. */
+  lazyJsRaw: 1_044_000,  // p4·M11: built 1,040,452 on the FINAL tree, margin 3,548.
   //   RED-THEN-GREEN at 997,403 against 997,000. Attribution is RESIDUAL ZERO
   //   over three terms, paired per chunk STEM by MULTISET against a snapshot of
   //   the untouched 8dc7a56 build: SectionSheet 0 -> 1,147 (minted) + classic
@@ -2238,7 +2278,18 @@ const ROUTE_BUDGET_GZ = {
    BottomTabBar is a static import of the eager NavTop and a static import of
    the sheet would pull V6Modal's chunk into the entry (measured: 0 occurrences
    of `v6-modal-veil` in the eager entry after the change). */
-const CHUNK_COUNT = 74;
+/* p4·M11 — RE-CENTRED 74 -> 75, and the band's WIDTH is untouched at ±4.
+   The build measures 78 against the old [70, 78]: INSIDE it and exactly ON the
+   ceiling, which is the state this file's own rule says to re-centre out of —
+   a per-release DRIFT detector sitting on its own limit reports the next mint
+   as a budget failure instead of as news about the build. [71, 79] restores
+   the one rung of upward headroom p4·04, p4·05 and p4·07 each re-established.
+   THE FALSIFYING TEST IS MET AND THIS IS THE WHOLE LICENCE FOR A RE-CENTRE:
+   the new chunk can be NAMED, and it is `ThesisTab` — a net-new lazy pane on
+   /monero, not a leaf that drifted across a group boundary. The day a release
+   cannot name its new chunk, the answer is per-stem accounting, not a wider
+   band. */
+const CHUNK_COUNT = 75;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

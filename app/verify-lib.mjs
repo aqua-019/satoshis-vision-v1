@@ -255,7 +255,14 @@ export const ROUTES = [
   '/future',
   '/future/outlook',
   ...['journey', 'timeline', 'quotes', 'simulators'].map((t) => `/learn/${t}`),
-  ...['overview', 'origin', 'tech', 'legality', 'comparison', 'attacks', 'bottomline']
+  /* p4·M11 adds 'thesis'. This list is HAND-COPIED from pages/monero/tabs.ts
+     and nothing derives it — the convention here is total (all seven tabs were
+     present), so a new tab that is left out is simply never walked by the three
+     gates that read this array: verify-nav, verify-responsive and verify-shots.
+     verify-mobile does NOT read it — it imports the 18-entry build ROUTES from
+     scripts/routes.mjs, so no /monero tab has ever been in its type-floor
+     sweep. verify-thesis.mjs §4 covers that gap for this one. */
+  ...['overview', 'origin', 'tech', 'legality', 'comparison', 'attacks', 'thesis', 'bottomline']
     .map((t) => `/monero/${t}`),
   ...['decoy', 'dandelion', 'viewtags', 'ringct', 'stealth', 'fcmp',
       'seraphis', 'jamtis', 'carrot', 'cuprate', 'stressnet', 'ospead',

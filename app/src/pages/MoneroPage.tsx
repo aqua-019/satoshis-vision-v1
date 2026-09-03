@@ -38,6 +38,18 @@ import { VsBitcoinTab } from "./monero/VsBitcoinTab";
 import { AttacksTab } from "./monero/AttacksTab";
 import { BottomLineTab } from "./monero/BottomLineTab";
 
+/* p4·M11 — THE ONE LAZY TAB, and it is measured rather than preferred. Every
+   other tab is a static import and stays one: they are small. This one carries
+   seven sourced briefs (~13.3 kB gzip of data alone) onto a route whose gzip
+   margin was 1,138 B when it was written, so a static import would charge all
+   seven other tabs for prose they never render. `views/index.tsx` makes the
+   same argument for the ten mempool view engines, and verify-bundle.mjs:2288
+   records that a route's closure EXCLUDES dynamicImports for exactly this
+   shape. See ThesisTab.tsx's header for the full arithmetic. */
+const ThesisTab = React.lazy(() =>
+  import("./monero/ThesisTab").then((m) => ({ default: m.ThesisTab })),
+);
+
 export function MoneroPage() {
   const data = useMoneroLive();
   const navigate = useNavigate();
@@ -70,6 +82,17 @@ export function MoneroPage() {
     case "legality":   content = <LegalityTab {...tabProps} />; break;
     case "comparison": content = <VsBitcoinTab {...tabProps} />; break;
     case "attacks":    content = <AttacksTab {...tabProps} />; break;
+    case "thesis":
+      // The fallback reserves height for the same reason MempoolPage.tsx:248
+      // does: a short placeholder swapped for a tall tab is a layout shift.
+      content = (
+        <React.Suspense
+          fallback={<div className="mono dim" style={{ padding: 40, minHeight: "70vh" }}>loading the thesis…</div>}
+        >
+          <ThesisTab {...tabProps} />
+        </React.Suspense>
+      );
+      break;
     case "bottomline": content = <BottomLineTab {...tabProps} />; break;
     default:           content = <OverviewTab {...tabProps} />;
   }
@@ -81,7 +104,7 @@ export function MoneroPage() {
   // the `scrollTo(0, 0)` effect that lived here; it is now useRouteChrome's rule 3,
   // which is the first version of this claim that is actually TRUE on desktop.
   return (
-    <PageShell width={active === "bottomline" ? "reading" : "standard"} bg={{ intensity: "calm" }}>
+    <PageShell width={active === "bottomline" || active === "thesis" ? "reading" : "standard"} bg={{ intensity: "calm" }}>
       <Crumbs path={active === "overview" ? R.MONERO : `${R.MONERO}/${active}`} />
       <MoneroTabs active={active} onChange={onChange} />
       {content}

@@ -183,11 +183,23 @@ await coldBootOffBrowser(b);
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
 
-  // p4·05 adds '/about/site'. It carries more OUTBOUND ANCHORS than any other
-  // route — a fundraiser on kuno.anne.media and an operator link — so it is the
-  // page where an anchor could most plausibly become a request by accident (an
-  // embedded widget, a progress badge, a favicon). Phase 1 above deliberately
-  // does not flag <a href>; this is the run that proves the distinction held.
+  // p4·05 adds '/about/site' — a fundraiser on kuno.anne.media and an operator
+  // link — so it is a page where an anchor could plausibly become a request by
+  // accident (an embedded widget, a progress badge, a favicon). Phase 1 above
+  // deliberately does not flag <a href>; this is the run that proves the
+  // distinction held.
+  /* p4·M11 CORRECTION — THIS COMMENT CLAIMED /about/site CARRIES "more OUTBOUND
+     ANCHORS than any other route" AND THAT WAS ALREADY FALSE, by a factor of
+     four, before this release touched anything. Counted over the prerendered
+     documents at 9847dfe (`<a href="http…">` per dist/<route>/index.html):
+     /operate/mine 13 · /operate/peers 10 (9 hosts) · /future 9 ·
+     /operate/superstress 7 · /about/site 3 · every other route 2.
+     /about/site ranks FIFTH. The p4·06 comment below is stale the same way:
+     /future/protocol's prerendered document carries 2, not "five off-origin
+     resource anchors" — the rest exist only in its ?p= detail state, which is
+     the same open-the-panel distinction p4·M3 found on /operate/peers.
+     The ranking is stated rather than the superlative repaired, because a
+     superlative is what one counterexample breaks and a count is not. */
   /* p4·06 adds BOTH of its routes, on p4·05's own precedent (which added
      /about/site here for exactly this reason). /future/protocol carries the
      five off-origin resource anchors including the two new audit links, so it
@@ -204,7 +216,7 @@ await coldBootOffBrowser(b);
      measured rather than assumed. */
   for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn',
                        '/about/site', '/future/protocol', '/operate/peers',
-                       '/operate/superstress/explorer']) {
+                       '/operate/superstress/explorer', '/monero/thesis']) {
     await p.goto(base + route, { waitUntil: 'load' }).catch(() => {});
     // v6.1.8 PRECONDITION — Home only. This gate counts OFF-ORIGIN REQUESTS;
     // if the splash covered Home and issued none, the zero would be the
@@ -229,6 +241,62 @@ await coldBootOffBrowser(b);
      * back to measuring an unopened page while looking like it had improved,
      * which is the same defect one layer up. `shotsSeen` is therefore asserted
      * POSITIVE — six same-origin image requests must actually have happened. */
+    /* p4·M11 — /monero/thesis IS THE SECOND ROUTE WHERE VISITING IT IS NOT
+     * ENOUGH, and for exactly the reason p4·M3 records below for peers.
+     *
+     * Every one of this page's source links lives inside a brief that V6Modal
+     * unmounts when closed, so an unopened /monero/thesis contains ZERO
+     * outbound anchors and ZERO off-origin-capable elements. Sweeping it
+     * unopened would be a true statement about the wrong subject — and this is
+     * the page in the whole sweep with the most off-origin links to get wrong:
+     * 27 source rows over 26 distinct URLs and 23 hosts, more than double
+     * /operate/peers' 9 hosts, which is the current maximum anywhere on the
+     * site. Every one is a plain <a>; nothing here may become a request.
+     *
+     * All seven briefs are opened. The FLOOR is asserted first: if the clicks
+     * silently did nothing this would go back to measuring an unopened page
+     * while looking like it had improved. `anchorsSeen` must be positive, and
+     * every anchor found must be an absolute https URL carrying
+     * rel="noopener noreferrer" — the one property no other gate in this suite
+     * checks for this page (verify-origins counts REQUESTS; the four existing
+     * rel checks are each scoped to a surface a Monero tab does not inherit). */
+    if (route === '/monero/thesis') {
+      const panels = await p.evaluate(() =>
+        [...document.querySelectorAll('[data-thesis-panel]')].map((b) => b.getAttribute('data-thesis-panel')));
+      ok(panels.length === 7,
+         `2 · /monero/thesis exposes ${panels.length} brief controls to open (floor: an unopened page has no source anchor at all, so a zero here makes this sweep vacuous)`);
+
+      let anchorsSeen = 0;
+      const badRel = [];
+      const badScheme = [];
+      const hosts = new Set();
+      for (const id of panels) {
+        await p.click(`[data-thesis-panel="${id}"]`).catch(() => {});
+        await p.waitForSelector('.th-brief', { timeout: 4000 }).catch(() => {});
+        const found = await p.evaluate(() =>
+          [...document.querySelectorAll('.th-srcs a')].map((a) => ({
+            href: a.getAttribute('href') || '',
+            rel: a.getAttribute('rel') || '',
+            target: a.getAttribute('target') || '',
+          })));
+        for (const a of found) {
+          anchorsSeen++;
+          if (!/^https:\/\//.test(a.href)) badScheme.push(a.href);
+          if (a.target === '_blank' && !/noopener/.test(a.rel)) badRel.push(a.href);
+          if (!/noreferrer/.test(a.rel)) badRel.push(a.href);
+          try { hosts.add(new URL(a.href).host); } catch { badScheme.push(a.href); }
+        }
+        await p.keyboard.press('Escape');
+        await p.locator('.th-brief').waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
+      }
+      ok(anchorsSeen >= 27,
+         `2 · the seven briefs rendered ${anchorsSeen} source anchors across ${hosts.size} hosts (floor 27 — the count is the sum of the seven srcs arrays, so a panel that stopped rendering its sources reds here)`);
+      ok(badScheme.length === 0,
+         `2 · every source href is an absolute https URL${badScheme.length ? ' — offenders: ' + badScheme.slice(0, 4).join(', ') : ''}`);
+      ok(badRel.length === 0,
+         `2 · every source anchor carries rel="noopener noreferrer"${badRel.length ? ' — offenders: ' + badRel.slice(0, 4).join(', ') : ''}`);
+    }
+
     if (route === '/operate/peers') {
       const ids = await p.evaluate(() =>
         [...document.querySelectorAll('[data-peer-brief]')].map((b) => b.getAttribute('data-peer-brief')));
