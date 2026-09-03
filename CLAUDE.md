@@ -1017,6 +1017,41 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   are drawn UNDER the opaque panels at `z-index 0` so they show only in the 13 px gutters, which
   is the mockup's own z-order; and panel V is half empty at 1440 because it spans two rows with
   short content, which is the mockup's own composition.
+  **THE SUITE, AND THE ONE RED TOOK A CONTROL THIS FILE HAS NOT RECORDED BEFORE.**
+  `verify:static` exit 0 · `verify-bundle` 32 · **`verify:e2e` ran ALL 40 members against a
+  dist stamped to HEAD — 39 green, one red, and it is `verify-vitals`** on the single
+  assertion `/live/markets · median LCP 4360ms ≤ 2600ms`. **AND THE STANDARD PAIRING
+  PROTOCOL THIS FILE PRESCRIBES WAS NOT SUFFICIENT — it produced a FALSE REGRESSION
+  SIGNAL, and only a PORT SWAP discriminated.** Paired the usual way — two builds, two
+  ports, interleaved, two rounds each, holders confirmed by `/proc/<pid>/cwd`, trees proven
+  distinct by entry hash (`index-Bq2UhpTv` head, `index-DEj6_v9q` base) — the base read
+  **2352 · 2328 (GREEN)** against the head's **4304 · 4436 (RED)**, a reproducible ~2,000 ms
+  gap that reads exactly like a regression this release introduced. The builds were checked
+  for parity first and are equivalent (12 fonts each, identical `/live/markets` HTML at
+  63,576 B, identical rendered output — 1 canvas, 1,933 text chars, mainH 2,685, ZERO failed
+  requests), so the obvious "the base build is broken" escape was closed rather than assumed.
+  **What settled it was SWAPPING THE PORTS**, which is the control that separates a fact
+  about the tree from a fact about the environment:
+
+  | tree | port 4173 | port 4174 |
+  |---|---|---|
+  | head | 4304 · 4436 | 4356 · 4368 |
+  | base | 4300 · 4208 | **2352 · 2328** |
+
+  The head is TIGHT across all four (4304-4436, spread 132). **The BASE is BIMODAL** —
+  2328 to 4300, spread **1,972 ms** — and its own high readings land on the head's. So the
+  instrument's spread ON THE BASE exceeds the head-vs-base delta, and the A/B comparison
+  carries NO INFORMATION about this branch: p4·07's recorded A/A finding, reproduced by a
+  different route and a different mechanism. Every one of the head's four readings also sits
+  inside the 4,324-4,656 band this file has recorded for this route across a dozen releases.
+  **AND CI SETTLES IT: all three checks GREEN on the head `ab53cc4`** — `hardening gates`,
+  which runs this same 40-member chain INCLUDING `verify-vitals`, reports **success**
+  (21:37 → 22:10 UTC), beside `typecheck + build + offline gates` and a Vercel preview
+  deployed Ready. p4·M7 measured this route at **2,168 ms on the runner against 4,368 here**.
+  **THE TRANSFERABLE HALF: two ports is not a control, it is a pairing. When a paired
+  vitals result looks like a regression, SWAP THE PORTS before believing it** — the standard
+  protocol held a port-linked artifact that would have been published as a +2,000 ms
+  regression on a route the diff barely touches.
   **No human has seen the rendered result in a browser.**
 
 - **2026-09-02**: p4·M10 "A TRACKED TRANSACTION GETS AN ADDRESS" (app/ + .github/ + README) —
