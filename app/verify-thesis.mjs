@@ -292,6 +292,37 @@ try {
     await page.locator('[role="dialog"]').waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
   }
 
+  /* §4c — OVERFLOW, SCROLLER-AWARE. Nothing else checks this route for it:
+     verify-mobile's §2 sweep reads the 18 build routes and no /monero tab is
+     among them. Measured with BOUNDING RECTS, not scrollWidth — `.art` and
+     `body` are `overflow-x: clip` below 769px, so the document's scrollWidth
+     structurally cannot exceed the viewport and would report a clean zero over
+     a page hanging off the edge (p4·02's recorded finding).
+     An element inside a HORIZONTAL SCROLLER is exempt and that is not a
+     loophole: `.tabstrip` is `overflow-x: auto` and genuinely scrollable
+     (scrollWidth 880 against clientWidth 334 at 390), so its later tabs sit
+     past the viewport BY DESIGN — the same swipe-the-columns pattern
+     styles.css grants `.table-scroll`. Four of them already did so with seven
+     tabs; this release adds a fifth. */
+  for (const [w, h] of [[390, 844], [320, 568]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.waitForTimeout(200);
+    const over = await page.evaluate((vw) => {
+      const scrolls = (el) => {
+        for (let n = el; n && n !== document.body; n = n.parentElement) {
+          const cs = getComputedStyle(n);
+          if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && n.scrollWidth > n.clientWidth + 1) return true;
+        }
+        return false;
+      };
+      return [...document.querySelectorAll('main.main *')]
+        .filter((el) => el.getBoundingClientRect().right > vw + 0.5 && !scrolls(el))
+        .map((el) => `${Math.round(el.getBoundingClientRect().right)}px <${el.tagName.toLowerCase()} class="${el.className}">`);
+    }, w);
+    ok(over.length === 0,
+       `§4c·${w} nothing outside a horizontal scroller extends past the viewport${over.length ? ` — ${over.length}: ` + over.slice(0, 4).join(' | ') : ''}`);
+  }
+
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.waitForTimeout(150);
 
