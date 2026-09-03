@@ -191,10 +191,19 @@ function Brief({ p, titleId, onClose }: { p: ThesisPressure; titleId: string; on
 
 export function ThesisTab(_props: MoneroTabProps) {
   const [openId, setOpenId] = React.useState<string | null>(null);
-  // useId, not a hardcoded string — the idiom both existing V6Modal consumers
-  // use (EcoPopup, ProtoPopup). A literal id is one duplicated mount away from
-  // two dialogs sharing an aria-labelledby target.
-  const titleId = React.useId();
+  /* useId, not a hardcoded string — the idiom both existing V6Modal consumers
+     use (EcoPopup, ProtoPopup). A literal id is one duplicated mount away from
+     two dialogs sharing an aria-labelledby target.
+     SANITISED, and that is a real fix rather than a way past verify-chartkit's
+     file-level check. React emits ":r0:", and a raw ":" is legal in
+     aria-labelledby but NOT inside url(#…) — and this component contains both,
+     which is exactly the pair that gate looks for. Deriving the SVG marker id
+     from the same sanitised value also retires a hardcoded global id: the
+     router mounts one tab at a time so it could not collide today, but that is
+     an argument about the router, not about the markup. */
+  const uid = React.useId().replace(/:/g, "");
+  const titleId = `th-t-${uid}`;
+  const markerId = `th-ah-${uid}`;
   const [lit, setLit] = React.useState<ThesisThemeId | null>(null);
   const open = THESIS_PRESSURES.find((p) => p.id === openId) ?? null;
 
@@ -221,11 +230,11 @@ export function ThesisTab(_props: MoneroTabProps) {
             881px exactly as the mockup hides it. */}
         <svg className="th-loop-svg" viewBox="0 0 1000 760" preserveAspectRatio="none" aria-hidden="true">
           <defs>
-            <marker id="th-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <marker id={markerId} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M0,1 L9,5 L0,9 z" fill="var(--ink-40)" />
             </marker>
           </defs>
-          <g fill="none" stroke="var(--ink-40)" strokeWidth="1.2" markerEnd="url(#th-ah)">
+          <g fill="none" stroke="var(--ink-40)" strokeWidth="1.2" markerEnd={`url(#${markerId})`}>
             {["M300,70 C420,70 480,70 560,70",
               "M118,150 C118,200 118,220 118,258",
               "M300,325 C360,325 380,325 418,325",
@@ -238,7 +247,7 @@ export function ThesisTab(_props: MoneroTabProps) {
               ))}
           </g>
           <path d="M958,658 C990,560 990,138 350,58" fill="none" stroke="var(--ink-40)" strokeWidth="1.2"
-                strokeDasharray="2 6" markerEnd="url(#th-ah)" opacity=".65" />
+                strokeDasharray="2 6" markerEnd={`url(#${markerId})`} opacity=".65" />
         </svg>
 
         <div className="th-grid">

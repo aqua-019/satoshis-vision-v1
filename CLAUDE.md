@@ -28,7 +28,17 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **89** `verify-*.mjs` files (`app/` ×80, `app/scripts/` ×1, `api/_tests/` ×8) — **85 gates**
+- Verification: **90** `verify-*.mjs` files (`app/` ×81, `app/scripts/` ×1, `api/_tests/` ×8) — **86 gates**
+  (p4·M11 RECOUNTED — **90 / 86 / 22 / 40 / 76 / 6**, i.e. 82 invocations − 6 duplicates. FOUR
+  figures move and `verify:static` and the orphan count do NOT, which is the correct outcome for
+  a release that adds a gate FILE **and wires it in the same release** — such a gate never passes
+  through the orphan list. The instrument was CONTROLLED against SIX commits before being
+  trusted and reproduced every one EXACTLY, including the base: `768ba13` 85/81/22/35/71/6,
+  `74bc561` 86/82/22/36/72/6, `0f00d26` 87/83/22/37/73/6, `e0c87ad` and `5854cbd` both
+  88/84/22/38/74/6, and `9847dfe` 89/85/22/39/75/6. It carries the fixes for all three recorded
+  defects of this instrument at once — count at ANY depth, allow BOTH a space and a `/` before
+  the filename, and walk `run:` BLOCK SCALARS line by line rather than with a lazy capture that
+  stops at the first line end.)
   (p4·M9a RECOUNTED and every figure is UNCHANGED — **89 / 85 / 22 / 39 / 75 / 6** — the correct
   outcome for a release that EXTENDS one gate in place and adds no gate FILE. CONTROLLED against
   FIVE commits first, all reproduced EXACTLY. **AND THE SCRIPT'S FIRST RUN WAS WRONG IN THE WAY
@@ -149,7 +159,7 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **75 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **76 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
   `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
@@ -539,7 +549,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **75 of the 85** gates on every PR to `main` and on every push to `main`
+- CI runs **76 of the 86** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **6**
   are wired to nothing (p3·18 wired `verify-legality`, an orphan since v6.0.10). This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -881,6 +891,133 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-09-03**: p4·M11 "/monero/thesis · THE EIGHTH TAB" (app/ + .github/) — seven sourced
+  demand pressures, each opening a brief, between "Attacks survived" and "Bottom Line".
+  **THE BRIEF'S BUDGET TABLE WAS ONE RELEASE STALE ON FOUR OF SIX GLOBALS AND 9,708 B STALE ON THE
+  ROW IT BUILT ITS WHOLE ARGUMENT ON.** It states *"`/monero` has real room and `cssGz` has almost
+  none. That asymmetry decides the whole implementation."* Measured on the untouched base,
+  `/monero` is **113,862 of 115,000 — 1,138 B, the SEVENTH TIGHTEST of the eighteen route rows**,
+  not the roomiest (`/` at 8,017). And the content is **13,303 B gzip against that 1,138** (11.7x)
+  and **3,455 B of stylesheet against cssGz's 489** (7x) — an order of magnitude on BOTH axes, not
+  p4·M9b's coin flip. Third consecutive release the table has been ~9 kB stale on its own subject
+  route (M9b 8,952 · M10 9,203); its own "re-measure and quote your own" is the only part worth
+  reading.
+  **THE TAB IS THE ONLY LAZY ONE AND THAT IS MEASURED.** `React.lazy` makes it a dynamicImport,
+  which `verify-bundle.mjs:2288` records is EXCLUDED from a route's static closure — the identical
+  shape as `/live/mempool`'s ten view engines, whose registry header argues it in the same words.
+  **`/monero` moved 113,862 → 114,158, +296 B for a tab carrying 13.3 kB gzip, and needed NO
+  raise**; a static import would have charged the seven other tabs for prose they never render,
+  which is p4·M3's recorded defect against `data.ts`.
+  **THE MOCKUP'S CENTRAL LAYOUT DECLARATION IS INVALID CSS, in the mockup exactly as here.** Its
+  `grid-template-areas` puts p5 on columns 4-6 of row 1 and 5-6 of row 2 — an **L**, and a grid
+  area must be a RECTANGLE — so the browser DISCARDS the whole declaration: `grid-template-areas`
+  computed `none`, every `grid-area: pN` resolved against implicit named lines, and all seven
+  panels stacked at ONE position (top 416 / left 269 / 993x358) with a click on II intercepted by
+  VII. Repaired to the nearest LEGAL grid keeping the author's composition. **No gate could have
+  caught it; only rendering and measuring did.**
+  **THE DATA IS GENERATED FROM THE MOCKUP, NOT RETYPED** (p4·06's rule), the generator REFUSING to
+  emit if a numeral is unknown, a `srcs` key has no source, `HUEBY` stops being derivable, or
+  `WHY` is not exactly the 21 sorted pairs — and the port proven **byte-for-byte round-trip
+  identical** on every rendered string.
+  **THE BRIEF'S "21 SOURCES" IS 28**: 28 declared, all absolute https, **26 cited**, 27 rendered
+  anchors over 23 hosts, `genius` cited twice, and **`bis` and `seiz` cited by nothing** — pinned
+  BY NAME so a third cannot appear unnoticed, and reported rather than deleted because citing them
+  would mean writing prose that references them.
+  **`WHY` IS EXACTLY THE 21 PAIRS AND ONE IS DEAD DATA THE BRIEF DID NOT KNOW ABOUT**: the
+  correlation list pairs by SHARED THEME, and IV [data·privacy·future] shares NONE with VI
+  [trace·risk·state], so `WHY["IV|VI"]` is written and never rendered. Gated as **21 declared AND
+  20 reachable with the dead pair NAMED**, so a second is a build failure rather than a silent
+  loss of a written sentence. **THREE SOURCES CARRY A NON-DATE IN THE DATE SLOT** (`fcc`/`seiz`
+  "—", `hf` "live" — an open milestone), two of which ship, so the standfirst says "dated where
+  its publisher dates it" instead of inventing dates.
+  **THE PALETTE IS THE REPO'S OWN, REDISCOVERED — and the instrument reproduces this file's own
+  recorded calibration exactly, which is what makes the rest trustworthy.** CIEDE2000 against
+  every shipping accent puts **SEVEN of the mockup's EIGHT hues inside the 4.35 calibration gap,
+  THREE at exactly 0.00** (my implementation measures that shipping-pair minimum at **4.35**,
+  matching p4·M6c). Four bind to the token already carrying that colour, three literals are new,
+  and **ONE IS FORCED**: the mockup gives VI `#ff7a1a`, which is `--o-50`, the Monero orange,
+  against the standing rule that orange means crypto DATA and never decoration. Re-hued to
+  `#e879a9` — **36.54** from the orange, **14.22** from its nearest neighbour (3.3x the
+  calibration), chroma 49 inside the existing 35-87 range so the distance is bought with hue
+  rather than by washing out, worst contrast 6.05. `--xmr` `#ff6600` is 4.61 from the real orange
+  — a second orange nobody can distinguish — so it binds to `--tk-accent`.
+  **FOUR MORE DEFECTS FOUND BY RENDERING AND MEASURING, none visible to review**: a `<button>`
+  centres its content box vertically in Chromium even at `display:block`, so the one two-row card
+  began **279 px below its own top border**; the class rename reached the stylesheet but NOT the
+  class names embedded in the mockup's HTML strings, so all nine `.tag` chips rendered unstyled;
+  the source attribution line — the one line carrying this page's whole claim — rendered at
+  **1.24:1**; and **`--bg-0` is the ONE ground token no theme rebinds**, so chips grounded on it
+  would be black holes in indigo's `#17161C` and phosphor's `#0A130A` panels.
+  **THE INK RAMP'S CONTRAST IS SITE-WIDE AND IS NOT THIS PR'S TO CHANGE — settled by a PAIRED
+  CONTROL, not by judgement.** Eleven roles here measure 1.24-3.00 against AA's 4.5, and three
+  UNTOUCHED pages measure IDENTICALLY: `.kicker` **1.71**, `.dim` **2.99**, `.dim2` **1.74** on
+  /monero/attacks, /about/site and /operate/peers against this page's 1.74 / 3.00 / 1.79. Recorded
+  for the operator; fixing it here would make one page inconsistent with seventeen.
+  **THE FLOW OVERLAY WAS PORTED AND THEN MEASURED RATHER THAN JUDGED**: §7 reads every arrow
+  endpoint back through the viewBox transform against the rendered panel rects and finds **10 of
+  10 landing inside a panel**, so dropping it on the suspicion that hand-placed coordinates could
+  not survive a font change would have been wrong.
+  **NEW GATE `verify-thesis.mjs` — 60 assertions in nine sections**, wired MID-CHAIN at
+  `verify:e2e` **20 of 40**, tail untouched. It covers TWO gaps MEASURED on the base:
+  **`verify-mobile`'s type-floor sweep imports the 18-entry BUILD routes, so NO Monero tab has
+  ever been in it** — not this one, not the seven that predate it — and **`verify-reduce` never
+  visits `/monero` at all**. Its own first run had FOUR defects it caught itself: a mis-transcribed
+  date allowlist; a `role="dialog"` sampled mid-exit against D0666's documented exit frame; a §4
+  reporting three of five named selectors `absent` because they exist only inside an open brief
+  (closed by sweeping inside one at both widths with a PRESENT floor); and a §9d tripping on the
+  block's own comment containing `#ff6600` — `verify-orb` §4's self-referential-grep defect,
+  fixed by stripping comments first.
+  **`verify-origins` GAINS `/monero/thesis`, THE SECOND ROUTE WHERE VISITING IT IS NOT ENOUGH**,
+  for p4·M3's exact reason: every source link lives inside a brief `V6Modal` unmounts, so an
+  unopened page has ZERO outbound anchors. All seven briefs are opened, floored, and every anchor
+  checked for absolute https and `rel="noopener noreferrer"` — a property **no gate in this suite
+  checked for this page**. **AND THAT FILE'S :186 SUPERLATIVE WAS ALREADY FALSE BY A FACTOR OF
+  FOUR BEFORE THIS RELEASE TOUCHED ANYTHING**: counted over the prerendered documents,
+  `/operate/mine` **13** · `/operate/peers` **10** · `/future` **9** · `/operate/superstress` 7 ·
+  **`/about/site` 3**, which is FIFTH. Corrected to a ranking rather than a repaired superlative,
+  because a superlative is what one counterexample breaks and a count is not.
+  **AND THE FULL CHAIN CAUGHT A REGRESSION THE NEW GATE STRUCTURALLY COULD NOT — the
+  run-the-whole-chain rule earning its keep TWICE in one release.** `verify:e2e` **ABORTED AT
+  POSITION 2** on `verify-palette` §4, which types the query `thesis` and calls it a "unique
+  word-start hit" in its own comment: a tab LABELLED "Thesis" made it ambiguous and
+  `/monero/thesis`, the exact label match, now ranks first. **The palette is RIGHT and the FIXTURE
+  rotted** — §4 now reads the top row's own `data-cmdk-path` and asserts Enter lands THERE, which
+  is the claim its text already made and cannot be falsified by the IA growing (48 → 50). Earlier,
+  `verify:static` caught a second: `verify-chartkit`'s file-level "every `useId()` feeding
+  `url(#…)` is sanitised" flagged this component for containing both — unrelated uses, but rather
+  than dodge it the SVG marker id now derives from the sanitised `useId`, retiring a hardcoded
+  global id. **One green line above an abort is not a pass; read the recorded exit** — the wrapper
+  reported 0 while `E2E_EXIT` said 1, p4·05's trap.
+  **BUDGETS: RESIDUAL ZERO ON ALL THREE HALVES.** Paired per chunk STEM by multiset against an
+  ISOLATED worktree build of `9847dfe`, **with JS and CSS separated and the `index` stem split by
+  ENTRY IDENTITY** from `dist/index.html`'s own `<script src>` — that stem holds the entry JS, a
+  lazy chunk AND the stylesheet, so a basename-keyed join files an 11,637 B CSS delta under the JS
+  budget. **75 of 79 slots size-identical**: `ThesisTab` 0 → 41,673 MINTED · `MoneroPage` +550 ·
+  `index` css +11,637 · `index` ENTRY +29. 41,673 + 550 = **42,223 = lazyJsRaw's whole delta**;
+  +29 = eagerJsRaw's; +42,252 = totalJsRaw's. Raised red-then-green on the FINAL tree: **cssGz
+  19,500 → 21,700** (built 21,105, margin 595) — the largest single cssGz raise here, with the
+  arithmetic done BEFORE the first rule and the cost shown DIFFUSE (the ten largest rules are
+  20.5% of the block across ~107 units averaging ~106 minified bytes, so there is no fat rule to
+  cut) — **lazyJsRaw 1,001,000 → 1,044,000**, **totalJsRaw 1,266,000 → 1,309,000** moved WITH lazy
+  by the same 43,000 so the 265,000 gap holds, and **CHUNK_COUNT re-centred 74 → 75**, width
+  untouched at ±4 (built 78, ON the old ceiling; the falsifying test is met because the new chunk
+  can be NAMED).
+  **CENSUS RECOUNTED with the instrument CONTROLLED against SIX commits, every one reproduced
+  EXACTLY including the base — 90 / 86 / 22 / 40 / 76 / 6**, 82 invocations − 6 duplicates.
+  THREE break tests, each restored against the COMMITTED BLOB with a bracketed marker sweep and a
+  rebuild between restore and re-measure, behind four guards: **M1** a dropped `WHY` key → **1 red
+  NAMING `V|VII`** with §2b-§2e green · **M2** a relative source href → red on BOTH instruments
+  (the pre-existing `verify-origins` would NOT have caught it — it counts REQUESTS, and an
+  `<a href>` is never one) · **M3** `variant="thesis"` removed → **exactly ONE red while the brief
+  still opens, is a labelled dialog, renders its sources and UNMOUNTS on Escape**, which is the
+  proof the variant is GEOMETRY and not BEHAVIOUR, `verify-discrete` green either way.
+  **NOT FIXED, and named**: the site-wide ink contrast; the seven pre-existing Monero tabs remain
+  outside every type-floor sweep; `verify-reduce` still never visits `/monero`; the flow arrows
+  are drawn UNDER the opaque panels at `z-index 0` so they show only in the 13 px gutters, which
+  is the mockup's own z-order; and panel V is half empty at 1440 because it spans two rows with
+  short content, which is the mockup's own composition.
+  **No human has seen the rendered result in a browser.**
 
 - **2026-09-02**: p4·M10 "A TRACKED TRANSACTION GETS AN ADDRESS" (app/ + .github/ + README) —
   `/live/mempool?v=<view>&tx=<64-hex>`. A tracked transaction had no URL: close the tab and the
