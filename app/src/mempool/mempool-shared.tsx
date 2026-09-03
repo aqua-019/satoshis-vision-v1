@@ -1,6 +1,7 @@
 // AUTO-PORTED from mempool/mempool-shared.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
+import { useSearchParams } from "react-router-dom";
 import type { MoneroLive, Block } from "@/data/types";
 import { shortHash, fmtBytes } from "@/data/types";
 import { LiveTxDetail, LiveBlockDetail } from "@/mempool/tx-detail";
@@ -30,6 +31,27 @@ export type Tracking =
   | { kind: "tx"; id: string; blockHeight: number | null; explicit?: boolean }
   | { kind: "block"; height: number; block?: Block }
   | null;
+
+/** The one txid validator. `MempoolSearchBar` accepts what this accepts and
+ *  `readTxParam` admits the same set from the URL — one predicate, so a typed
+ *  txid and a linked txid can never disagree about what a txid is.
+ *  (`live-detail.ts` keeps its own private copy as the fetch layer's guard:
+ *  importing this one there would close an import cycle, since this module
+ *  imports `useTrackedTxHeight` from it.) */
+export const TXID_RE = /^[0-9a-f]{64}$/i;
+
+/** p4·M10 — the `?tx=` parameter, read the way MempoolPage.tsx reads `?block=`:
+ *  a well-formed value, or NOTHING. A malformed value is ABSENT rather than an
+ *  error — the page is the mempool, as if no parameter were given — and a
+ *  well-formed one is lower-cased so `?tx=ABC…` and `?tx=abc…` name one
+ *  transaction (node txids are lower-case hex, and `/api/xmr/tx/<id>` is a
+ *  case-sensitive path segment). Exported because MempoolPage reads it too, to
+ *  silence `?block=` in its presence: precedence is decided THERE, in one
+ *  expression, never by which effect happens to run last. */
+export function readTxParam(params: URLSearchParams): string | null {
+  const raw = params.get("tx");
+  return raw != null && TXID_RE.test(raw) ? raw.toLowerCase() : null;
+}
 
 // MempoolHeartbeat — a per-mempool liveness chip. Real Monero blocks are ~2 min
 // apart, so the block ribbon is legitimately quiet between them; this gives the
@@ -101,7 +123,67 @@ export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
 }
 
 export function useMempoolTracking(data: MoneroLive) {
-  const [tracking, setTracking] = React.useState<Tracking>(null);
+  // p4·M10 — THE TRACKED TRANSACTION HAS AN ADDRESS: `?tx=<64-hex>`.
+  //
+  // The URL is read and written HERE, not in MempoolPage, because this hook is
+  // the one owner of the tracking slot and every view calls it. Wiring the read
+  // into the page would mean an eleventh copy of the `focusBlock` effect each
+  // view already carries by hand (classic.tsx:271, reactor.tsx:422, …), and an
+  // eleventh view would have to remember it; here it is free. Only `id` is in
+  // the URL: `blockHeight`, `explicit` and the resolved detail stay local and
+  // re-derive from the node exactly as they do after a typed search.
+  //
+  // ── PUSH / REPLACE, per routes/useUrlState.ts's policy block ─────────────
+  // "A query parameter that names PRIMARY, SHAREABLE CONTENT gets a history
+  // entry, so Back means 'the thing I was looking at before'." A tracked
+  // transaction is exactly that, so a search PUSHES — Back walks the tracked
+  // transactions in order and then lands on the plain mempool. Untracking
+  // REPLACES: it is a dismissal, the way `clearFocus` drops `?block` when a
+  // panel closes, not new content, so Back leaves the page rather than
+  // re-opening what was just closed.
+  //
+  // ── ONE SLOT, TWO KEYS ────────────────────────────────────────────────────
+  // `?block=` (the Home ribbon's deep link) and `?tx=` drive this one slot.
+  // Which wins on a URL carrying both is decided in MempoolPage — a well-formed
+  // `?tx=` silences `focusBlock` — and this hook keeps the URL from ever
+  // CLAIMING what is not on screen: a tx search sets `tx` and drops `block`, a
+  // block search drops both (an in-view block click writes no claim of its
+  // own, so the URL is silent about it, and a stale `block=` left standing
+  // would come back to life the moment `tx` went), and a clear drops both.
+  //
+  // ── WHY EVERY CLEAR WRITE DELETES BOTH KEYS ──────────────────────────────
+  // react-router-dom 6.30's functional `setSearchParams` composes on the
+  // RENDER-TIME params (`nextInit(searchParams)` inside a useCallback closed
+  // over them), not on the latest location — read in the installed source
+  // before this was written. The views' `clear` calls `clearTracking()` AND
+  // `onClearFocus()` back to back: two writes in one tick, both composing on
+  // the same stale copy, and the SECOND navigation is what survives. If each
+  // deleted only its own key, an untrack would leave `?tx=` in the URL and the
+  // effect below would re-track it on the next render. So both writes delete
+  // both keys and converge on one URL whichever lands last. The guards on
+  // `params.has(…)` keep a page with nothing to drop from issuing a
+  // navigation at all.
+  const [params, setParams] = useSearchParams();
+  const txParam = readTxParam(params);
+  const [tracking, setTracking] = React.useState<Tracking>(() =>
+    txParam ? { kind: "tx", id: txParam, blockHeight: null, explicit: false } : null,
+  );
+
+  // URL → state. The initializer covers mount; this covers Back/Forward and
+  // any other navigation that changes the parameter under a mounted view.
+  // Functional and identity-checked, so it cannot loop: after this hook's own
+  // write the URL names the txid the state already holds, the updater returns
+  // the SAME reference and React bails out — which is also what keeps an
+  // EXPLICIT click-from-block height from being wiped by that write. A block
+  // tracking is never touched here: a block has no URL claim, so the
+  // parameter's absence says nothing about it.
+  React.useEffect(() => {
+    setTracking((t) => {
+      if (txParam == null) return t?.kind === "tx" ? null : t;
+      if (t?.kind === "tx" && t.id.toLowerCase() === txParam) return t;
+      return { kind: "tx", id: txParam, blockHeight: null, explicit: false };
+    });
+  }, [txParam]);
 
   const onSearch = React.useCallback((q: SearchQuery) => {
     if (q.kind === "tx") {
@@ -114,13 +196,58 @@ export function useMempoolTracking(data: MoneroLive) {
       // Confirmations then derive live (confOf) on every render.
       const explicit = typeof q.blockHeight === "number";
       setTracking({ kind: "tx", id: q.id, blockHeight: explicit ? q.blockHeight! : null, explicit });
+      const id = q.id.toLowerCase();
+      // No write when the URL already names this txid and claims no block: a
+      // navigation to the URL you are on would PUSH a duplicate entry, and Back
+      // would then appear to do nothing.
+      if (readTxParam(params) !== id || params.has("block")) {
+        setParams((prev) => {
+          // ALWAYS the functional form — routes/useUrlState.ts's whole reason to
+          // exist: compose onto the params in the URL now, so `?v=` survives.
+          const out = new URLSearchParams(prev);
+          out.set("tx", id);
+          out.delete("block");
+          return out;
+        });
+      }
     } else {
       const block = data.blocks.find((b) => b.height === q.height);
       setTracking({ kind: "block", height: q.height, block });
+      // The slot is a block now, so a `tx` claim goes, and so does a `block`
+      // claim about a DIFFERENT block — a stale `block=` left standing would
+      // come back to life the moment `tx` went. A `block=` naming THIS height
+      // stays: it is the Home ribbon's deep link, and the views' own
+      // `focusBlock` effects reach this branch by way of it, so deleting it
+      // here would make every `?block=` link consume itself on arrival
+      // (verify-nav §4a caught exactly that in this release's first cut).
+      // PUSHED, not replaced: the transaction (or the linked block) WAS the
+      // primary content, and Back should return to it.
+      const staleBlock = params.has("block") && params.get("block") !== String(q.height);
+      if (params.has("tx") || staleBlock) {
+        setParams((prev) => {
+          const out = new URLSearchParams(prev);
+          out.delete("tx");
+          if (staleBlock) out.delete("block");
+          return out;
+        });
+      }
     }
-  }, [data.blocks]);
+  }, [data.blocks, params, setParams]);
 
-  const clearTracking = React.useCallback(() => setTracking(null), []);
+  const clearTracking = React.useCallback(() => {
+    setTracking(null);
+    if (params.has("tx") || params.has("block")) {
+      setParams(
+        (prev) => {
+          const out = new URLSearchParams(prev);
+          out.delete("tx");
+          out.delete("block");
+          return out;
+        },
+        { replace: true },
+      );
+    }
+  }, [params, setParams]);
 
   // ONE real block height, resolved from the node and re-polled while pending. The
   // ribbon reads tracking.blockHeight and the detail panel resolves the same height,
@@ -163,7 +290,7 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
     e.preventDefault();
     const t = q.trim();
     if (!t) return;
-    if (/^[0-9a-f]{64}$/i.test(t)) onSearch({ kind: "tx", id: t });
+    if (TXID_RE.test(t)) onSearch({ kind: "tx", id: t });
     else if (/^\d{1,8}$/.test(t)) onSearch({ kind: "block", height: parseInt(t, 10) });
   };
   return (

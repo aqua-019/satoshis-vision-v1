@@ -1623,7 +1623,16 @@ const ROUTE_BUDGET_GZ = {
                                      //  reasoning and same ~10% rule. This row IS the eager
                                      //  closure (2 chunks: entry + vendor), so it tracks that
                                      //  ceiling +1,000 rather than moving independently.
-  '/live/mempool':          107_000, //  96,835
+  '/live/mempool':          107_000, // 106,038 — p4·M10 RE-BASELINED FROM A BUILD OF THE BASE (cabab9c),
+                                     //  the merge of #209. This row read `96,835` from p4·M6b onward
+                                     //  while p4·M9b MEASURED 105,787 on its own base and recorded it
+                                     //  in the LOG rather than here, and then shipped 106,038 — so
+                                     //  the figure beside the ceiling was 9,203 B stale on the
+                                     //  tightest row on the board. TRUE MARGIN: 962 B (0.9%), not
+                                     //  the ~10,000 the old comment implied. The row two lines down
+                                     //  records the same defect against itself (`95,817` stale by
+                                     //  7,879); this is that defect on the route this repo calls
+                                     //  its flagship. Re-derive from `--measure`, never copy.
   '/live/markets':          121_000, // 117,803 — p3·13: 112,000 -> 121,000 (margin 3,197).
                                      // The route gained a chunk: `timeline` (12,973 B raw), the
                                      // annotation data, now shared with /learn rather than living

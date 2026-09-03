@@ -882,6 +882,143 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-09-02**: p4·M10 "A TRACKED TRANSACTION GETS AN ADDRESS" (app/ + .github/ + README) —
+  `/live/mempool?v=<view>&tx=<64-hex>`. A tracked transaction had no URL: close the tab and the
+  tracking was gone, send the link and the recipient got the mempool. Now the search WRITES the
+  address, the address OPENS the tracking, and all ten views get it with ZERO per-view edits.
+  **THE BRIEF'S BUDGET FIGURE WAS ONE RELEASE STALE, AND THE BRIEF SAID SO ITSELF.** It quotes
+  `/live/mempool` at 105,787 with a 1,213 B margin and instructs "re-measure and quote your own".
+  Measured on a build of `cabab9c`: **106,038 of 107,000 — 962 B**, the figure p4·M9b shipped;
+  the row's own comment still read `96,835`, 9,203 B stale on the tightest row on the board, and
+  was re-baselined in its own commit before any feature byte, as the brief asked.
+  **THE BRIEF'S TABLE ROW "URL state, composed not replaced → `useUrlState.ts`" IS HALF RIGHT,
+  and the half that is wrong decided the shape.** The hook's POLICY — push for primary shareable
+  content, replace for a secondary control, always the functional form — is exactly what this
+  feature follows and quotes. Its MECHANISM cannot hold a txid: `UrlStateSpec` demands an
+  enumerated `values: readonly T[]`, and a 64-hex string is a member of no list. `?block=`, the
+  one deep link already on this page, is not through the hook either (`MempoolPage.tsx:52`,
+  `useSearchParams` plus a regex), which is why `?tx=` follows THAT shape. For an open-domain
+  value the functional form is a CONVENTION, not a mechanism — the brief's own break test asks
+  exactly that, and M1 below answers it: the gate is what makes it a mechanism now.
+  **THE READ AND THE WRITE LIVE IN `useMempoolTracking`, NOT IN THE PAGE, and the reason is
+  countable.** The page reads `?block=` and hands `focusBlock` down; every one of the ten views
+  then carries its OWN copy of the effect that turns it into a search (`classic.tsx:271`,
+  `reactor.tsx:422`, and eight more). A page-level `?tx=` read would have been an eleventh copy
+  in ten files and an obligation on the eleventh view. The hook is the ONE owner of the tracking
+  slot and every view calls it, so the address is view-generic by construction — the same
+  argument `verify-tracking`'s header makes for its own sweep. Only `id` is in the URL;
+  `blockHeight`, `explicit` and the resolved detail stay local and re-derive from the node
+  exactly as after a typed search. **The re-render-loop question the brief could not answer from
+  outside**: the URL → state effect is functional and identity-checked (case-insensitively on the
+  id), so the hook's own write finds the state already holding that txid, returns the SAME
+  reference, and React bails out — which is also what keeps an explicit click-from-block height
+  from being wiped by the write. Measured by the gate rather than argued: `§7 clearing REPLACES —
+  history length 3 → 3` on all ten views, and no `pageerror` anywhere in §8.
+  **THE NOT-FOUND STATE EXISTS** (the brief's second unknown): `tx-detail.tsx:129` renders "Not
+  returned by the node" whenever `useLiveTx` reads error or null, and `api/xmr.js:902` answers an
+  unknown txid with a 404 that `getJSON` (`http.ts:14`) turns into null. The fixture now answers
+  `/api/xmr/tx/<id>` PER ID and 404s the rest — before this it answered the tracked tx's detail
+  for ANY requested id, which no view exercised and §8b now does.
+  **REACT-ROUTER'S FUNCTIONAL UPDATER IS STALE WITHIN A TICK, AND THE CLEAR PATH IS BUILT AROUND
+  THAT.** Read in the installed `react-router-dom@6.30.4`: `setSearchParams`'s functional form is
+  `nextInit(searchParams)` inside a `useCallback` closed over the RENDER-TIME params, not the
+  latest location. The views' `clear` calls `clearTracking()` AND `onClearFocus()` back to back —
+  two writes in one tick, both composing on the same stale copy, and the SECOND navigation is
+  what survives. Had each deleted only its own key, an untrack would have left `?tx=` standing
+  and the URL effect would have re-tracked it on the next render. So every clear write deletes
+  BOTH keys and the pair converges on one URL whichever lands last; both are guarded on
+  `params.has(…)` so a page with nothing to drop issues no navigation. **Break test M4 restores
+  the one-key-each shape: 4 reds, and WHERE they land is the measurement — `[classic] §7 Clear tracked removes tx=` and `[reactor] §7` leak the key (`?v=classic&tx=aaaa…` after Clear tracked) and §8c's two clears on classic leak it too, while the EIGHT views whose `clear` issues ONE write stay green: classic and reactor are the two whose `clear` calls `onClearFocus` after `clearTracking`, so the hazard is located to the exact call shape rather than asserted** — the staleness claim reproduced in a browser, not only in source.
+  **PRECEDENCE IS ONE EXPRESSION, AND THE TRANSACTION WINS.** `focusBlock = focusTx == null && …`
+  in `MempoolPage.tsx` — a well-formed `?tx=` silences `?block=`, so a URL carrying both opens the
+  transaction, the more specific claim and the one this page mints itself; decided there rather
+  than by which of the hook's URL effect and the views' `focusBlock` effects runs last, which
+  would be a fact about React's schedule and not about the URL. Gated in BOTH orders, with a 1.5s
+  settle where a late `focusBlock` effect would have flipped the slot, and a control that
+  `?block=` alone still opens the block. **The URL never CLAIMS what is not on screen**: a tx
+  search sets `tx` and drops `block`; a block search drops both (an in-view block click writes no
+  claim of its own, and a stale `block=` left standing would have come back to life the moment
+  `tx` went — the corner a hand-composed URL reaches); a clear drops both. **And the block
+  transition PUSHES rather than replaces** — the transaction WAS the primary content, so `§8g Back
+  returns to the tracked transaction`; a replace would have made Back a no-op and a second
+  tracked transaction unreachable from history.
+  **WHAT A SHARED LINK CARRIES, in one sentence a reader can act on**: a link copied from a
+  tracked transaction hands its recipient — and, before any script runs, this site's own edge, in
+  the request line — the id of the transaction you were watching, and nothing else. That id
+  already reaches this origin as a path segment the moment you track it (`live-detail.ts:99,115,130`
+  fetch `/api/xmr/tx/<txid>`), so the address adds no exposure of the txid to this origin, and
+  `Referrer-Policy: no-referrer` (`vercel.json:14`) keeps it from any site you follow a link to.
+  New on the reader's own device: one history entry per tracked transaction. **`?tx=` over `#tx=`
+  is RECOMMENDED and is the operator's call, priced**: a fragment would keep the id out of the
+  recipient's first request line and nothing more, at the cost of a second URL-state idiom in a
+  codebase that has spent three releases removing hand-copied second sources — and `useUrlState`
+  does no hashes, so the `?v=`/`?block=` composition the feature rides on would have to be rebuilt
+  for one key. Written into the README's claims table as well, because the brief is right that a
+  reader should be able to find it where readers look.
+  **GATE: `verify-tracking` 89 → 184**, in place: per view, §2b (the search writes `tx=` and keeps
+  `v=`) and §7 (a cold `?tx=` opens the SAME transaction unsearched, IN MEMPOOL at depth 0, the
+  view marks it in its own idiom from the URL alone — idiom 1–2 on every view — and Clear removes
+  `tx=`, keeps `v=`, REPLACES); once on classic, §8a–g (malformed, unknown, precedence both orders
+  plus the clear dropping both keys, push count, the Back/Forward walk with the chip re-targeted at
+  each step, the view switch, the block transition). **The CI step name read `(61)` against a
+  measured 89 on the untouched base** — stale since p2·10, another count in a step title that
+  nothing derives; it reads 184 now, from the run. Census RECOUNTED: **89 files** by `find` at any
+  depth and `package.json`'s chains byte-identical to the base — no gate file added, nothing
+  wired, so 89 / 85 / 22 / 39 / 75 / 6 stands.
+  **AND `verify-nav` §4a CAUGHT A REGRESSION THIS RELEASE'S OWN GATE COULD NOT — the full-set rule,
+  walked into by a gate that had just passed 183.** The first cut's block branch dropped every
+  `block=` claim, on the argument that a stale one would come back to life when `tx` went. It is
+  the Home ribbon's `?block=H` deep link that reaches that branch, BY WAY OF the views' own
+  `focusBlock` effects, so every `?block=` link opened its panel and then deleted itself
+  (`?block= present before the click (?v=classic)`, 3 reds). `verify-tracking` §8c's control had
+  stayed GREEN on the same tree, because it asserted the block OPENS and never that the parameter
+  SURVIVES — "opens" and "survives" are different claims, and the control was the narrower one.
+  Fixed so a block search drops `block=` only when it names a DIFFERENT block; the control now
+  asserts survival; **break test M7 restores the first cut and reds exactly that one assertion**
+  (`block= is still in the URL (?v=classic)`), the class this gate could not see an hour earlier.
+  **SEVEN BREAK TESTS, every restore proven against the COMMITTED BLOB with a marker sweep, rebuilt
+  between restore and re-measure, behind three guards (mutation landed, build succeeded, server
+  answering from THIS dist):** M1 the object form `setParams({ tx })` → **20 reds** — §2b on all ten views (`?tx=aaaa…` with `v=` gone), §3's idiom on nine of them (the requested view had fallen back to classic, so its own idiom had nothing to mark) and §8g. The brief's prediction, exactly, and the answer to its question: something reds — twenty things · M2 the validator
+  admitting 63 hex → **2 reds** — `§8a … no chip, no detail panel (chips 1, panels 1)` and the not-found panel counted as an error surface · M3 precedence inverted, `focusBlock` ignoring `?tx=` → **2 reds** — both orders read `phase "block", panel "block", chip "BLOCK #3,700"`, while the `?block=`-alone control stayed GREEN, which is what proves the assertion discriminates · M4 each
+  clear write deleting only its own key → **4**, on exactly the two views that issue two writes (above) · M5 the tx write replacing instead of pushing →
+  **3 reds** — `§8d … PUSHES exactly one history entry (2 → 2)` twice, and the history walk threw for want of an entry to go back to · M6 the URL → state effect removed, a mount-only read → **4 reds** — `§8e Back … the chip follows` reads the chip still on `77777777…` under a URL naming `aaaa…`, `Back again … chips 1`, Forward likewise, and §8g's Back lands on `phase "block"`.
+  **BUDGETS: RESIDUAL ZERO, TWO TERMS, NOTHING RAISED.** Paired per chunk STEM by multiset against a build of `cabab9c` snapshotted before the first edit: **75 of 77 slots size-identical**; `mempool-shared` 7,687 → 8,442 = **+755** and `MempoolPage` 6,238 → 6,309 = **+71**, sum **+826**, which IS `lazyJsRaw`'s whole delta (997,403 → 998,229) and `totalJsRaw`'s (1,263,109 → 1,263,935). `eagerJsRaw` **BYTE-IDENTICAL at 265,706** — the `SITE_PR` bump is three digits at identical length, as p4·01 measured; `eagerJsGz` 88,995 → 88,983 (−12) is compressibility alone, the entry's `__vite__mapDeps` table carrying the two rotated hashes; `cssGz` **BYTE-IDENTICAL at 19,011**, no stylesheet rule; chunks **77 = 77**, nothing minted. **`/live/mempool` 106,038 → 106,318 B gzip, +280, margin 682** — the brief's "near zero" held: a hook call and a param read on a page that already imported both, and no new import edge, `useSearchParams` being in the vendor chunk already. `verify-bundle` 32 passed on the final tree.**
+  **NOT FIXED, and named**: an in-view block click still writes no `?block=` (blocks keep the Home
+  ribbon's deep link only), so after tx → block the URL is honest about the transaction and silent
+  about the block, and Forward from that entry is lossy — writing `?block=` on in-view clicks is
+  the completion, and a scope decision rather than this PR's; `RouteAnnouncer` says "Navigated to
+  Mempool" on a track, because its effect keys on `location.search` on purpose
+  (`/mempool?v=terminal` is different content) and a tracked transaction is the same kind of thing
+  — consistent, and a little odd; `live-detail.ts:61` keeps its own private `TXID_RE`, because
+  importing the exported one would close an import cycle; `ci.yml`'s memstats step name read `(36)` against a measured **80** (p4·M9a took that gate 46 → 80 and never touched the title) — corrected from this run, the same stale-count-in-a-title defect as the tracking step's `(61)`, and the two were found the same way, by running the gate the title names.
+  **THE SUITE, AND THE ONE RED IS PAIRED RATHER THAN WAVED AT.** `verify:static` exit 0 (22 gates).
+  **`verify:e2e` ran ALL 39 members on a fresh build of the head — 38 green, one red, and it is
+  `verify-vitals`** (`/` blocking 438 ≤ 400, `/live/markets` LCP 4424 ≤ 2600), the same two assertions
+  p4·M9b, p4·M6c-shot and p4·M7 each recorded on this machine. Neither route loads either chunk this
+  diff moved and `eagerJsRaw` is byte-identical — but "implausible" is not "measured", so it was
+  PAIRED on this machine, interleaved, two rounds each, against the base build snapshotted from
+  `cabab9c` and served on its own port from a copy of `serve-dist` pointed at the snapshot, the two
+  trees proven distinct by entry hash (`index-CgzL-Emj` base, `index-DEj6_v9q` head) and each port's
+  holder confirmed by `/proc/<pid>/cwd`:
+
+  | assertion | base r1 · r2 | head r1 · r2 |
+  |---|---|---|
+  | `/` blocking ≤ 400 | 399 ✅ · 370 ✅ | 399 ✅ · **438 ❌** |
+  | `/live/markets` LCP ≤ 2600 | **4544 ❌ · 4524 ❌** | 4484 declined, "would have FAILED" · **4524 ❌** |
+  | `/live/markets` blocking ≤ 400 | **444 ❌ · 409 ❌** | 400 declined, "would have PASSED" · **450 ❌** |
+  | `/live/mempool` LCP ≤ 4350 · blocking ≤ 300 | 4016 · 3972 / 270 · 256 | **3908 · 3936 / 236 · 250** |
+  | `/` LCP ≤ 2500 · `/learn/sim` | ✅ (sim declined in r1) | ✅ |
+
+  `/live/markets` is red on the BASE in both rounds — that ceiling is unreachable in this sandbox on
+  either tree, p4·M7's recorded factor of two against the runner; `/` blocking straddles its ceiling
+  on both trees (p4·01's plateau — the base's 399 is one millisecond under); and `/live/mempool`, the
+  one route this diff touches, is green on both and BETTER on the head in all four readings.
+  **AND CI SETTLES IT: all three checks GREEN on the head `8c04900`** — `hardening gates`, which runs
+  this same 39-member chain including `verify-vitals`, reports **success** (23:11 → 23:42 UTC),
+  beside `typecheck + build + offline gates` and the Vercel preview, deployed Ready. A draft PR,
+  #210, mergeable, no review comments at the time of writing.
+  **No human has seen the rendered result in a browser** — read from screenshots at 1440 and 390 (dpr 2): classic and orbital tracked from the URL alone (orbital's ring lights the tracked transaction and the chip reads `AAAAAAAA…AAAAAA · IN MEMPOOL ×`), the phone's panel brought into view by p4·M8's `useDetailReveal`, and the unknown-txid not-found state. **Classic's chip is clipped at the right edge at 1440** in both classic captures — `.mempool-search-bar` sits inside the wide `.mp-view` that pans — which p4·M8 already recorded ("off-screen on desktop too") and which is untouched here.
+
 - **2026-09-02**: p4·M9b "MOBILE 2.0: NAV REACHABILITY AND A PHONE LAYOUT FOR CLASSIC"
   (app/) — eleven routes a phone could not reach, and the two classic defects p4·M8
   did not already fix.
