@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260903-M11
 branch: claude/monero-thesis-mockup-y78sb8
-status: in_progress
+status: done
 written_by: claude-code (manual mode — task arrived as a prompt)
 owner: claude-code
 ---
@@ -122,9 +122,33 @@ node verify-discrete.mjs
 ```
 
 ## 7 · REPORT — filled on exit
-status:
-pr:
-commits:
+status: done
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/211
+commits: 33591ac (feature) · c4d71e5 (record) · + the LOG/PR-URL commit
+
+**Shipped**: `/monero/thesis` as the eighth Monero tab — 7 pressure panels, 28 sourced
+permalinks (26 cited), 21 pairwise overlap sentences, a closing box, theme tracing, and a
+ported flow overlay whose endpoints were measured rather than assumed (10/10 land on panels).
+
+**The brief's central premise was refuted by the first measurement**: `/monero`'s margin is
+1,138 B (7th tightest of 18), not ~10,846, and the content is 11.7x that. `React.lazy` — the
+same shape as `/live/mempool`'s ten view engines — held the route at +296 B and needed no raise.
+
+**The mockup's `grid-template-areas` is invalid CSS** (a non-rectangular area) and the browser
+discards it, in the mockup too: all seven panels stacked at one position. Repaired minimally.
+
+**The palette is the repo's own, rediscovered** — 7 of 8 hues inside the recorded 4.35
+calibration gap, 3 at exactly 0.00. One re-hue forced by the Monero-orange rule.
+
+**Gates**: new `verify-thesis.mjs` (60 assertions) covering two measured gaps — no Monero tab
+has ever been in `verify-mobile`'s type sweep, and `verify-reduce` never visits `/monero`.
+`verify-palette` §4 re-anchored on the mechanism after this release falsified its "unique
+word-start hit" premise. Census 90 / 86 / 22 / 40 / 76 / 6, instrument controlled against six
+commits. Budgets residual zero; cssGz / lazyJsRaw / totalJsRaw raised, CHUNK_COUNT re-centred.
+
+**Three break tests**, each restored against the committed blob behind four guards; M3 is the
+sharpest — exactly one red while the brief still opens, is labelled, renders its sources and
+unmounts, proving the variant is geometry and not behaviour.
 
 ## 8 · LOOP FEEDBACK
 - The brief's budget table was one release stale on 4 of 6 globals and **9,708 B stale on the
