@@ -958,7 +958,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   endpoint back through the viewBox transform against the rendered panel rects and finds **10 of
   10 landing inside a panel**, so dropping it on the suspicion that hand-placed coordinates could
   not survive a font change would have been wrong.
-  **NEW GATE `verify-thesis.mjs` — 60 assertions in nine sections**, wired MID-CHAIN at
+  **NEW GATE `verify-thesis.mjs` — 62 assertions in nine sections**, wired MID-CHAIN at
   `verify:e2e` **20 of 40**, tail untouched. It covers TWO gaps MEASURED on the base:
   **`verify-mobile`'s type-floor sweep imports the 18-entry BUILD routes, so NO Monero tab has
   ever been in it** — not this one, not the seven that predate it — and **`verify-reduce` never

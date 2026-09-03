@@ -140,7 +140,7 @@ discards it, in the mockup too: all seven panels stacked at one position. Repair
 **The palette is the repo's own, rediscovered** — 7 of 8 hues inside the recorded 4.35
 calibration gap, 3 at exactly 0.00. One re-hue forced by the Monero-orange rule.
 
-**Gates**: new `verify-thesis.mjs` (60 assertions) covering two measured gaps — no Monero tab
+**Gates**: new `verify-thesis.mjs` (62 assertions) covering two measured gaps — no Monero tab
 has ever been in `verify-mobile`'s type sweep, and `verify-reduce` never visits `/monero`.
 `verify-palette` §4 re-anchored on the mechanism after this release falsified its "unique
 word-start hit" premise. Census 90 / 86 / 22 / 40 / 76 / 6, instrument controlled against six
