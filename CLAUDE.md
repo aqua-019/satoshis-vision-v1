@@ -1048,6 +1048,20 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   which runs this same 40-member chain INCLUDING `verify-vitals`, reports **success**
   (21:37 → 22:10 UTC), beside `typecheck + build + offline gates` and a Vercel preview
   deployed Ready. p4·M7 measured this route at **2,168 ms on the runner against 4,368 here**.
+  **AND THE CHAIN WENT GREEN AGAIN ON `e41ce87`** (22:35 → 23:09 UTC, 34m27s), the docs head two
+  build-neutral commits later — so `verify-vitals` on this route has now passed the runner
+  TWICE on this branch, which is what makes the port-swap disposition a finding rather than an
+  excuse.
+  **AND THAT SECOND RUN SETTLES A SEPARATE ONE: `verify-coldboot` §`390 @10x CPU: precondition
+  — the field ran and handed off under throttle` RED ONCE ON CI, ON THE SUPERSEDED HEAD
+  `c4d71e5`, AND HAS BEEN GREEN EITHER SIDE OF IT** — `ab53cc4` and `e41ce87`, with 220/220
+  locally and the throttled loop measuring 3,649 ms against its own 4,500 ms ceiling, i.e.
+  ~19% of margin. Recorded rather than waved at, because this file already calls that gate
+  "the likeliest flake in the suite" and had no INSTANCE to point at; one red between two
+  greens on a build-neutral pair is what an instance looks like. **The one mechanism by which
+  it could have been this release's was named before it was dismissed** — the +11,637 B of
+  render-blocking CSS does load on `/`, which is the route that assertion drives — and a
+  second red would have been real rather than a second flake. It did not come.
   **THE TRANSFERABLE HALF: two ports is not a control, it is a pairing. When a paired
   vitals result looks like a regression, SWAP THE PORTS before believing it** — the standard
   protocol held a port-linked artifact that would have been published as a +2,000 ms
