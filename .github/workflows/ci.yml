@@ -390,7 +390,7 @@ jobs:
       # Bounded at 12 annotations because GitHub caps what it will render and a
       # truncated list that does not say it was truncated is the same defect one
       # level up. The count is printed either way.
-      - name: 'E2E gates (39) — memviews · memphone · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · legality · mine · site · protocol · explorer · +22'
+      - name: 'E2E gates (40) — memviews · memphone · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · legality · mine · site · protocol · explorer · thesis · +22'
         run: |
           set -o pipefail
           npm run verify:e2e 2>&1 | tee /tmp/e2e-chain.log

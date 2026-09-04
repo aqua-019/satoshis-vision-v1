@@ -205,15 +205,33 @@ REPORT.group('── §4 · Enter navigates the selection ───────�
   await open(page, '/');
   await page.click('.nav-kbd');
   await waitDialogVisible(page);
-  await page.keyboard.type('thesis'); // unique word-start hit — see file header's ranking note
+  /* p4·M11 — THIS ASSERTED A HARDCODED DESTINATION AND THE QUERY STOPPED BEING
+     UNIQUE. It typed 'thesis', called that a "unique word-start hit" in its own
+     comment, and required /live/markets/thesis. p4·M11 added a Monero tab
+     LABELLED "Thesis", so the corpus now holds two word-start hits and the
+     exact label match — /monero/thesis — ranks first. The palette is right; the
+     FIXTURE rotted, and it rots again for any future page whose label collides.
+     The claim in this assertion's own text is "Enter navigates to the TOP
+     RESULT", so it now reads the top row's own `data-cmdk-path` — the value
+     CommandPalette.tsx renders for the row it ranked first — and asserts Enter
+     lands there. That is the mechanism rather than a proxy for it, and it
+     cannot be falsified by the IA growing. Floored so it cannot pass over an
+     empty list or a row with no destination. */
+  await page.keyboard.type('thesis');
   await soft(page.waitForFunction(
     () => document.querySelector('.cmdk-list')?.getAttribute('data-cmdk-result-count') !== '0',
     null, { timeout: 5000 },
   ));
+  const top = await page.evaluate(() => {
+    const r = document.querySelector('.cmdk-row');
+    return r ? r.getAttribute('data-cmdk-path') : null;
+  });
+  REPORT.ok(typeof top === 'string' && top.startsWith('/'),
+    `the palette ranked a navigable row first (data-cmdk-path=${top}) — floor: Enter cannot be checked against an empty or action-only list`);
   await page.keyboard.press('Enter');
-  await soft(page.waitForFunction(() => location.pathname === '/live/markets/thesis', null, { timeout: 10000 }));
+  await soft(page.waitForFunction((t) => location.pathname === t, top, { timeout: 10000 }));
   const url = await page.evaluate(() => location.pathname);
-  REPORT.ok(url === '/live/markets/thesis', `Enter (sel=0, no arrow keys) navigates to the top result (got ${url})`);
+  REPORT.ok(url === top, `Enter (sel=0, no arrow keys) navigates to the TOP RESULT the palette itself ranked (top=${top}, got ${url})`);
   await waitDialogHidden(page);
   REPORT.ok((await dialog(page).count()) === 0, 'the palette closes after Enter navigates');
   await page.context().close();
