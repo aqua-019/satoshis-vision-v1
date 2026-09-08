@@ -136,10 +136,16 @@ const routes = await p.evaluate(() =>
   [...document.querySelectorAll('#root a')]
     .map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } })
     .filter(Boolean));
-// The 18-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
+// The 19-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
 // no import (see verify-lib.mjs's ROUTES for the same constraint reasoned
 // out in full).
 //
+// p4·M12 · 18 -> 19 (/about/terms). This entry earns its keep harder than the
+// others: the Terms page is read monthly by kycnot.me's automated scorer, which
+// fetches HTML and does not run scripts, and their "Can't analyse ToS" penalty
+// names client-side rendering as a cause. So "the terms are a real anchor in
+// the JS-off nav, and the JS-off document is substantial" is not house habit
+// here — it is the requirement, and this is the gate that measures it.
 // p4·07 · 17 -> 18 (/operate/superstress/explorer).
 // p4·05 · 15 -> 16 (/about/site).
 // p4·04 · 14 -> 15 (/operate/mine).
@@ -156,7 +162,7 @@ for (const r of ['/', '/live/mempool', '/live/markets', '/live/markets/thesis', 
                   '/future/protocol',
                   '/operate/node', '/operate/mine', '/operate/superstress',
                   '/operate/superstress/explorer', '/operate/peers',
-                  '/about/sources', '/about/site']) {
+                  '/about/sources', '/about/site', '/about/terms']) {
   ok(routes.includes(r), `no-JS: ${r} is a real anchor in the prerendered nav`);
 }
 

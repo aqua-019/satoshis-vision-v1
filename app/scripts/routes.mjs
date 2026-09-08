@@ -129,10 +129,30 @@ export const R = {
   // REDIRECTS protects URLs that once served content and moved, and this one
   // has never existed.
   ABOUT_SITE: "/about/site",
+  // p4·M12 — the NINETEENTH route, and the About section's FOURTH leaf: the
+  // site's Terms of Service. Declared LAST in the About group for the reason
+  // ABOUT_SITE's own note directly above records — `ROUTES = Object.values(R)`
+  // inherits this order and `nav/ia.ts`'s About column navigates to
+  // `cols[0].items[0].p`, so a leaf placed ahead of ABOUT_SOURCES would
+  // silently move where clicking "About" in the nav goes.
+  //
+  // WHY A TERMS PAGE IS A ROUTE AND NOT A PARAGRAPH ON /about/site. The two
+  // pages overlap deliberately and neither is the other's source: /about/site
+  // is EDITORIAL — what this site is and how it is funded, in the operator's
+  // own voice — and this one is CONTRACTUAL, written to be parsed. It has an
+  // automated reader: kycnot.me re-reads the document monthly and scores the
+  // service from it, and one sentence in §2 is load-bearing for a quarter of
+  // this site's published privacy score. That is why it is prerendered like
+  // every other route (a client-rendered terms page is unreadable to that
+  // parser, and costs trust points for exactly that reason), and why
+  // verify-terms.mjs exists to make the sentence unremovable in silence.
+  //
+  // NO REDIRECT SOURCE: this URL has never existed.
+  ABOUT_TERMS: "/about/terms",
 };
 
 /**
- * The 17 routes App.tsx serves that have a fixed path, in R's declared
+ * The 19 routes App.tsx serves that have a fixed path, in R's declared
  * order. Consumed by prerender.mjs (emits dist/<route>/index.html, so the
  * site works with JS off) and gen-sitemap.mjs (emits sitemap.xml).
  *

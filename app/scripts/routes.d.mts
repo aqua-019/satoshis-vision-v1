@@ -33,6 +33,7 @@ export interface RouteMap {
   OPERATE_PEERS: string;
   ABOUT_SOURCES: string;
   ABOUT_SITE: string;
+  ABOUT_TERMS: string;
 }
 
 export interface RedirectPair {

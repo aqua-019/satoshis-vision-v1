@@ -6,6 +6,13 @@
 // Run: node verify-releases.mjs   (Node >=22.18 strips the type annotations)
 
 import { readFileSync, readdirSync } from 'fs';
+// p4·M12 — imported for ONE message string, deliberately. The count below
+// used to be the literal 18 and was stale the moment a route was added: it
+// lives in an assertion MESSAGE, so it cannot red, which is exactly why
+// CLAUDE.md records this line as the registration surface the settled
+// twelve-surface list does not name (found by `git show --stat` on p4·04's
+// own commit rather than by reading the list). Derived, it cannot rot again.
+import { ROUTES } from './scripts/routes.mjs';
 
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
@@ -311,7 +318,7 @@ ok(CURATED.every((c) => typeof c.v === 'string' && c.v.length > 0 && typeof c.no
   // see one injected by a Vite plugin from vite.config.ts.
   const pre = readFileSync(new URL('./scripts/prerender.mjs', import.meta.url), 'utf8');
   ok(!/<title/i.test(pre),
-    'scripts/prerender.mjs emits no <title> — the shell is the single authority for all 18 routes');
+    `scripts/prerender.mjs emits no <title> — the shell is the single authority for all ${ROUTES.length} routes`);
 }
 
 console.log(fail ? '\n❌ verify-releases FAILED' : '\n✅ verify-releases: all assertions passed');

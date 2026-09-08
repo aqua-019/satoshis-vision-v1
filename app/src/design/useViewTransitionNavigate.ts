@@ -120,6 +120,7 @@ const ROUTE_TABLE: RouteObject[] = [
   { path: R.OPERATE_PEERS, handle: "peers" },
   { path: R.ABOUT_SOURCES, handle: "sources" },
   { path: R.ABOUT_SITE, handle: "site" },
+  { path: R.ABOUT_TERMS, handle: "terms" },
   { path: "*", handle: "notfound" },
 ];
 
@@ -137,7 +138,7 @@ const ROUTE_ORDER = [
   R.LEARN, R.LEARN_SIM,
   R.FUTURE, R.FUTURE_OUTLOOK, R.FUTURE_PROTOCOL,
   R.OPERATE_NODE, R.OPERATE_MINE, R.OPERATE_SUPERSTRESS, R.OPERATE_SUPERSTRESS_EXPLORER, R.OPERATE_PEERS,
-  R.ABOUT_SOURCES, R.ABOUT_SITE,
+  R.ABOUT_SOURCES, R.ABOUT_SITE, R.ABOUT_TERMS,
 ];
 
 function directionFor(fromPath: string, toPath: string): "fwd" | "back" {

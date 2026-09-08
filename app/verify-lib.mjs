@@ -252,6 +252,14 @@ export const ROUTES = [
      page the ROUTES-consuming gates never walk. Total 49 -> 50 — MEASURED,
      see the header: do not read that figure off this comment. */
   '/about/site',
+  /* p4·M12 — /about/terms, the NINETEENTH route, on the same argument p3·16,
+     p4·04 and p4·05 make above. It earns its entry for a reason those three
+     did not have: verify-nav walks THIS list asserting exactly one
+     `#page-title` per route, and a terms document that silently grew a second
+     <h1> would be a structural defect on the one page written to be parsed by
+     a machine. Total MEASURED 54 -> 55 — do not read that figure off this
+     comment, count it, per this file's own header. */
+  '/about/terms',
   '/future',
   '/future/outlook',
   ...['journey', 'timeline', 'quotes', 'simulators'].map((t) => `/learn/${t}`),

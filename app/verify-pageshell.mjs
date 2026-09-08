@@ -130,6 +130,12 @@ const ROUTES = [
   // gate is still npm-wired only, and a route absent from the table is one the
   // sweep is never taught about on the day the /future red is fixed.
   { path: '/about/site',         label: '/about/site',                tier: 'standard' },
+  // p4·M12 — the 19th route, on the precedent p3·16, p4·04 and p4·05 each
+  // record above: this gate is still npm-wired only, and a route absent from
+  // the table is one the sweep is never taught about on the day the /future
+  // red is fixed. Placed BEFORE /__nope__, which is the 404 control and has
+  // to stay last.
+  { path: '/about/terms',        label: '/about/terms',               tier: 'standard' },
   { path: '/__nope__',           label: '/__nope__',            tier: 'standard' },
 ];
 const WIDTHS = [1920, 1600, 1280, 1024, 768, 390];
