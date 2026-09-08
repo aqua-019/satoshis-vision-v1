@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260908-M12
 branch: claude/terms-of-service-page-8egioc
-status: in_progress
+status: done
 written_by: claude-code
 owner: claude-code
 ---
