@@ -273,6 +273,10 @@ const aboutCol: IaCol = {
     // projects you RUN is not a statement about this site, which is what the
     // other three leaves here are.
     { l: "Mission & ethos", p: R.ABOUT_SITE, note: "what this is · how it is funded" },
+    // p4·M12 — appended LAST, deliberately. This column's section header
+    // navigates to `cols[0].items[0].p`, so a leaf placed first would move
+    // where clicking "About" in the nav goes; verify-terms §5 pins both.
+    { l: "Terms of service", p: R.ABOUT_TERMS, note: "what this site will never ask you for" },
   ],
 };
 

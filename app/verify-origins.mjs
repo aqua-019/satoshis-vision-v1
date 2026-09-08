@@ -214,8 +214,21 @@ await coldBootOffBrowser(b);
      of page that grows a "look this up on a block explorer" fetch. It must
      issue ZERO off-origin requests, like every other page, and now that is
      measured rather than assumed. */
+  /* p4·M12 adds '/about/terms', and the argument is p4·05's own applied with
+     more force than p4·05 had. That release added '/about/site' so "the page's
+     claim covers the page itself" — /about/site SAYS the browser reaches no
+     third party, so the gate should measure the page saying it. /about/terms
+     is the CONTRACTUAL version of that claim: it states in a document written
+     to be parsed that this site is served under `connect-src 'self'` and that
+     "third parties never see you". A terms page asserting zero off-origin
+     requests, on a route nothing counted requests for, would be the one page
+     on this site whose central promise was unmeasured.
+     It carries exactly one outbound anchor, a `mailto:`, and no image — so
+     phase 1 is satisfied by that sweep's own stated carve-out (an <a href>
+     issues no request until a reader clicks it) and phase 2 should read ZERO,
+     with no popup to open first, unlike /operate/peers or /monero/thesis. */
   for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn',
-                       '/about/site', '/future/protocol', '/operate/peers',
+                       '/about/site', '/about/terms', '/future/protocol', '/operate/peers',
                        '/operate/superstress/explorer', '/monero/thesis']) {
     await p.goto(base + route, { waitUntil: 'load' }).catch(() => {});
     // v6.1.8 PRECONDITION — Home only. This gate counts OFF-ORIGIN REQUESTS;

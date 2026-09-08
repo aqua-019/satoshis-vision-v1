@@ -102,7 +102,7 @@ function stripStrings(src) {
 // ============================================================================
 // §1 · routes.mjs canonical list
 // ============================================================================
-R.group('§1 · routes.mjs exports exactly 18 ROUTES in specified order');
+R.group('§1 · routes.mjs exports exactly 19 ROUTES in specified order');
 
 try {
   const routesModule = await import(join(__dirname, 'scripts', 'routes.mjs'));
@@ -133,14 +133,17 @@ try {
     // with them, exactly as the p4·04 note below says to count.
     // p4·07 · 17 -> 18, all THREE literals, exactly as the note above says
     // to count them.
-    R.ok(routes.length === 18, `ROUTES length: ${routes.length} (expected 18)`);
+    // p4·M12 · 18 -> 19, all THREE literals, exactly as the note above says
+    // to count them. The nineteenth is /about/terms, appended LAST so the
+    // About column's own header destination (cols[0].items[0].p) is unmoved.
+    R.ok(routes.length === 19, `ROUTES length: ${routes.length} (expected 19)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
       '/live/network', '/learn', '/learn/sim', '/monero', '/future',
       '/future/outlook', '/future/protocol', '/operate/node', '/operate/mine',
       '/operate/superstress', '/operate/superstress/explorer',
-      '/operate/peers', '/about/sources', '/about/site',
+      '/operate/peers', '/about/sources', '/about/site', '/about/terms',
     ];
 
     const ordered = routes.length === expected.length &&

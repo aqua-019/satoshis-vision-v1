@@ -34,10 +34,13 @@ ADDITIONAL DISCLAIMERS AND NOTICES
    The inclusion of any cryptocurrency, exchange service, or third-party
    widget does not constitute an endorsement or recommendation.
 
-3. THIRD-PARTY INTEGRATIONS
-   Exchange widgets (ChangeNOW, Wagyu Wallet references) are included for
-   demonstration purposes only. Users interact with these services at their
-   own risk and should review each service's terms independently.
+3. NO THIRD-PARTY INTEGRATIONS
+   This site embeds no third-party service. It contains no exchange widget,
+   no swap iframe, and no embedded interface of any kind, and it takes
+   custody of nothing. Third-party projects, exchanges and services named
+   anywhere on this site are named as editorial description only — a mention
+   is not an endorsement, and each carries its own terms and its own risks,
+   which you should review independently before using it.
 
 4. REGULATORY COMPLIANCE
    Users are solely responsible for ensuring compliance with all applicable

@@ -100,6 +100,7 @@ const ROUTES: ReadonlyArray<readonly [string, string]> = [
   [R.OPERATE_PEERS, "Peers"],
   [R.ABOUT_SOURCES, "Sources"],
   [R.ABOUT_SITE, "Mission"],
+  [R.ABOUT_TERMS, "Terms"],
 ];
 
 export interface RootBoundaryProps {

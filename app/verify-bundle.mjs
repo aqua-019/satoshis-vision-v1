@@ -181,6 +181,7 @@ const PAGE_MODULE = {
   '/operate/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
   '/about/site': 'src/pages/SitePage.tsx',
+  '/about/terms': 'src/pages/TermsPage.tsx',
 };
 
 /** Rollup leaves facadeModuleId null when a chunk is not a pure facade —
@@ -742,7 +743,15 @@ const BUDGETS = {
      The reconciliation this file has flagged as lapsed since p2·7 is STILL
      lapsed (eagerJsRaw 280,000 + lazyJsRaw 1,044,000 = 1,324,000 against this
      line's 1,309,000) and is still not this PR's to make. */
-  totalJsRaw: 1_309_000,  // p4·M11: built 1,306,187 on the FINAL tree, margin 2,813 (0.22%).
+  /* p4·M12 RAISED 1,309,000 -> 1,329,000, moved WITH lazyJsRaw by the same
+     20,000 so this row's documented 265,000 gap over lazy HOLDS rather than
+     being quietly broken (1,064,000 + 265,000 = 1,329,000). Built 1,326,608,
+     margin 2,392. The delta is +20,228 = the 19,837 B TermsPage chunk plus
+     the 391 B of eager registration, which is both halves and residual ZERO.
+     The sum-of-the-two-real-budgets reconciliation this row's own comment
+     describes stays lapsed, as it has since #174, and is still not this PR's
+     to restore. */
+  totalJsRaw: 1_329_000,  // p4·M12: built 1,326,608 on the FINAL tree, margin 2,392 (0.18%).
   //   MOVED WITH lazyJsRaw BY THE SAME 4,000, so the documented gap between the
   //   two holds at 265,000 — this row's own construction, kept rather than
   //   quietly broken. eager +736 (the entry alone; its lazy sibling in the
@@ -1454,7 +1463,19 @@ const BUDGETS = {
      gzip of prose, because React.lazy makes it a dynamicImport and :2288 above
      records that a route's static closure excludes those. A static import
      would have charged all seven other tabs for a tab they never render. */
-  lazyJsRaw: 1_044_000,  // p4·M11: built 1,040,452 on the FINAL tree, margin 3,548.
+  /* p4·M12 RAISED 1,044,000 -> 1,064,000. Built 1,060,482 on the FINAL tree,
+     margin 3,518 — the same ~3,500 this ceiling has carried for several
+     releases, so the calibration is re-applied rather than re-invented.
+
+     THE DELTA IS ONE TERM AND THE RESIDUAL IS ZERO. Paired per chunk STEM by
+     multiset against an ISOLATED git-worktree build of b7ab133, with the
+     entry split out by ENTRY IDENTITY read from dist/index.html's own
+     <script src> rather than by basename (the `index` stem holds two chunks;
+     p2·9 recorded them moving in opposite directions and different budgets):
+     77 of 79 slots SIZE-IDENTICAL, `TermsPage` 0 -> 19,837 MINTED, and the
+     eager entry 102,820 -> 103,211. lazyJsRaw moved 1,040,645 -> 1,060,482,
+     which is +19,837 — the new chunk, exactly, and nothing else. */
+  lazyJsRaw: 1_064_000,  // p4·M12: built 1,060,482 on the FINAL tree, margin 3,518.
   //   RED-THEN-GREEN at 997,403 against 997,000. Attribution is RESIDUAL ZERO
   //   over three terms, paired per chunk STEM by MULTISET against a snapshot of
   //   the untouched 8dc7a56 build: SectionSheet 0 -> 1,147 (minted) + classic
@@ -1817,7 +1838,24 @@ const ROUTE_BUDGET_GZ = {
   //   because ProtoPopup still imports the extracted body, so the route now
   //   pays for FuturePage + ProtocolDetail as two chunks instead of one
   //   larger. 484 B is where the next touch to this route reds.
-  '/future/outlook':         92_000, //  83,652 — new: split out of the old /monero/outlook tab
+  /* p4·M12 RAISED 92,000 -> 93,000, and this row is worth reading because
+     NOTHING ON THIS ROUTE CHANGED. /about/terms added a 19th route, and the
+     irreducible cost of registering one is ~391 B raw in the EAGER entry
+     (R gains a key, App.tsx a lazy import and a <Route>, nav/ia.ts a leaf,
+     RootBoundary a label, useViewTransitionNavigate two list entries, and
+     Vite's __vite__mapDeps table one preload string). A route row is eager
+     gzip PLUS its own closure, so that +123 B gzip lands on ALL NINETEEN
+     rows — and this one had the tightest margin on the board at 93 B, so it
+     is the row that reds. Measured: 91,907 -> 92,030, over by THIRTY BYTES.
+
+     None of those six registrations is optional: p4·04 measured what dropping
+     the useViewTransitionNavigate entry costs (the route's transition gets
+     gated on whether the 404 page's chunk has loaded — a true answer to the
+     wrong question), and RootBoundary is the chunk-failure shell. So the cost
+     is real and the row is recalibrated rather than the registration trimmed.
+     93,000 against a built 92,030 leaves 970 B, which at ~123 B of eager gzip
+     per new route is about seven more routes before this row speaks again. */
+  '/future/outlook':         93_000, //  92,030 — see the note above: +123 B of EAGER growth, not its own
   //   p4·06 · NEW ROW. A four-chunk closure: entry + vendor + ProtocolPage +
   //   ProtocolDetail. It is the cheapest new route in the Phase 4 series
   //   because it mints almost no markup of its own — the body is a component
@@ -2050,6 +2088,14 @@ const ROUTE_BUDGET_GZ = {
      owns some of those rows and touching them is a guaranteed conflict for no
      gate benefit. */
   '/about/site':             99_000, //  96,514
+  /* p4·M12 — /about/terms, the NINETEENTH route. Built 96,227, ceiling set to
+     99,000 (margin 2,773) — the same number its sibling /about/site carries,
+     which is the right comparator: both are About-section prose pages served
+     out of a three-chunk closure (entry + vendor + their own page chunk) and
+     they measure within 1 KB of each other. The page is prose in existing
+     house components and adds NO stylesheet rule, so there is nothing here
+     that grows except the words. */
+  '/about/terms':            99_000, //  96,227
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
@@ -2289,7 +2335,23 @@ const ROUTE_BUDGET_GZ = {
    /monero, not a leaf that drifted across a group boundary. The day a release
    cannot name its new chunk, the answer is per-stem accounting, not a wider
    band. */
-const CHUNK_COUNT = 75;
+/* p4·M12 — RE-CENTRED 75 -> 76, and the band's WIDTH is untouched at ±4.
+   The build measures 79 against the old [71, 79]: INSIDE it and exactly ON
+   the ceiling, which is the state p4·M11's note directly above says to
+   re-centre out of — a per-release DRIFT detector sitting on its own limit
+   reports the next mint as a budget failure instead of as news about the
+   build. [72, 80] restores the one rung of upward headroom p4·04, p4·05,
+   p4·07 and p4·M11 each re-established.
+
+   THE FALSIFYING TEST IS MET, and it is the whole licence for a re-centre:
+   the new chunk can be NAMED, and it is `TermsPage` — a net-new lazy ROUTE
+   (App.tsx's React.lazy list), not a leaf that drifted across a chunk-group
+   boundary. This is also worth stating because the brief for this release
+   did not predict it: CHUNK_COUNT is a ROUTE-COUNT DERIVATIVE, since every
+   net-new lazy route mints exactly one chunk — the same blind spot p2·10
+   recorded when a net-new mempool VIEW did it. The day a release cannot
+   name its new chunk, the answer is per-stem accounting, not a wider band. */
+const CHUNK_COUNT = 76;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);
